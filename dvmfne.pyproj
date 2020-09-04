@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{2551da28-74ee-403e-944c-9b9d7595efb6}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>fne\fne_core.py</StartupFile>
+    <SearchPath />
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId>Global|PythonCore|2.7-32</InterpreterId>
+    <IsWindowsApplication>False</IsWindowsApplication>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="blacklist_ids_SAMPLE.csv" />
+    <Content Include="fne\.gitignore" />
+    <Content Include="fne-SAMPLE.cfg" />
+    <Content Include="monitor\index_template.html" />
+    <Content Include="monitor\templates\cmd_panel.html" />
+    <Content Include="monitor\templates\group_affil_table.html" />
+    <Content Include="monitor\templates\rules_table.html" />
+    <Content Include="monitor\templates\link_table.html" />
+    <Content Include="fne_bridge-SAMPLE.cfg" />
+    <Content Include="requirements.txt" />
+    <Content Include="whitelist_ids_SAMPLE.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="dmr_utils\ambe.py" />
+    <Compile Include="dmr_utils\ambe_bridge.py" />
+    <Compile Include="dmr_utils\ambe_utils.py" />
+    <Compile Include="dmr_utils\bptc.py" />
+    <Compile Include="dmr_utils\const.py" />
+    <Compile Include="dmr_utils\crc.py" />
+    <Compile Include="dmr_utils\decode.py" />
+    <Compile Include="dmr_utils\golay.py" />
+    <Compile Include="dmr_utils\golay_tables.py" />
+    <Compile Include="dmr_utils\hamming.py" />
+    <Compile Include="dmr_utils\qr.py" />
+    <Compile Include="dmr_utils\rs129.py" />
+    <Compile Include="dmr_utils\__init__.py" />
+    <Compile Include="fms_db_sync\config_SAMPLE.py" />
+    <Compile Include="fms_db_sync\db_sync.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="fne\fne_core.py" />
+    <Compile Include="fne\__init__.py" />
+    <Compile Include="monitor\config_SAMPLE.py" />
+    <Compile Include="monitor\web_tables.py" />
+    <Compile Include="fne_bridge.py" />
+    <Compile Include="fne\fne_config.py" />
+    <Compile Include="fne\fne_const.py" />
+    <Compile Include="fne\fne_log.py" />
+    <Compile Include="fne_parrot.py" />
+    <Compile Include="fne_router.py" />
+    <Compile Include="fne_routing_rules-SAMPLE.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="Global|PythonCore|2.7-32" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="dmr_utils\" />
+    <Folder Include="monitor\" />
+    <Folder Include="monitor\templates\" />
+    <Folder Include="fne\" />
+    <Folder Include="fms_db_sync\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+</Project>

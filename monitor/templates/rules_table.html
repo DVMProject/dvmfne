@@ -1,0 +1,64 @@
+<h3>Talkgroup Configuration</h3>
+<table>
+    <colgroup>
+        <col style="width: 10%" />
+        <col style="width: 10%" />
+        <col style="width: 10%" />
+        <col style="width: 2%" />
+        <col style="width: 2%" />
+        <col style="width: 2%" />
+        <col style="width: 10%" />
+        <col style="width: 10%" />
+        <col style="width: 2%" />
+        <col style="width: 5%" />
+        <col style="width: 5%" />
+        <col style="width: 25%" />
+        <col style="width: 25%" />
+        <col style="width: 10%" />
+        <col style="width: 25%" />
+    </colgroup>
+
+    {% if _table.items()|length == 0 %}
+    <thead>
+        <tr><th colspan="7">Loading talkgroups ... this may take some time!</th></tr>
+    </thead>
+    {% endif %}
+    {% for system, _system_data in _table.iteritems() %}
+    <thead>
+        <tr>
+            <th>System</th>
+            <th>Name</th>
+            <th>TGID</th>
+            <th>Slot</th>
+            <th>Active</th>
+            <th>Routable</th>
+            <th>Dst. System</th>
+            <th>Dst. TGID</th>
+            <th>Dst. Slot</th>
+            <th>Route T/O</th>
+            <th>T/O Action</th>
+            <th>Aff. Repeated</th>
+            <th>Ignored Peers</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for _rule_data in _system_data %}
+        <tr>
+            <td>{{ system }}</td>
+            <td>{{ _rule_data['NAME'] }}</td>
+            <td>{{ _rule_data['SRC_GROUP'] }}</td>
+            <td>{{ _rule_data['SRC_TS'] }}</td>
+            <td class="{{ 'table-col-success' if _rule_data['ACTIVE'] == 'True' else 'table-col-danger' }}">{{ _rule_data['ACTIVE'] }}</td>
+            <td class="{{ 'table-col-success' if _rule_data['ROUTABLE'] == 'True' else 'table-col-danger' }}">{{ _rule_data['ROUTABLE'] }}</td>
+            <td>{{ _rule_data['DST_NET'] }}</td>
+            <td>{{ _rule_data['DST_GROUP'] }}</td>
+            <td>{{ _rule_data['DST_TS'] }}</td>
+            <td>{{ _rule_data['TIMEOUT'] }}</td>
+            <td>{{ _rule_data['TO_TYPE'] }}</td>
+            <td class="{{ 'table-col-success' if _rule_data['AFFILIATED'] == 'True' else 'table-col-danger' }}">{{ _rule_data['AFFILIATED'] }}</td>
+            <td style="word-wrap: break-word;">{{ _rule_data['IGNORED_LST'] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    {% endfor %}
+</table>
