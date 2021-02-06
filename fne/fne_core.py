@@ -8,7 +8,7 @@
 #
 ###############################################################################
 #   Copyright (C) 2016 Cortney T.  Buffington, N0MJS <n0mjs@me.com>
-#   Copyright (C) 2017-2019 Bryan Biedenkapp <gatekeep@gmail.com>
+#   Copyright (C) 2017-2021 Bryan Biedenkapp <gatekeep@gmail.com>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -134,26 +134,33 @@ def setup_activity_log(_config, _logger):
         return None
 
     act_log_file = open(_config['Log']['ActivityLogFile'], "a+")
-    def act_log_split_loop(_actLogFile, _filePath, _logger):
+    def act_log_split_loop(_actLogFile, _filePath):
         global _act_log_lock
-        _logger.debug('Periodic activity log splitter')
         _actLogFile.seek(0)
                 
         nLines = sum(1 for line in _actLogFile)
         _actLogFile.seek(0)
-        if (nLines < 300):
+        if (nLines < 1024):
             _actLogFile.seek(0, 2)
         else:
             _act_log_lock = True
-            split_file(_filePath, _actLogFile)
+            split_file(_filePath, _diagLogFile)
             _actLogFile.seek(0, 2)
             _act_log_lock = False
             
     _logger.info('Activity Log Transfer services configured')
         
-    logsplitter = task.LoopingCall(act_log_split_loop, act_log_file, _config['Log']['ActivityLogFile'], _logger)
+    logsplitter = task.LoopingCall(act_log_split_loop, act_log_file, _config['Log']['ActivityLogFile'])
     logsplitter.start(3600)
     return (act_log_file)
+
+def setup_peer_diag_log(_config, _logger, _peer_id):
+    if _config['Log']['AllowDiagTrans'] == False:
+        return None
+
+    diag_log_filepath = _config['Log']['DiagLogPath'] + str(int_id(_peer_id)) + ".log"
+    diag_log_file = open(diag_log_filepath, "a+")
+    return (diag_log_file)
 
 # ---------------------------------------------------------------------------
 #   String Utility Routines
@@ -578,6 +585,7 @@ class coreFNE(DatagramProtocol):
                         'SLOTS': '',
                         'SOFTWARE_ID': '',
                         'PACKAGE_ID': '',
+                        'DIAG_LOG_FILE': None,
                 }})
 
                 self._logger.info('(%s) Repeater logging in with PEER %s, %s:%s', self._system, int_id(_peer_id), _host, _port)
@@ -632,6 +640,11 @@ class coreFNE(DatagramProtocol):
                 _this_peer['SOFTWARE_ID'] = _data[222:262]
                 _this_peer['PACKAGE_ID'] = _data[262:302]
 
+                # setup peer diagnostics log
+                if self._CONFIG['Log']['AllowDiagTrans'] == True:
+                    diag_log_file = setup_peer_diag_log(self._CONFIG, self._logger, _peer_id)
+                    _this_peer['DIAG_LOG_FILE'] = diag_log_file
+
                 self.send_peer(_peer_id, fne_const.TAG_REPEATER_ACK + _peer_id)
                 self._logger.info('(%s) PEER %s has sent configuration', self._system, _this_peer['PEER_ID'])
                 self._logger.info('(%s) PEER %s Connection from PEER Completed', self._system, _this_peer['PEER_ID'])
@@ -649,6 +662,14 @@ class coreFNE(DatagramProtocol):
                 self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                 self._logger.info('(%s) PEER %s is closing down', self._system, int_id(_peer_id))
                 self.transport.write(fne_const.TAG_MASTER_NAK + _peer_id, (_host, _port))
+
+                # setup peer diagnostics log
+                if self._CONFIG['Log']['AllowDiagTrans'] == True:
+                    if self._peers[_peer_id]['DIAG_LOG_FILE'] != None:
+                        diag_log_file = self._peers[_peer_id]['DIAG_LOG_FILE']
+                        diag_log_file.close()
+                        _this_peer['DIAG_LOG_FILE'] = None
+
                 del self._peers[_peer_id]
 
         elif _data[:7] == fne_const.TAG_REPEATER_PING: # fne_const.TAG_REPEATER_PING -- peer is pinging us
@@ -662,7 +683,7 @@ class coreFNE(DatagramProtocol):
                     self.transport.write(fne_const.TAG_MASTER_NAK + _peer_id, (_host, _port))
                     self._logger.warning('(%s) RPTPING from unauth PEER %s', self._system, int_id(_peer_id))
 
-        elif _data[:7] == fne_const.TAG_TRANSFER_LOG: # fne_const.TAG_TRANSFER_LOG -- peer is transferring activity log to us
+        elif _data[:7] == fne_const.TAG_TRANSFER_ACT_LOG: # fne_const.TAG_TRANSFER_ACT_LOG -- peer is transferring activity log data to us
                 if self._CONFIG['Log']['AllowActTrans'] == True and _act_log_lock == False:
                     _peer_id = _data[7:11]
                     if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == "YES" and
@@ -671,15 +692,24 @@ class coreFNE(DatagramProtocol):
                         self._act_log_file.seek(0, 2)
                         self._act_log_file.write(str(int_id(_peer_id)) + ' ' + _msg + '\n')
                         self._act_log_file.flush()
-                    else:
-                        self.transport.write(fne_const.TAG_MASTER_NAK + _peer_id, (_host, _port))
-                        self._logger.warning('(%s) TRNSLOG from unauth PEER %s', self._system, int_id(_peer_id))
+
+        elif _data[:8] == fne_const.TAG_TRANSFER_DIAG_LOG: # fne_const.TAG_TRANSFER_DIAG_LOG -- peer is transferring diagnostics log data to us
+                if self._CONFIG['Log']['AllowDiagTrans'] == True:
+                    _peer_id = _data[8:12]
+                    if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == "YES" and
+                        self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
+                        _msg = _data[12:-1]
+                        diag_log_file = self._peers[_peer_id]['DIAG_LOG_FILE']
+                        if diag_log_file != None:
+                            diag_log_file.seek(0, 2)
+                            diag_log_file.write(str(int_id(_peer_id)) + ' ' + _msg + '\n')
+                            diag_log_file.flush()
 
         else:
             try:
                 self._logger.error('(%s) Unrecognized command PEER %s PACKET %s', self._system, int_id(_peer_id), ahex(_data))
             except UnboundLocalError:
-                self._logger.error('(%s) Unrecognized command %s PACKET %s', self._system, _command, ahex(_data))
+                self._logger.error('(%s) Unrecognized command %s PACKET %s', self._system, _data[:9], ahex(_data))
         
     # Aliased in __init__ to datagramReceived if system is a peer
     def peer_datagramReceived(self, _data, (_host, _port)):

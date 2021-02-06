@@ -435,7 +435,7 @@ class AMBE_HB(AMBE_BASE):
                     _frame[15] = _orig_flag # Use the origional flag value if not DMO
 
                 _repeaterID = hex_str_4(int(_peerDict['PEER_ID']))
-                for _index in range(0,4):   # Force the repeater ID to be the "destination" ID of the client (hblink will not accept it otherwise)
+                for _index in range(0,4):   # Force the repeater ID to be the "destination" ID of the client (fne will not accept it otherwise)
                     _frame[_index+11] = _repeaterID[_index]
 
                 self._parent.send_peer(_peer, _frame)

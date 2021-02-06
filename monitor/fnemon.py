@@ -30,6 +30,7 @@ import logging
 import sys
 import subprocess
 import re
+import json
 
 from pprint import pprint
 from time import time, strftime, localtime
@@ -72,6 +73,17 @@ REPORT_OPCODES = {
     'GRP_AFF_UPD': '\x08',
 }
 
+WEBSOCK_OPCODES = {
+    'QUIT': 'q',
+    'CONFIG': 'c',
+    'RULES': 'r',
+    'AFFILIATION': 'g',
+    'ACTIVITY': 'a',
+    'LOG': 'l',
+    'DIAG_LOG': 'd',
+    'MESSAGE': 'm',
+}
+
 # Global Variables:
 CONFIG           = {}
 CTABLE           = {'MASTERS': {}, 'MASTER_CNT': 0, 'PEERS': {}, 'PEER_CNT': 0}
@@ -83,23 +95,13 @@ GATABLE          = {}
 RULES_RX         = ''
 CONFIG_RX        = ''
 LOGBUF           = deque(100*[''], 100)
-RED              = '#d9534f'
-GREEN            = '#5cb85c'
-BLUE             = '#5bc0de'
-ORANGE           = '#cc6500'
-WHITE            = '#ffffff'
 
-LOG_MAX          = 100
+LOG_MAX          = 512
 EOL_SCANAHEAD    = LOG_MAX / 2
 
 # ---------------------------------------------------------------------------
 #   Module Routines
 # ---------------------------------------------------------------------------
-
-# For importing HTML templates
-def get_template(_file):
-    with open(_file, 'r') as html:
-        return html.read()
 
 def process_act_log(_file):
     global LOG_MAX, EOL_SCANAHEAD
@@ -114,7 +116,6 @@ def process_act_log(_file):
             if (re.search('(end of)', line) != None):
                 continue
 
-            warningRow = False
             peerId = line.split(' ')[0]
             logLineRaw = line.split(' ')[1:-1]
             rawData = logLineRaw[1:-1]
@@ -123,56 +124,72 @@ def process_act_log(_file):
             mode = rawMode = rawData[2]
             src = rawData[3]
             type = ''
+            typeClass = 'normal'
 
             if (src == 'Net'):
                 continue
 
             if (re.search('(voice transmission|voice header|late entry)', line) != None):
-                type = '<span class="span-normal">Voice Transmission</span>'
+                type = 'Voice Transmission'
             if (re.search('(data transmission|data header)', line) != None):
-                type = '<span class="span-normal">Data Transmission</span>'
+                type = 'Data Transmission'
 #            if (re.search('(group grant request)', line) != None):
-#                type = '<span class="span-success">Group Grant Request</span>'
+#                typeClass = 'success'
+#                type = 'Group Grant Request'
 #            if (re.search('(unit-to-unit grant request)', line) != None):
-#                type = '<span class="span-success">Unit-to-Unit Grant Request</span>'
+#                typeClass = 'success'
+#                type = 'Unit-to-Unit Grant Request'
             if (re.search('(group affiliation request)', line) != None):
-                type = '<span class="span-warning">Group Affiliation</span>'
+                typeClass = 'warning'
+                type = 'Group Affiliation'
             if (re.search('(group affiliation query command)', line) != None):
-                type = '<span class="span-info">Group Affiliation Query</span>'
+                typeClass = 'info'
+                type = 'Group Affiliation Query'
             if (re.search('(group affiliation query response)', line) != None):
-                type = '<span class="span-success">Group Affiliation Query</span>'
+                typeClass = 'success'
+                type = 'Group Affiliation Query'
             if (re.search('(unit registration request)', line) != None):
-                type = '<span class="span-warning">Unit Registration</span>'
+                typeClass = 'warning'
+                type = 'Unit Registration'
             if (re.search('(unit registration command)', line) != None):
-                type = '<span class="span-info">Unit Registration Command</span>'
+                typeClass = 'info'
+                type = 'Unit Registration Command'
             if (re.search('(unit deregistration request)', line) != None):
-                type = '<span class="span-warning">Unit De-Registration</span>'
+                typeClass = 'warning'
+                type = 'Unit De-Registration'
             if (re.search('(status update)', line) != None):
-                type = '<span class="span-info">Status Update</span>'
+                typeClass = 'info'
+                type = 'Status Update'
             if (re.search('(message update)', line) != None):
-                type = '<span class="span-info">Message Update</span>'
+                typeClass = 'info'
+                type = 'Message Update'
             if (re.search('(call alert)', line) != None):
-                type = '<span class="span-info">Call Alert</span>'
+                typeClass = 'info'
+                type = 'Call Alert'
             if (re.search('(ack response)', line) != None):
-                type = '<span class="span-success">ACK Response</span>'
+                typeClass = 'success'
+                type = 'ACK Response'
 #            if (re.search('(cancel service)', line) != None):
-#                type = '<span class="span-danger">Cancel Service</span>'
+#                typeClass = 'danger'
+#                type = 'Cancel Service'
             if (re.search('(radio check request)', line) != None):
-                type = '<span class="span-info">Radio Check</span>'
+                typeClass = 'info'
+                type = 'Radio Check'
             if (re.search('(radio check response)', line) != None):
-                type = '<span class="span-success">Radio Check ACK</span>'
+                typeClass = 'success'
+                type = 'Radio Check ACK'
             if (re.search('(radio inhibit request)', line) != None):
-                type = '<span class="span-danger">Radio Inhibit</span>'
-                warningRow = True
+                typeClass = 'danger'
+                type = 'Radio Inhibit'
             if (re.search('(radio inhibit response)', line) != None):
-                type = '<span class="span-success">Radio Inhibit ACK</span>'
-                warningRow = True
+                typeClass = 'danger'
+                type = 'Radio Inhibit ACK'
             if (re.search('(radio uninhibit request)', line) != None):
-                type = '<span class="span-danger">Radio Uninhibit</span>'
-                warningRow = True
+                typeClass = 'danger'
+                type = 'Radio Uninhibit'
             if (re.search('(radio uninhibit response)', line) != None):
-                type = '<span class="span-success">Radio Uninhibit ACK</span>'
-                warningRow = True
+                typeClass = 'success'
+                type = 'Radio Uninhibit ACK'
 
             if (type == ''):
                 continue
@@ -228,7 +245,8 @@ def process_act_log(_file):
                 if (_to == '16777212'):
                     _to = 'FNE'
 
-            name = '&nbsp;(' + _from + ')'
+            dur = 'Timing unavailable'
+            ber = 'No BER data'
 
             durAndBer = '<td colspan="2" class="table-col-disabled">No data or timing unavailable</td>'
             endOfCount = 0
@@ -248,12 +266,11 @@ def process_act_log(_file):
                             continue
 
                         rawStats = etLine.split(', ')
-                        dur = ber = 'N/A'
                         if (mode == 'P25'):
                             if (len(rawStats) >= 2):
-                                dur = '<td>' + rawStats[1].rstrip().replace(' seconds', 's') + '</td>'
+                                dur = rawStats[1].rstrip().replace(' seconds', 's')
                             else:
-                                dur = '<td>0s</td>'
+                                dur = '0s'
 
                             if (len(rawStats) >= 3):
                                 ber = rawStats[2].rstrip().replace('BER: ', '').replace('%', '')
@@ -261,54 +278,73 @@ def process_act_log(_file):
                                 ber = '0.0'
                         elif ((mode == 'DMR TS1') or (mode == 'DMR TS2')):
                             if (len(rawStats) >= 3):
-                                dur = '<td>' + rawStats[2].rstrip().replace(' seconds', 's') + '</td>'
+                                dur = rawStats[2].rstrip().replace(' seconds', 's')
                             else:
-                                dur = '<td>0s</td>'
+                                dur = '0s'
 
                             if (len(rawStats) >= 4):
                                 ber = rawStats[3].rstrip().replace('BER: ', '').replace('%', '')
                             else:
                                 ber = '0.0'
 
-                        if (ber == 'N/A'):
-                            ber = '<td class="table-col-disabled">' + ber + '%</td>'
-                        else:
-                            if (float(ber) >= 0.0) and (float(ber) <= 1.9):
-                                ber = '<td class="table-col-success">' + ber + '%</td>'
-                            elif (float(ber) >= 2.0) and (float(ber) <= 2.9):
-                                ber = '<td class="table-col-warn">' + ber + '%</td>'
-                            elif (float(ber) >= 3.0):
-                                ber = '<td class="table-col-danger">' + ber + '%</td>'
-                        
-                        durAndBer = dur + ber
                         break
 
-            warnClass = ''
-            if (warningRow):
-                warnClass = 'class="table-row-danger"'
-
-            entry = '<tr ' + warnClass + '>'
-            entry += '<td style="text-align: left;">' + dateUTC + '</td>'
-            entry += '<td>' + peerId + '</td>'
-            entry += '<td>' + mode + '</td>'
-            entry += '<td class="table-col-disabled"><b>' + type + '</b></td>'
-            entry += '<td>' + _from + '</td>'
-            entry += '<td>' + _to + '</td>'
-            entry += durAndBer
-            entry += '</tr>'
+            entry = {}
+            entry['date'] = dateUTC
+            entry['peerId'] = peerId
+            entry['mode'] = mode
+            entry['type_class'] = typeClass
+            entry['type'] = type
+            entry['from'] = _from
+            entry['to'] = _to
+            entry['duration'] = dur
+            entry['ber'] = ber
             _entries.append(entry)
     return (_entries)
+
+def process_diag_log(_file):
+    global LOG_MAX
+    _lines = []
+    _line_cnt = 0
+    with open(_file, 'r') as log:
+        fwd_log = list(log)
+        rev_log = reversed(fwd_log)
+        for line in rev_log:
+            _line_cnt += 1
+            if (_line_cnt >= LOG_MAX):
+                break
+
+            _lines.append(line)
+    return (_lines)
             
 # Build configuration and rules tables from config/rules dicts
 # this currently is a timed call
 def gen_activity():
-    global ACTIVITY_LOG
-    if True:
-        _entries = process_act_log(ACTIVITY_LOG)
-        dashboard_server.broadcast('c')
-        for _message in _entries:
-            if _message:
-                dashboard_server.broadcast('a' + _message)
+    global ACTIVITY_LOG, WEBSOCK_OPCODES
+    _entries = process_act_log(ACTIVITY_LOG)
+    dashboard_server.broadcast(WEBSOCK_OPCODES['ACTIVITY'] + json.dumps(_entries))
+
+# ---------------------------------------------------------------------------
+#   Group Affiliations Table Routines
+# ---------------------------------------------------------------------------
+
+def build_grp_aff_table(_grp_aff):
+    _table = {}
+    
+    for _peer_id, _aff_data in _grp_aff.iteritems():
+        _tgid_entries = _grp_aff[_peer_id]
+        for _tgid in _tgid_entries:
+            _rid_entries = _tgid_entries[_tgid]
+            for _rid in _rid_entries:
+                _table[_rid] = {}
+                _table[_rid]['PEER_ID'] = _peer_id
+                _table[_rid]['DST_ID'] = _tgid
+  
+    return _table
+
+# ---------------------------------------------------------------------------
+#   Connections Table Routines
+# ---------------------------------------------------------------------------
 
 # Build the connections table
 def build_ctable(_config):
@@ -343,20 +379,6 @@ def build_ctable(_config):
                 _stats_table['PEER_CNT'] += 1
                 
     return(_stats_table)
-
-def build_grp_aff_table(_grp_aff):
-    _table = {}
-    
-    for _peer_id, _aff_data in _grp_aff.iteritems():
-        _tgid_entries = _grp_aff[_peer_id]
-        for _tgid in _tgid_entries:
-            _rid_entries = _tgid_entries[_tgid]
-            for _rid in _rid_entries:
-                _table[_rid] = {}
-                _table[_rid]['PEER_ID'] = _peer_id
-                _table[_rid]['DST_ID'] = _tgid
-  
-    return _table
 
 # ---------------------------------------------------------------------------
 #   Rules Table Routines
@@ -408,30 +430,25 @@ def build_rules_table(_rules):
     
     return _stats_table
 
-# Build configuration and rules tables from config/rules dicts
-# this currently is a timed call
-build_time = time()
-def build_stats():
-    global build_time
-    now = time()
-    if True: #now > build_time + 1:
-        if CONFIG:
-            table = 'd' + dtemplate.render(_table=CTABLE)
-            dashboard_server.broadcast(table)
-            if (CTABLE['MASTER_CNT'] > 0) and (PRIMARY_MASTER != ''):
-                table = 'm' + cmdtemplate.render(_table=CTABLE['MASTERS'][PRIMARY_MASTER])
-                dashboard_server.broadcast(table)
-        if RULES:
-            table = 'b' + btemplate.render(_table=RTABLE['RULES'])
-            dashboard_server.broadcast(table)
-        if GRP_AFF:
-            table = 'g' + gtemplate.render(_table=GATABLE)
-            dashboard_server.broadcast(table)
-        build_time = now
+# ---------------------------------------------------------------------------
+#   Routines
+# ---------------------------------------------------------------------------
+
+def websock_update():
+    global WEBSOCK_OPCODES
+    if CONFIG:
+        table = WEBSOCK_OPCODES['CONFIG'] + json.dumps(CTABLE)
+        dashboard_server.broadcast(table)
+    if RULES:
+        table = WEBSOCK_OPCODES['RULES'] + json.dumps(RTABLE['RULES'])
+        dashboard_server.broadcast(table)
+    if GRP_AFF:
+        table = WEBSOCK_OPCODES['AFFILIATION'] + json.dumps(GATABLE)
+        dashboard_server.broadcast(table)
 
 # Process in coming messages and take the correct action depending on the opcode
 def process_message(_message):
-    global CTABLE, CONFIG, RULES, RTABLE, GRP_AFF, GATABLE, CONFIG_RX, RULES_RX
+    global CTABLE, CONFIG, RULES, RTABLE, GRP_AFF, GATABLE, CONFIG_RX, RULES_RX, WEBSOCK_OPCODES
     opcode = _message[:1]
     _now = strftime('%Y-%m-%d %H:%M:%S %Z', localtime(time()))
     
@@ -490,7 +507,7 @@ def process_message(_message):
         else:
             log_message = '[{}] UNKNOWN LOG MESSAGE'.format(_now)
             
-        dashboard_server.broadcast('l' + log_message)
+        dashboard_server.broadcast(WEBSOCK_OPCODES['LOG'] + log_message)
         LOGBUF.append(log_message)
     else:
         logging.debug('got unknown opcode: {}, message: {}'.format(repr(opcode), repr(_message[1:])))
@@ -528,9 +545,10 @@ class reportClientFactory(ReconnectingClientFactory):
         pass
         
     def startedConnecting(self, connector):
+        global WEBSOCK_OPCODES
         logging.info('Initiating Connection to Server.')
         if 'dashboard_server' in locals() or 'dashboard_server' in globals():
-            dashboard_server.broadcast('q' + 'Connection to FNE Established')
+            dashboard_server.broadcast(WEBSOCK_OPCODES['QUIT'] + 'Connection to FNE Established')
 
     def buildProtocol(self, addr):
         logging.info('Connected.')
@@ -539,9 +557,10 @@ class reportClientFactory(ReconnectingClientFactory):
         return report()
 
     def clientConnectionLost(self, connector, reason):
+        global WEBSOCK_OPCODES
         logging.info('Lost connection.  Reason: %s', reason)
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
-        dashboard_server.broadcast('q' + 'Connection to FNE Lost')
+        dashboard_server.broadcast(WEBSOCK_OPCODES['QUIT'] + 'Connection to FNE Lost')
 
     def clientConnectionFailed(self, connector, reason):
         logging.info('Connection failed. Reason: %s', reason)
@@ -557,25 +576,23 @@ class dashboard(WebSocketServerProtocol):
         logging.info('Client connecting: %s', request.peer)
 
     def onOpen(self):
+        global WEBSOCK_OPCODES
         logging.info('WebSocket connection open.')
         self.factory.register(self)
-        self.sendMessage('d' + str(dtemplate.render(_table=CTABLE)))
-        self.sendMessage('b' + str(btemplate.render(_table=RTABLE['RULES'])))
-        self.sendMessage('g' + str(gtemplate.render(_table=GATABLE)))
+        websock_update()
+        gen_activity()
         for _message in LOGBUF:
             if _message:
-                self.sendMessage('l' + _message)
-        gen_activity()
-        if (CTABLE['MASTER_CNT'] > 0) and (PRIMARY_MASTER != ''):
-            self.sendMessage('m' + str(cmdtemplate.render(_table=CTABLE['MASTERS'][PRIMARY_MASTER])))
+                self.sendMessage(WEBSOCK_OPCODES['LOG'] + _message)
 
     def onMessage(self, payload, isBinary):
+        global WEBSOCK_OPCODES, LOG_PATH
         if isBinary:
             logging.info('Binary message received: %s bytes', len(payload))
         else:
             _payload = payload.decode('utf8')
             _opcode = _payload[:1]
-            if (_opcode == 'm') and (PRIMARY_MASTER != ''):
+            if (_opcode == WEBSOCK_OPCODES['MESSAGE']) and (PRIMARY_MASTER != ''):
                 _arguments = _payload.split(',')
                 _peer_ip = _arguments[0][1:]
                 _command = _arguments[1]
@@ -595,6 +612,11 @@ class dashboard(WebSocketServerProtocol):
 
                     if _mot_mfid == 'true':
                         subprocess.call([DVM_CMD_TOOL, '-a', _peer_ip, 'p25-set-mfid', '0'])
+            elif (_opcode == WEBSOCK_OPCODES['DIAG_LOG']):
+                _arguments = _payload.split(',')
+                _peer_id = _arguments[0][1:]
+                diag_log = process_diag_log(LOG_PATH + _peer_id + '.log')
+                self.sendMessage(WEBSOCK_OPCODES['DIAG_LOG'] + json.dumps(diag_log))
             else:
                 logging.info('Text message received: %s', _payload)
 
@@ -633,23 +655,6 @@ class dashboardFactory(WebSocketServerFactory):
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
-#     This implements the root resource for the site.
-# ---------------------------------------------------------------------------
-
-class siteResource(Resource):
-    isLeaf = True
-    def getChild(self, path, request):
-        return self
-
-    def render(self, request):
-        logging.info('static website requested: %s', request)
-        if request.uri == '/':
-            return index_html
-        else:
-            return 'Bad request'
-
-# ---------------------------------------------------------------------------
-#   Class Declaration
 #     
 # ---------------------------------------------------------------------------
 
@@ -657,7 +662,7 @@ class siteResource(Resource):
 class publicHTMLRealm(object):
     def requestAvatar(self, avatarId, mind, *interfaces):
         if IResource in interfaces:
-            return (IResource, siteResource(), lambda: None)
+            return (IResource, siteResource, lambda: None)
         raise NotImplementedError()
 
 # ---------------------------------------------------------------------------
@@ -680,24 +685,11 @@ if __name__ == '__main__':
     observer = log.PythonLoggingObserver()
     observer.start()
     
-    env = Environment(
-        loader = PackageLoader('web_tables', 'templates')
-    )
-
-    cmdtemplate = env.get_template('cmd_panel.html')
-    dtemplate = env.get_template('link_table.html')
-    btemplate = env.get_template('rules_table.html')
-    gtemplate = env.get_template('group_affil_table.html')
-    
-    # Create Static Website index file
-    index_html = get_template(PATH + 'index_template.html')
-    index_html = index_html.replace('<<<system_name>>>', REPORT_NAME)
-    
     # Start update loop
-    update_stats = task.LoopingCall(build_stats)
+    update_stats = task.LoopingCall(websock_update)
     update_stats.start(FREQUENCY)
 
-    # Connect to HBlink
+    # Connect to fne_core
     reactor.connectTCP(FNEMON_IP, FNEMON_PORT, reportClientFactory())
     
     # Create websocket server to push content to clients
@@ -708,6 +700,8 @@ if __name__ == '__main__':
     # Start activity update loop
     update_act = task.LoopingCall(gen_activity)
     update_act.start(10)
+
+    siteResource = File('./webroot')
 
     passwd_db = InMemoryUsernamePasswordDatabaseDontUse()
     passwd_db.addUser(HTACCESS_USER, HTACCESS_PASS)

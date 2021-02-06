@@ -1,5 +1,4 @@
 REPORT_NAME     = 'system.domain.name'  # Name of the monitored HBlink system
-CONFIG_INC      = True                  # Include FNE stats
 FNEMON_IP       = '127.0.0.1'           # FNE's IP Address
 FNEMON_PORT     = 4321                  # FNE's TCP reporting socket
 FREQUENCY       = 10                    # Frequency to push updates to web clients
@@ -16,4 +15,4 @@ DVM_CMD_TOOL    = '/opt/dvmfne/monitor/dvmcmd'
 
 # Files and stuff for loading alias files for mapping numbers to names
 PATH            = './'                          # MUST END IN '/'
-FILE_RELOAD     = 7                             # Number of days before we reload DMR-MARC database files
+LOG_PATH        = './'                          # MUST END IN '/'

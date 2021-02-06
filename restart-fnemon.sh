@@ -22,7 +22,7 @@ do_fullpidof()
     fi
 }
 
-pid=$(do_fullpidof web_tables)
+pid=$(do_fullpidof fnemon)
 kill -9 $pid
 
 L_PATH=/opt/dvmfne/log
@@ -30,6 +30,6 @@ R_PATH=/opt/dvmfne/monitor
 pushd ${R_PATH}
 
 PYTHON="/usr/bin/env python"
-${PYTHON} ${R_PATH}/web_tables.py >${L_PATH}/monitor.log 2>&1 &
+${PYTHON} ${R_PATH}/fnemon.py >${L_PATH}/fnemon.log 2>&1 &
 
 popd

@@ -13,6 +13,7 @@
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId>Global|PythonCore|2.7-32</InterpreterId>
     <IsWindowsApplication>False</IsWindowsApplication>
+    <SuppressPackageInstallationPrompt>True</SuppressPackageInstallationPrompt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
@@ -23,12 +24,41 @@
     <Content Include="blacklist_ids_SAMPLE.csv" />
     <Content Include="fne\.gitignore" />
     <Content Include="fne-SAMPLE.cfg" />
-    <Content Include="monitor\index_template.html" />
-    <Content Include="monitor\templates\cmd_panel.html" />
-    <Content Include="monitor\templates\group_affil_table.html" />
-    <Content Include="monitor\templates\rules_table.html" />
-    <Content Include="monitor\templates\link_table.html" />
     <Content Include="fne_bridge-SAMPLE.cfg" />
+    <Content Include="monitor\webroot\css\bootstrap-table.min.css" />
+    <Content Include="monitor\webroot\css\bootstrap-theme.css" />
+    <Content Include="monitor\webroot\css\bootstrap-theme.css.map" />
+    <Content Include="monitor\webroot\css\bootstrap-theme.min.css" />
+    <Content Include="monitor\webroot\css\bootstrap-theme.min.css.map" />
+    <Content Include="monitor\webroot\css\bootstrap.css" />
+    <Content Include="monitor\webroot\css\bootstrap.css.map" />
+    <Content Include="monitor\webroot\css\bootstrap.min.css" />
+    <Content Include="monitor\webroot\css\bootstrap.min.css.map" />
+    <Content Include="monitor\webroot\dashboard.css" />
+    <Content Include="monitor\webroot\favicon.ico" />
+    <Content Include="monitor\webroot\fonts\glyphicons-halflings-regular.eot" />
+    <Content Include="monitor\webroot\fonts\glyphicons-halflings-regular.svg" />
+    <Content Include="monitor\webroot\fonts\glyphicons-halflings-regular.ttf" />
+    <Content Include="monitor\webroot\fonts\glyphicons-halflings-regular.woff" />
+    <Content Include="monitor\webroot\fonts\glyphicons-halflings-regular.woff2" />
+    <Content Include="monitor\webroot\index.html" />
+    <Content Include="monitor\webroot\index.js" />
+    <Content Include="monitor\webroot\js\bootstrap-table.min.js" />
+    <Content Include="monitor\webroot\js\bootstrap.js" />
+    <Content Include="monitor\webroot\js\bootstrap.min.js" />
+    <Content Include="monitor\webroot\js\npm.js" />
+    <Content Include="monitor\webroot\activity.js" />
+    <Content Include="monitor\webroot\activity.html" />
+    <Content Include="monitor\webroot\about.html" />
+    <Content Include="monitor\webroot\about.js" />
+    <Content Include="monitor\webroot\diag-trace.js" />
+    <Content Include="monitor\webroot\diag-trace.html" />
+    <Content Include="monitor\webroot\traffic-trace.js" />
+    <Content Include="monitor\webroot\traffic-trace.html" />
+    <Content Include="monitor\webroot\talkgroups.js" />
+    <Content Include="monitor\webroot\talkgroups.html" />
+    <Content Include="monitor\webroot\overview.js" />
+    <Content Include="monitor\webroot\overview.html" />
     <Content Include="requirements.txt" />
     <Content Include="whitelist_ids_SAMPLE.csv" />
   </ItemGroup>
@@ -53,7 +83,7 @@
     <Compile Include="fne\fne_core.py" />
     <Compile Include="fne\__init__.py" />
     <Compile Include="monitor\config_SAMPLE.py" />
-    <Compile Include="monitor\web_tables.py" />
+    <Compile Include="monitor\fnemon.py" />
     <Compile Include="fne_bridge.py" />
     <Compile Include="fne\fne_config.py" />
     <Compile Include="fne\fne_const.py" />
@@ -68,9 +98,12 @@
   <ItemGroup>
     <Folder Include="dmr_utils\" />
     <Folder Include="monitor\" />
-    <Folder Include="monitor\templates\" />
+    <Folder Include="monitor\webroot\" />
     <Folder Include="fne\" />
     <Folder Include="fms_db_sync\" />
+    <Folder Include="monitor\webroot\css\" />
+    <Folder Include="monitor\webroot\fonts\" />
+    <Folder Include="monitor\webroot\js\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>

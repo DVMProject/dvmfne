@@ -1,0 +1,56 @@
+<h1 class="page-header">Dashboard</h1>
+
+<h2 class="sub-header">Master Systems</h2>
+<table id="master-systems" class="table table-striped table-responsive">
+    <thead>
+        <tr>
+            <th data-field="masterName" data-formatter="boldFormatter">System</th>
+            <th data-field="peerId" data-formatter="peerIdFormatter">Peer ID</th>
+            <th data-field="callsign">Callsign</th>
+            <th data-field="rxFreq" data-formatter="freqFormatter">Rx Freq</th>
+            <th data-field="txFreq" data-formatter="freqFormatter">Tx Freq</th>
+            <th data-field="ipAddr">IP</th>
+            <th data-field="ipPort">Port</th>
+            <th data-field="connection" data-cell-style="connCellStyle">Connection</th>
+        </tr>
+    </thead>
+</table>
+
+<h2 class="sub-header">Peer Systems</h2>
+<table id="peer-systems" class="table table-striped table-responsive">
+    <thead>
+        <tr>
+            <th data-field="peerId">Peer ID</th>
+            <th data-field="callsign">Callsign</th>
+            <th data-field="rxFreq" data-formatter="freqFormatter">Rx Freq</th>
+            <th data-field="txFreq" data-formatter="freqFormatter">Tx Freq</th>
+            <th data-field="pingSent">Ping Sent</th>
+            <th data-field="pingAck">Ping Ack</th>
+            <th data-field="masterIp">Master IP</th>
+            <th data-field="connection" data-cell-style="connCellStyle">Connection</th>
+        </tr>
+    </thead>
+</table>
+
+<h2 class="sub-header">Talkgroup Affiliations</h2>
+
+<div class="table-controls">
+    <h5>
+        <label>
+            <input type="checkbox" aria-label="Auto-refresh" id="aff-auto-refresh" /> Auto-refresh
+        </label>
+        <button type="button" class="btn btn-sm btn-primary">
+            <span class="glyphicon glyphicon-refresh" aria-hidden="true" id="aff-refresh"></span>
+        </button>
+    </h5>
+</div>
+
+<table id="affiliations" class="table table-striped table-responsive">
+    <thead>
+        <tr>
+            <th data-field="peerId" data-sortable="true">Peer ID</th>
+            <th data-field="from" data-searchable="true">Source</th>
+            <th data-field="to" data-searchable="true">Target</th>
+        </tr>
+    </thead>
+</table>

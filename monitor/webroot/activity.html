@@ -1,0 +1,28 @@
+<h1 class="page-header">System Activity</h1>
+
+<div class="table-controls">
+    <h5>
+        <label>
+            <input type="checkbox" aria-label="Auto-refresh" id="act-auto-refresh" /> Auto-refresh
+        </label>
+        <button type="button" class="btn btn-sm btn-primary">
+            <span class="glyphicon glyphicon-refresh" aria-hidden="true" id="act-refresh"></span>
+        </button>
+    </h5>
+</div>
+
+<table id="activity" class="table table-striped table-responsive"
+       data-toggle="table" data-search="true" data-sortable="true" data-height="1080" data-pagination="true" data-page-size="50" data-buttons-class="primary">
+    <thead>
+        <tr>
+            <th data-field="date" data-sortable="true" data-cell-style="actTypeCellStyle">Time (UTC)</th>
+            <th data-field="peerId" data-sortable="true" data-searchable="true" data-cell-style="actTypeCellStyle">Peer ID</th>
+            <th data-field="mode" data-sortable="true" data-cell-style="actTypeCellStyle">Mode</th>
+            <th data-field="type" data-sortable="true" data-formatter="actTypeFormatter">Type</th>
+            <th data-field="from" data-searchable="true" data-cell-style="actTypeCellStyle">Source</th>
+            <th data-field="to" data-searchable="true" data-cell-style="actTypeCellStyle">Target</th>
+            <th data-field="duration" data-cell-style="actDurationCellStyle">Duration</th>
+            <th data-field="ber" data-cell-style="actBERCellStyle">BER %</th>
+        </tr>
+    </thead>
+</table>
