@@ -6,6 +6,10 @@
  * @package DVM / FNE
  */
 
+/*
+** Page View Routines
+*/
+
 /**
  * 
  * @returns {any} string
@@ -27,8 +31,20 @@ function onLoad() {
 /**
  * 
  */
+function onUnload() {
+    /* stub */
+}
+
+/**
+ * 
+ */
 function onRefresh() {
-    var ellog = $('#traffic-trace-log');
-    ellog.html(trafficTrace);
-    ellog.scrollTop = ellog.scrollHeight;
+    var log = $('#traffic-trace-log');
+
+    var content = '';
+    for (var i = 0; i < trafficTrace.length; i++) {
+        content += trafficTrace[i] + '\n';
+    }
+
+    log.html(content);
 }

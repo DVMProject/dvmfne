@@ -358,24 +358,44 @@ def build_ctable(_config):
                 _stats_table['MASTERS'][_hbp]['PEER_CNT'] = 0
                 for _peer in _hbp_data['PEERS']:
                     _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)] = {}
-                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['CALLSIGN'] = _hbp_data['PEERS'][_peer]['CALLSIGN']
+
                     _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['CONNECTION'] = _hbp_data['PEERS'][_peer]['CONNECTION']
-                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['IP'] = _hbp_data['PEERS'][_peer]['IP']
                     _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['PINGS_RECEIVED'] = _hbp_data['PEERS'][_peer]['PINGS_RECEIVED']
                     _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['LAST_PING'] = _hbp_data['PEERS'][_peer]['LAST_PING']
+                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['IP'] = _hbp_data['PEERS'][_peer]['IP']
                     _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['PORT'] = _hbp_data['PEERS'][_peer]['PORT']
+
+                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['IDENTITY'] = _hbp_data['PEERS'][_peer]['IDENTITY']
                     _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['RX_FREQ'] = _hbp_data['PEERS'][_peer]['RX_FREQ']
                     _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['TX_FREQ'] = _hbp_data['PEERS'][_peer]['TX_FREQ']
+
+                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['LATITUDE'] = _hbp_data['PEERS'][_peer]['LATITUDE']
+                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['LONGITUDE'] = _hbp_data['PEERS'][_peer]['LONGITUDE']
+                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['HEIGHT'] = _hbp_data['PEERS'][_peer]['HEIGHT']
+                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['LOCATION'] = _hbp_data['PEERS'][_peer]['LOCATION']
+
+                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['TX_OFFSET'] = _hbp_data['PEERS'][_peer]['TX_OFFSET']
+                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['CH_BW'] = _hbp_data['PEERS'][_peer]['CH_BW']
+                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['CHANNEL_ID'] = _hbp_data['PEERS'][_peer]['CHANNEL_ID']
+                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['CHANNEL_NO'] = _hbp_data['PEERS'][_peer]['CHANNEL_NO']
+                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['TX_POWER'] = _hbp_data['PEERS'][_peer]['TX_POWER']
+
+                    _stats_table['MASTERS'][_hbp]['PEERS'][int_id(_peer)]['SOFTWARE_ID'] = _hbp_data['PEERS'][_peer]['SOFTWARE_ID']
+
                     _stats_table['MASTERS'][_hbp]['PEER_CNT'] += 1 
                 _stats_table['MASTER_CNT'] += 1
             elif _hbp_data['Mode'] == 'peer':
                 _stats_table['PEERS'][_hbp] = {}
-                _stats_table['PEERS'][_hbp]['CALLSIGN'] = _hbp_data['Callsign']
                 _stats_table['PEERS'][_hbp]['PEER_ID'] = int_id(_hbp_data['PeerId'])
-                _stats_table['PEERS'][_hbp]['MASTER_IP'] = _hbp_data['MasterAddress']
-                _stats_table['PEERS'][_hbp]['STATS'] = _hbp_data['STATS']
+                _stats_table['PEERS'][_hbp]['IDENTITY'] = _hbp_data['Identity']
                 _stats_table['PEERS'][_hbp]['RX_FREQ'] = _hbp_data['RxFrequency']
                 _stats_table['PEERS'][_hbp]['TX_FREQ'] = _hbp_data['TxFrequency']
+                _stats_table['PEERS'][_hbp]['LATITUDE'] = _hbp_data['Latitude']
+                _stats_table['PEERS'][_hbp]['LONGITUDE'] = _hbp_data['Longitude']
+                _stats_table['PEERS'][_hbp]['LOCATION'] = _hbp_data['Location']
+                _stats_table['PEERS'][_hbp]['LOCATION'] = _hbp_data['Location']
+                _stats_table['PEERS'][_hbp]['SOFTWARE_ID'] = _hbp_data['SoftwareId']
+                _stats_table['PEERS'][_hbp]['STATS'] = _hbp_data['STATS']
                 _stats_table['PEER_CNT'] += 1
                 
     return(_stats_table)

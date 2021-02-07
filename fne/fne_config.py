@@ -107,20 +107,14 @@ def build_config(_config_file):
                         'MasterAddress': gethostbyname(config.get(section, 'MasterAddress')),
                         'MasterPort': config.getint(section, 'MasterPort'),
                         'Passphrase': config.get(section, 'Passphrase'),
-                        'Callsign': config.get(section, 'Callsign').ljust(8)[:8],
                         'PeerId': hex(int(config.get(section, 'PeerId')))[2:].rjust(8,'0').decode('hex'),
+                        'Identity': config.get(section, 'Identity').ljust(8)[:8],
                         'RxFrequency': config.get(section, 'RxFrequency').ljust(9)[:9],
                         'TxFrequency': config.get(section, 'TxFrequency').ljust(9)[:9],
-						'TXOffsetMhz': config.get(section, 'TXOffsetMhz').ljust(2)[:2],
-						'BandwidthKhz': config.get(section, 'BandwidthKhz').ljust(3)[:3],
-                        'TxPower': config.get(section, 'TxPower').rjust(2,'0'),
                         'Latitude': config.get(section, 'Latitude').ljust(8)[:8],
                         'Longitude': config.get(section, 'Longitude').ljust(9)[:9],
-                        'Height': config.get(section, 'Height').rjust(3,'0'),
                         'Location': config.get(section, 'Location').ljust(20)[:20],
-                        'Slots': config.get(section, 'Slots'),
-                        'SoftwareId': config.get(section, 'SoftwareId').ljust(40)[:40],
-                        'PackageId': config.get(section, 'PackageId').ljust(40)[:40],
+                        'SoftwareId': config.get(section, 'SoftwareId').ljust(16)[:16],
                         'GroupHangtime': config.getint(section, 'GroupHangtime')
                     }})
                     CONFIG['Systems'][section].update({'STATS': {

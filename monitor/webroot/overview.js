@@ -8,6 +8,10 @@
 
 var affFirstRefresh = true;
 
+/*
+** Page View Routines
+*/
+
 /**
  * 
  * @returns {any} value
@@ -34,6 +38,13 @@ function onLoad() {
 /**
  * 
  */
+function onUnload() {
+    /* stub */
+}
+
+/**
+ * 
+ */
 function onRefresh() {
     // parse data
     if (!$.isEmptyObject(config)) {
@@ -49,12 +60,19 @@ function onRefresh() {
                 masterData.push({
                     'masterName': masterName,
                     'peerId': peerId,
-                    'callsign': value.CALLSIGN,
+                    'identity': value.IDENTITY,
                     'rxFreq': value.RX_FREQ,
                     'txFreq': value.TX_FREQ,
+                    'channelId': value.CHANNEL_ID,
+                    'channelNo': value.CHANNEL_NO,
+                    'latitude': value.LATITUDE,
+                    'longitude': value.LONGITUDE,
+                    'height': value.HEIGHT,
                     'ipAddr': value.IP,
                     'ipPort': value.PORT,
-                    'connection': value.CONNECTION
+                    'pings': value.PINGS_RECEIVED,
+                    'connection': value.CONNECTION,
+                    'software': value.SOFTWARE_ID
                 });
             });
         });
@@ -74,12 +92,14 @@ function onRefresh() {
             peerData.push({
                 'peerName': peerName,
                 'peerId': value.PEER_ID,
-                'callsign': value.CALLSIGN,
+                'identity': value.IDENTITY,
                 'rxFreq': value.RX_FREQ,
                 'txFreq': value.TX_FREQ,
+                'latitude': value.LATITUDE,
+                'longitude': value.LONGITUDE,
+                'masterIp': value.MASTER_IP,
                 'pingSent': value.STATS.PINGS_SENT,
                 'pingAck': value.STATS.PINGS_ACKD,
-                'masterIp': value.MASTER_IP,
                 'connection': value.STATS.CONNECTION
             });
         });
@@ -109,6 +129,10 @@ function onRefresh() {
         refreshAffiliations();
     }
 }
+
+/*
+** Private Routines
+*/
 
 /**
  *
@@ -149,14 +173,41 @@ function refreshAffiliations() {
  * @returns {any} value
  */
 function connCellStyle(value, row, index) {
-    if (value !== "YES") {
+    if (value === 'YES') {
+        if (row.software === 'UNK_SIMPLE_CONFIG_ONLY') {
+            return {
+                classes: "table-warning"
+            };
+        }
+
         return {
-            classes: "col-danger"
+            classes: "table-success"
         };
+    }
+
+    return {
+        classes: "table-danger"
+    };
+}
+
+/**
+ * 
+ * @param {any} value
+ * @param {any} row
+ * @param {any} index
+ * @returns {any} value
+ */
+function connCellFormatter(value, row, index) {
+    if (value === 'YES') {
+        if (row.software === 'UNK_SIMPLE_CONFIG_ONLY') {
+            // exclamation icon
+            return '<div align="center">' + exclamationIcon + '</div>';
+        }
+
+        // check icon
+        return '<div align="center">' + checkIcon + '</div>';
     } else {
-        return {
-            classes: "col-success"
-        };
+        return '<div align="center">' + errorIcon + '&nbsp;' + value + '</div>';
     }
 }
 

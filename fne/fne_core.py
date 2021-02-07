@@ -572,19 +572,27 @@ class coreFNE(DatagramProtocol):
                         'PORT': _port,
                         'SALT': randint(0,0xFFFFFFFF),
                         'PEER_ID': str(int(ahex(_peer_id), 16)),
-                        'CALLSIGN': '',
+
+                        'IDENTITY': '',
                         'RX_FREQ': '',
                         'TX_FREQ': '',
-					    'TX_OFFSET': '',
-					    'CH_BW': '',
+
                         'LATITUDE': '',
                         'LONGITUDE': '',
                         'HEIGHT': '',
                         'LOCATION': '',
+
+                        'TX_OFFSET': '',
+                        'CH_BW': '',
+                        'CHANNEL_ID': '',
+                        'CHANNEL_NO': '',
                         'TX_POWER': '',
-                        'SLOTS': '',
+
                         'SOFTWARE_ID': '',
-                        'PACKAGE_ID': '',
+
+                        'RCON_PASSWORD': '',
+                        'RCON_PORT': '',
+
                         'DIAG_LOG_FILE': None,
                 }})
 
@@ -625,20 +633,50 @@ class coreFNE(DatagramProtocol):
                 self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                 _this_peer = self._peers[_peer_id]
                 _this_peer['CONNECTION'] = 'YES'
+                _this_peer['PINGS_RECEIVED'] = 0
                 _this_peer['LAST_PING'] = time()
-                _this_peer['CALLSIGN'] = _data[8:16]
-                _this_peer['RX_FREQ'] = _data[16:25]
-                _this_peer['TX_FREQ'] = _data[25:34]
-                _this_peer['TX_OFFSET'] = _data[34:36]
-                _this_peer['CH_BW'] = _data[36:38]
-                _this_peer['LATITUDE'] = _data[38:46]
-                _this_peer['LONGITUDE'] = _data[46:55]
-                _this_peer['HEIGHT'] = _data[55:58]
-                _this_peer['LOCATION'] = _data[58:78]
-                _this_peer['TX_POWER'] = _data[78:80]
-                _this_peer['SLOTS'] = _data[97:98]
-                _this_peer['SOFTWARE_ID'] = _data[222:262]
-                _this_peer['PACKAGE_ID'] = _data[262:302]
+
+                # standard config data
+                _this_peer['IDENTITY'] = _data[8:16]            # 8 bytes/characters
+                _this_peer['RX_FREQ'] = _data[16:25]            # 9 bytes/characters
+                _this_peer['TX_FREQ'] = _data[25:34]            # 9 bytes/characters
+
+                # enhanced config data
+                try:
+                    # 10 bytes/characters reserved
+                    _this_peer['LATITUDE'] = float(_data[44:52])    # 8 bytes/characters
+                    _this_peer['LONGITUDE'] = float(_data[53:63])   # 10 bytes/characters
+                    _this_peer['HEIGHT'] = int(_data[63:66])        # 3 bytes/characters
+                    _this_peer['LOCATION'] = _data[66:86]           # 20 bytes/characters
+                    # 10 bytes/characters reserved
+                    _this_peer['TX_OFFSET'] = float(_data[96:101])  # 5 bytes/characters
+                    _this_peer['CH_BW'] = float(_data[101:106])     # 5 bytes/characters
+                    _this_peer['CHANNEL_ID'] = int(_data[106:109])  # 3 bytes/characters
+                    _this_peer['CHANNEL_NO'] = int(_data[109:113])  # 4 bytes/characters
+                    _this_peer['TX_POWER'] = int(_data[113:115])    # 2 bytes/characters
+                    _this_peer['SOFTWARE_ID'] = _data[115:131]      # 16 bytes/characters
+                    # 10 bytes/characters reserved
+                    _this_peer['RCON_PASSWORD'] = _data[141:161]    # 20 bytes/characters
+                    _this_peer['RCON_PORT'] = int(_data[161:166])   # 5 bytes/characters
+                except:
+                    _this_peer['LATITUDE'] = 0.00
+                    _this_peer['LONGITUDE'] = 0.00
+                    _this_peer['HEIGHT'] = 0
+                    _this_peer['LOCATION'] = 'Anywhere, USA'
+                    _this_peer['TX_OFFSET'] =  0.00
+                    _this_peer['CH_BW'] = 0.00
+                    _this_peer['CHANNEL_ID'] = 0
+                    _this_peer['CHANNEL_NO'] = 0
+                    _this_peer['TX_POWER'] = 0
+                    _this_peer['SOFTWARE_ID'] = 'UNK_SIMPLE_CONFIG_ONLY'
+                    _this_peer['RCON_PASSWORD'] = ''
+                    _this_peer['RCON_PORT'] = 0
+
+                # strip strings
+                _this_peer['IDENTITY'] = _this_peer['IDENTITY'].rstrip()
+                _this_peer['LOCATION'] = _this_peer['LOCATION'].rstrip()
+                _this_peer['SOFTWARE_ID'] = _this_peer['SOFTWARE_ID'].rstrip()
+                _this_peer['RCON_PASSWORD'] = _this_peer['RCON_PASSWORD'].rstrip()
 
                 # setup peer diagnostics log
                 if self._CONFIG['Log']['AllowDiagTrans'] == True:
@@ -676,6 +714,7 @@ class coreFNE(DatagramProtocol):
                 _peer_id = _data[7:11]
                 if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == "YES" and
                     self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
+                    self._peers[_peer_id]['PINGS_RECEIVED'] += 1
                     self._peers[_peer_id]['LAST_PING'] = time()
                     self.send_peer(_peer_id, fne_const.TAG_MASTER_PONG + _peer_id)
                     self._logger.debug('(%s) Received and answered RPTPING from PEER %s', self._system, int_id(_peer_id))
@@ -783,20 +822,24 @@ class coreFNE(DatagramProtocol):
                     if _data[6:10] == self._config['PeerId']:
                         self._logger.info('(%s) PEER %s authentication accepted', self._system, int_id(self._config['PeerId']))
                         _config_packet = self._config['PeerId'] + \
-                                         self._config['Callsign'] + \
+                                         self._config['Identity'] + \
                                          self._config['RxFrequency'] + \
                                          self._config['TxFrequency'] + \
-										 self._config['TXOffsetMhz'] + \
-										 self._config['BandwidthKhz'] + \
+                                         '          ' + \
                                          self._config['Latitude'] + \
                                          self._config['Longitude'] + \
-                                         self._config['Height'] + \
+                                         '  0' + \
                                          self._config['Location'] + \
-                                         self._config['TxPower'] + \
-                                         "                 " + \
-                                         self._config['Slots'] + \
+                                         '          ' + \
+                                         ' 0.00' + \
+                                         '00.00' + \
+                                         '  0' + \
+                                         '   0' + \
+                                         ' 0' + \
                                          self._config['SoftwareId'] + \
-                                         self._config['PackageId']
+                                         '          ' + \
+                                         '                    ' + \
+                                         '    0'
 
                         self.send_master(fne_const.TAG_REPEATER_CONFIG + _config_packet)
                         self._stats['CONNECTION'] = 'CONFIG-SENT'

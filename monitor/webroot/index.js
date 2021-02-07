@@ -25,17 +25,32 @@ var rules = {};
 var affiliations = {};
 var activity = {};
 
-var trafficTrace = '';
-var trafficTraceLines = 0;
+var trafficTrace = [];
 var trafficTraceMaxLines = 65535;
 
 var peerMap = {};
+
+var exclamationIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-exclamation-octagon" viewBox="0 0 16 16">' +
+    '<path d="M4.54.146A.5.5 0 0 1 4.893 0h6.214a.5.5 0 0 1 .353.146l4.394 4.394a.5.5 0 0 1 .146.353v6.214a.5.5 0 0 1-.146.353l-4.394 4.394a.5.5 0 0 1-.353.146H4.893a.5.5 0 0 1-.353-.146L.146 11.46A.5.5 0 0 1 0 11.107V4.893a.5.5 0 0 1 .146-.353L4.54.146zM5.1 1L1 5.1v5.8L5.1 15h5.8l4.1-4.1V5.1L10.9 1H5.1z" />' +
+    '<path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z" />' +
+    '</svg>';
+var checkIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check2-circle" viewBox="0 0 16 16">' +
+    '<path d="M2.5 8a5.5 5.5 0 0 1 8.25-4.764.5.5 0 0 0 .5-.866A6.5 6.5 0 1 0 14.5 8a.5.5 0 0 0-1 0 5.5 5.5 0 1 1-11 0z"/>' +
+    '<path d="M15.354 3.354a.5.5 0 0 0-.708-.708L8 9.293 5.354 6.646a.5.5 0 1 0-.708.708l3 3a.5.5 0 0 0 .708 0l7-7z"/>' +
+    '</svg>';
+var errorIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-octagon" viewBox="0 0 16 16">' +
+    '<path d="M4.54.146A.5.5 0 0 1 4.893 0h6.214a.5.5 0 0 1 .353.146l4.394 4.394a.5.5 0 0 1 .146.353v6.214a.5.5 0 0 1-.146.353l-4.394 4.394a.5.5 0 0 1-.353.146H4.893a.5.5 0 0 1-.353-.146L.146 11.46A.5.5 0 0 1 0 11.107V4.893a.5.5 0 0 1 .146-.353L4.54.146zM5.1 1L1 5.1v5.8L5.1 15h5.8l4.1-4.1V5.1L10.9 1H5.1z"/>' +
+    '<path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>' +
+    '</svg>';
 
 /**
  * 
  * @param {any} scriptName
  */
 function loadScript(scriptName) {
+    if (typeof onUnload === "function") {
+        onUnload();
+    }
     $.getScript(scriptName)
         .done(function (script, textStatus) {
             console.log("Active view:", getInfo());
@@ -51,18 +66,16 @@ function loadScript(scriptName) {
  */
 function displayHash(hash) {
     if (hash) {
-        // assumes that the anchor tag and li tag 
-        // remove the current anchor tag
-        $(".active").removeClass("active");
-        $('a[href="' + hash + '"]').parent().addClass("active");
-
         if (hash.includes('/')) {
             hash = hash.split('/')[0];
-            loadScript(hash.replace("#", "") + ".js");
         }
-        else {
-            loadScript(hash.replace("#", "") + ".js");
-        }
+
+        // assumes that the anchor tag and li tag
+        // remove the current anchor tag
+        $(".active").removeClass("active");
+        $('a[href="' + hash + '"]').addClass("active");
+
+        loadScript(hash.replace("#", "") + ".js");
     }
 }
 
@@ -84,7 +97,48 @@ function freqFormatter(value) {
     var mhzFreq = value / 1000000;
     mhzFreq = mhzFreq.toFixed(5);
 
-    return mhzFreq + ' mhz';
+    return mhzFreq + ' MHz';
+}
+
+/**
+ * 
+ * @param {any} value
+ * @returns {any} value 
+ */
+function trueFalseFormatter(value) {
+    if (value === 'True') {
+        // check icon
+        return '<div align="center">' + checkIcon + '</div>';
+    } else {
+        // X icon
+        return '<div align="center">' + errorIcon + '</div>';
+    }
+}
+
+/**
+ * 
+ * @param {any} value
+ * @param {any} row 
+ * @param {any} index 
+ * @returns {any} value
+ */
+function trueFalseCellStyle(value, row, index) {
+    if (value !== "True") {
+        // HACK: let this support YES values too
+        if (value === 'YES') {
+            return {
+                classes: "table-success"
+            };
+        }
+
+        return {
+            classes: "table-danger"
+        };
+    } else {
+        return {
+            classes: "table-success"
+        };
+    }
 }
 
 /**
@@ -116,6 +170,8 @@ function fetchDiagLog(peerId) {
 }
 
 $(document).ready(function () {
+    $('#diag-trace-nav').hide();
+
     if (window.location.hash) {
         displayHash(window.location.hash);
     }
@@ -172,7 +228,7 @@ $(document).ready(function () {
                         var masterPeers = value.PEERS;
                         $.each(masterPeers, function (key, value) {
                             var peerId = key;
-                            var peerName = value.CALLSIGN;
+                            var peerName = value.IDENTITY;
                             peerMap[peerId] = peerName;
                         });
                     });
@@ -188,13 +244,16 @@ $(document).ready(function () {
                 activity = JSON.parse(message);
             }
             else if (opcode === WEBSOCK_OPCODES['LOG']) {
-                if (trafficTraceLines >= trafficTraceMaxLines) {
-                    trafficTraceLines = 0;
-                    trafficTrace = '';
+                trafficTrace.reverse();
+                if (trafficTrace.length >= trafficTraceMaxLines) {
+                    trafficTrace.splice(0, 1);
                 }
 
-                trafficTrace += message + '\n';
-                trafficTraceLines++;
+                trafficTrace.push(message);
+                trafficTrace.reverse();
+            }
+            else if (opcode === WEBSOCK_OPCODES['DIAG_LOG']) {
+                /* ignore */
             } else {
                 console.error("Unknown Message Received", opcode, message);
             }

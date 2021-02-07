@@ -6,6 +6,10 @@
  * @package DVM / FNE
  */
 
+/*
+** Page View Routines
+*/
+
 /**
  * 
  * @returns {any} string
@@ -18,14 +22,33 @@ function getInfo() {
  * 
  */
 function onLoad() {
-    $.get("diag-trace.html", function(data) {
+    $.get("diag-trace.html", function (data) {
+        $('#diag-trace-nav').show();
+
         $('#content-section').html(data);
         var hash = window.location.hash;
         if (hash) {
             var peerId = hash.split('/')[1];
+
+            $('#diag-trace-link').attr('href', '#diag-trace/' + peerId);
+            if (peerId in peerMap) {
+                $('#peerId').html(peerMap[peerId] + '(<i>' + peerId + '</i>)');
+            }
+            else {
+                $('#peerId').html('<i>' + peerId + '</i>');
+            }
+
             fetchDiagLog(peerId);
         }
     });
+}
+
+/**
+ * 
+ */
+function onUnload() {
+    $('#diag-trace-nav').hide();
+    $('#diag-trace-link').attr('href', '#diag-trace');
 }
 
 /**

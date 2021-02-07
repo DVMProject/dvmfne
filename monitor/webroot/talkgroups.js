@@ -6,6 +6,10 @@
  * @package DVM / FNE
  */
 
+/*
+** Page View Routines
+*/
+
 /**
  * 
  * @returns {any} string
@@ -23,6 +27,13 @@ function onLoad() {
 
         onRefresh();
     });
+}
+
+/**
+ * 
+ */
+function onUnload() {
+    /* stub */
 }
 
 /**
@@ -83,24 +94,5 @@ function onRefresh() {
         $('#talkgroups').bootstrapTable({
             data: []
         });
-    }
-}
-
-/**
- * 
- * @param {any} value
- * @param {any} row 
- * @param {any} index 
- * @returns {any} value
- */
-function tgYesNoCellStyle(value, row, index) {
-    if (value !== "True") {
-        return {
-            classes: "col-danger"
-        };
-    } else {
-        return {
-            classes: "col-success"
-        };
     }
 }

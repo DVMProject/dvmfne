@@ -8,14 +8,14 @@
             <th data-field="tgName" data-sortable="true" data-searchable="true">Name</th>
             <th data-field="srcTGID" data-sortable="true" data-searchable="true">TGID</th>
             <th data-field="srcSlot">Slot</th>
-            <th data-field="active" data-cell-style="tgYesNoCellStyle">Active</th>
-            <th data-field="routable" data-cell-style="tgYesNoCellStyle">Routable</th>
+            <th style="width: 1%;" data-field="active" data-formatter="trueFalseFormatter" data-cell-style="trueFalseCellStyle">Active</th>
+            <th style="width: 1%;" data-field="routable" data-formatter="trueFalseFormatter" data-cell-style="trueFalseCellStyle">Routable</th>
             <th data-field="dstSystem" data-sortable="true" data-formatter="boldFormatter">Dst. System</th>
             <th data-field="dstTGID" data-sortable="true" data-searchable="true">Dst. TGID</th>
             <th data-field="dstSlot">Dst. Slot</th>
             <th data-field="routeTimeout">Route T/O</th>
             <th data-field="timeoutAction">T/O Action</th>
-            <th class="col-md-1" data-field="affRepeated" data-cell-style="tgYesNoCellStyle">Aff. Repeated</th>
+            <th style="width: 1%;" data-field="affRepeated" data-formatter="trueFalseFormatter" data-cell-style="trueFalseCellStyle">Aff. Repeated</th>
             <th data-field="ignoredPeers" data-searchable="true">Ignored Peers</th>
         </tr>
     </thead>

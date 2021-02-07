@@ -24,49 +24,49 @@
 </head>
 
 <body>
-    <nav class="navbar navbar-inverse navbar-fixed-top">
-        <div class="container-fluid">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="#overview">Fixed Network Equipment Monitor</a>
-            </div>
-            <div id="topNavSection" class="navbar-collapse collapse">
-                <ul class="nav navbar-nav navbar-right">
-                    <li><a href="#about">About</a></li>
-                </ul>
-            </div>
+    <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
+        <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#overview">Fixed Network Equipment Monitor</a>
+        <div id="no-connection" class="alert alert-danger header-alert" role="alert">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-exclamation-octagon" viewBox="0 0 16 16">
+                <path d="M4.54.146A.5.5 0 0 1 4.893 0h6.214a.5.5 0 0 1 .353.146l4.394 4.394a.5.5 0 0 1 .146.353v6.214a.5.5 0 0 1-.146.353l-4.394 4.394a.5.5 0 0 1-.353.146H4.893a.5.5 0 0 1-.353-.146L.146 11.46A.5.5 0 0 1 0 11.107V4.893a.5.5 0 0 1 .146-.353L4.54.146zM5.1 1L1 5.1v5.8L5.1 15h5.8l4.1-4.1V5.1L10.9 1H5.1z" />
+                <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z" />
+            </svg>
+            &nbsp;<b>No connection to Fixed Network Equipment!</b>
         </div>
+        <ul class="navbar-nav navbar-nav-row">
+            <li id="diag-trace-nav" class="nav-item"><a id="diag-trace-link" class="nav-link" href="#diag-trace">Diagnostic Trace</a></li>
+            <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+        </ul>
     </nav>
 
     <div class="container-fluid">
         <div class="row">
-            <div class="col-sm-1 col-md-1 sidebar" id="leftNavSection">
-                <ul class="nav nav-sidebar">
-                    <li class="active"><a href="#overview">Overview</a></li>
-                    <li><a href="#talkgroups">Talkgroups</a></li>
-                    <li><hr /></li>
-                    <li><a href="#activity">System Activity</a></li>
-                    <li><a href="#traffic-trace">Traffic Trace</a></li>
-                </ul>
-            </div>
+            <nav class="col-md-2 d-none d-md-block bg-dark sidebar">
+                <div class="sidebar-sticky">
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a class="nav-link active" href="#overview">Overview</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#talkgroups">Talkgroups</a></li>
+                    </ul>
 
-            <div class="col-sm-10 col-sm-offset-2 col-md-11 col-md-offset-1 main" id="alert-section">
-                <div class="alert alert-danger" role="alert" id="no-connection"><b>No connection to Fixed Network Equipment!</b></div>
-            </div>
+                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                        Network Activity
+                    </h6>
 
-            <div class="col-sm-10 col-sm-offset-2 col-md-11 col-md-offset-1 main" id="content-section">
-                <!-- dynamic -->
-            </div>
+                    <ul class="nav flex-column mb-2">
+                        <li class="nav-item"><a class="nav-link" href="#activity">System Activity</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#traffic-trace">Traffic Trace</a></li>
+                    </ul>
+                </div>
+            </nav>
+            <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+                <div id="content-section"></div>
+            </main>
         </div>
+    </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery.min.js"><\/script>')</script>
-    <script src="js/bootstrap.min.js"></script>
+    <script src="js/bootstrap.bundle.min.js"></script>
     <script src="js/bootstrap-table.min.js"></script>
     <script src="index.js"></script>
 </body>

@@ -6,6 +6,10 @@
  * @package DVM / FNE
  */
 
+/*
+** Page View Routines
+*/
+
 /**
  * 
  * @returns {any} string
@@ -21,6 +25,13 @@ function onLoad() {
     $.get("about.html", function(data) {
         $('#content-section').html(data);
     });
+}
+
+/**
+ * 
+ */
+function onUnload() {
+    /* stub */
 }
 
 /**

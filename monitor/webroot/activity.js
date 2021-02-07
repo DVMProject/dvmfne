@@ -8,6 +8,10 @@
 
 var actFirstRefresh = true;
 
+/*
+** Page View Routines
+*/
+
 /**
  * 
  * @returns {any} string
@@ -34,6 +38,13 @@ function onLoad() {
 /**
  * 
  */
+function onUnload() {
+    /* stub */
+}
+
+/**
+ * 
+ */
 function onRefresh() {
     var autoRefresh = $('#act-auto-refresh').prop("checked");
 
@@ -43,6 +54,10 @@ function onRefresh() {
         refreshActivity();
     }
 }
+
+/*
+** Private Routines
+*/
 
 /**
  * 
@@ -70,7 +85,7 @@ function refreshActivity() {
  */
 function actTypeFormatter(value, row) {
     if (row.type_class !== 'normal') {
-        return '<span class="span-' + row.type_class + '">' + value + '</span>';
+        return '<span class="text-' + row.type_class + '">' + value + '</span>';
     } else {
         return value;
     }
@@ -86,7 +101,7 @@ function actTypeFormatter(value, row) {
 function actTypeCellStyle(value, row, index) {
     if (row.type_class === 'danger') {
         return {
-            classes: "col-danger"
+            classes: "table-danger"
         };
     } else {
         return {};
@@ -103,7 +118,7 @@ function actTypeCellStyle(value, row, index) {
 function actDurationCellStyle(value, row, index) {
     if (value === 'Timing unavailable') {
         return {
-            classes: "col-disabled"
+            classes: "table-disabled"
         };
     } else {
         return {};
@@ -120,22 +135,22 @@ function actDurationCellStyle(value, row, index) {
 function actBERCellStyle(value, row, index) {
     if (value === 'No BER data') {
         return {
-            classes: "col-disabled"
+            classes: "table-disabled"
         };
     } else {
         if (value >= 0.0 && value <= 1.9) {
             return {
-                classes: "col-success"
+                classes: "table-success"
             };
         }
-        else if ((value >= 2.0) && (value <= 2.9)) {
+        else if (value >= 2.0 && value <= 2.9) {
             return {
-                classes: "col-warn"
+                classes: "table-warn"
             };
         }
         else if (value >= 3.0) {
             return {
-                classes: "col-danger"
+                classes: "table-danger"
             };
         }
         else {
