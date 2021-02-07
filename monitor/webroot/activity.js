@@ -158,3 +158,17 @@ function actBERCellStyle(value, row, index) {
         }
     }
 }
+
+/**
+ * 
+ * @param {any} value
+ * @returns {any} value 
+ */
+function peerIdFormatter(value) {
+    if (value in peerMap) {
+        return peerMap[value] + ' (<i>' + value + '</i>)';
+    }
+    else {
+        return value;
+    }
+}
