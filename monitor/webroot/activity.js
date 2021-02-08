@@ -31,6 +31,7 @@ function onLoad() {
             refreshActivity();
         });
 
+        showTableLoading('#activity');
         onRefresh();
     });
 }
@@ -63,6 +64,8 @@ function onRefresh() {
  * 
  */
 function refreshActivity() {
+    showTableLoading('#activity');
+
     // parse data
     if (!$.isEmptyObject(activity)) {
         $('#activity').bootstrapTable("destroy");

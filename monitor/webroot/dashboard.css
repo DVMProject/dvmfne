@@ -119,10 +119,16 @@ h1 {
     margin: 0;
 }
 
+.fixed-table-loading {
+    background: #383c41 !important;
+}
+    .fixed-table-loading .loading-wrap .loading-text {
+        font-size: 20px !important;
+    }
+
 /*
  * Navbar
  */
-
 .navbar-brand {
     padding-top: .75rem;
     padding-bottom: .75rem;

@@ -28,14 +28,14 @@ from __future__ import print_function
 
 import logging
 import sys
-import subprocess
 import re
 import json
 
 from pprint import pprint
 from time import time, strftime, localtime
 from cPickle import loads
-from binascii import b2a_hex as h
+from binascii import b2a_hex as ahex
+from binascii import a2b_hex as bhex
 from os.path import getmtime
 from collections import deque
 
@@ -56,21 +56,22 @@ from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerF
 
 from jinja2 import Environment, PackageLoader
 
-from dmr_utils.utils import hex_str_3, int_id
+from dmr_utils.utils import hex_str_3
 
 from config import *
 
 # Opcodes for the network-based reporting protocol
 REPORT_OPCODES = {
     'CONFIG_REQ': '\x00',
-    'CONFIG_SND': '\x01',
+    'CONFIG_RSP': '\x01',
     'RRULES_REQ': '\x02',
-    'RRULES_SND': '\x03',
+    'RRULES_RSP': '\x03',
     'CONFIG_UPD': '\x04',
     'RRULES_UPD': '\x05',
     'LINK_EVENT': '\x06',
     'CALL_EVENT': '\x07',
     'GRP_AFF_UPD': '\x08',
+    'RCON_REQ': '\x09',
 }
 
 WEBSOCK_OPCODES = {
@@ -98,6 +99,14 @@ LOGBUF           = deque(100*[''], 100)
 
 LOG_MAX          = 512
 EOL_SCANAHEAD    = LOG_MAX / 2
+
+# ---------------------------------------------------------------------------
+#   String Utility Routines
+# ---------------------------------------------------------------------------
+
+# Convert a hex string to an int (peer ID, etc.)
+def int_id(_hex_string):
+    return int(ahex(_hex_string), 16)
 
 # ---------------------------------------------------------------------------
 #   Module Routines
@@ -130,15 +139,19 @@ def process_act_log(_file):
                 continue
 
             if (re.search('(voice transmission|voice header|late entry)', line) != None):
-                type = 'Voice Transmission'
+                if (re.search('(encrypted)', line) != None):
+                    typeClass = 'success'
+                    type = 'Voice Transmission (Enc)'
+                else:
+                    type = 'Voice Transmission'
             if (re.search('(data transmission|data header)', line) != None):
                 type = 'Data Transmission'
-#            if (re.search('(group grant request)', line) != None):
-#                typeClass = 'success'
-#                type = 'Group Grant Request'
-#            if (re.search('(unit-to-unit grant request)', line) != None):
-#                typeClass = 'success'
-#                type = 'Unit-to-Unit Grant Request'
+            if (re.search('(group grant request)', line) != None):
+                typeClass = 'success'
+                type = 'Group Grant Request'
+            if (re.search('(unit-to-unit grant request)', line) != None):
+                typeClass = 'success'
+                type = 'Unit-to-Unit Grant Request'
             if (re.search('(group affiliation request)', line) != None):
                 typeClass = 'warning'
                 type = 'Group Affiliation'
@@ -472,14 +485,14 @@ def process_message(_message):
     opcode = _message[:1]
     _now = strftime('%Y-%m-%d %H:%M:%S %Z', localtime(time()))
     
-    if opcode == REPORT_OPCODES['CONFIG_SND']:
-        logging.debug('got CONFIG_SND opcode')
+    if opcode == REPORT_OPCODES['CONFIG_RSP']:
+        logging.debug('got CONFIG_RSP opcode')
         CONFIG = load_dictionary(_message)
         CONFIG_RX = strftime('%Y-%m-%d %H:%M:%S', localtime(time()))
         CTABLE = build_ctable(CONFIG)
     
-    elif opcode == REPORT_OPCODES['RRULES_SND']:
-        logging.debug('got RRULES_SND opcode')
+    elif opcode == REPORT_OPCODES['RRULES_RSP']:
+        logging.debug('got RRULES_RSP opcode')
         RULES = load_dictionary(_message)
         RULES_RX = strftime('%Y-%m-%d %H:%M:%S', localtime(time()))
         RTABLE['RULES'] = build_rules_table(RULES)
@@ -530,7 +543,7 @@ def process_message(_message):
         dashboard_server.broadcast(WEBSOCK_OPCODES['LOG'] + log_message)
         LOGBUF.append(log_message)
     else:
-        logging.debug('got unknown opcode: {}, message: {}'.format(repr(opcode), repr(_message[1:])))
+        self._factory._logger.error('Report unrecognized opcode %s PACKET %s', int_id(opcode), ahex(_message))
         
 def load_dictionary(_message):
     data = _message[1:]
@@ -543,11 +556,12 @@ def load_dictionary(_message):
 # ---------------------------------------------------------------------------
 
 class report(NetstringReceiver):
-    def __init__(self):
-        pass
+    def __init__(self, factory):
+        self._factory = factory
 
     def connectionMade(self):
-        pass
+        self._factory.connection = self
+        logging.info('Reporting server connected: %s', self.transport.getPeer())
 
     def connectionLost(self, reason):
         pass
@@ -562,19 +576,18 @@ class report(NetstringReceiver):
 
 class reportClientFactory(ReconnectingClientFactory):
     def __init__(self):
-        pass
+        self.connection = {}
         
     def startedConnecting(self, connector):
         global WEBSOCK_OPCODES
-        logging.info('Initiating Connection to Server.')
+        logging.info('Connecting to FNE server.')
         if 'dashboard_server' in locals() or 'dashboard_server' in globals():
             dashboard_server.broadcast(WEBSOCK_OPCODES['QUIT'] + 'Connection to FNE Established')
 
     def buildProtocol(self, addr):
         logging.info('Connected.')
-        logging.info('Resetting reconnection delay')
         self.resetDelay()
-        return report()
+        return report(self)
 
     def clientConnectionLost(self, connector, reason):
         global WEBSOCK_OPCODES
@@ -585,6 +598,9 @@ class reportClientFactory(ReconnectingClientFactory):
     def clientConnectionFailed(self, connector, reason):
         logging.info('Connection failed. Reason: %s', reason)
         ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
+
+    def send_message(self, message):
+        self.connection.sendString(message)
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
@@ -606,32 +622,24 @@ class dashboard(WebSocketServerProtocol):
                 self.sendMessage(WEBSOCK_OPCODES['LOG'] + _message)
 
     def onMessage(self, payload, isBinary):
-        global WEBSOCK_OPCODES, LOG_PATH
+        global WEBSOCK_OPCODES, REPORT_OPCODES, LOG_PATH, report_client
         if isBinary:
             logging.info('Binary message received: %s bytes', len(payload))
         else:
-            _payload = payload.decode('utf8')
+            _payload = payload.decode('ascii')
             _opcode = _payload[:1]
-            if (_opcode == WEBSOCK_OPCODES['MESSAGE']) and (PRIMARY_MASTER != ''):
+            if (_opcode == WEBSOCK_OPCODES['MESSAGE']):
                 _arguments = _payload.split(',')
-                _peer_ip = _arguments[0][1:]
+                _peer_id = _arguments[0][1:]
                 _command = _arguments[1]
                 _command_arg = _arguments[2]
                 _dmr_slot = _arguments[3]
                 _mot_mfid = _arguments[4]
-                logging.info('Received system command: PEER IP %s COMMAND %s ARGUMENT %s MOT MFID %s', 
-                             _peer_ip, _command, _command_arg, _mot_mfid)
-                if DVM_CMD_TOOL != '':
-                    if _mot_mfid == 'true':
-                        subprocess.call([DVM_CMD_TOOL, '-a', _peer_ip, 'p25-set-mfid', '144'])
-
-                    if _dmr_slot == '0':
-                        subprocess.call([DVM_CMD_TOOL, '-a', _peer_ip, _command, _command_arg])
-                    else:
-                        subprocess.call([DVM_CMD_TOOL, '-a', _peer_ip, _command, _dmr_slot, _command_arg])
-
-                    if _mot_mfid == 'true':
-                        subprocess.call([DVM_CMD_TOOL, '-a', _peer_ip, 'p25-set-mfid', '0'])
+                logging.info('Received system command: PEER ID %s COMMAND %s DMR SLOT %s ARGUMENT %s MOT MFID %s', 
+                             _peer_id, _command, _dmr_slot, _command_arg, _mot_mfid)
+                if 'report_client' in locals() or 'report_client' in globals():
+                    _message = (',' + _peer_id + ',' + _command + ',' + _command_arg + ',' + _dmr_slot + ',' + _mot_mfid).encode('ascii')
+                    report_client.send_message(REPORT_OPCODES['RCON_REQ'] + _message)
             elif (_opcode == WEBSOCK_OPCODES['DIAG_LOG']):
                 _arguments = _payload.split(',')
                 _peer_id = _arguments[0][1:]
@@ -710,7 +718,8 @@ if __name__ == '__main__':
     update_stats.start(FREQUENCY)
 
     # Connect to fne_core
-    reactor.connectTCP(FNEMON_IP, FNEMON_PORT, reportClientFactory())
+    report_client = reportClientFactory()
+    reactor.connectTCP(FNEMON_IP, FNEMON_PORT, report_client)
     
     # Create websocket server to push content to clients
     dashboard_server = dashboardFactory('ws://*:9000')

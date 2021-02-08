@@ -25,6 +25,7 @@ function onLoad() {
     $.get("talkgroups.html", function(data) {
         $('#content-section').html(data);
 
+        showTableLoading('#talkgroups');
         onRefresh();
     });
 }
@@ -94,5 +95,6 @@ function onRefresh() {
         $('#talkgroups').bootstrapTable({
             data: []
         });
+        $('#talkgroups').bootstrapTable("showLoading");
     }
 }

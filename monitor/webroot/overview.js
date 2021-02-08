@@ -31,6 +31,9 @@ function onLoad() {
             refreshAffiliations();
         });
 
+        showTableLoading('#master-systems');
+        showTableLoading('#peer-systems');
+        showTableLoading('#affiliations');
         onRefresh();
     });
 }
@@ -115,12 +118,14 @@ function onRefresh() {
         $('#master-systems').bootstrapTable({
             data: []
         });
+        $('#master-systems').bootstrapTable("showLoading");
 
         // populate bootstrap table
         $('#peer-systems').bootstrapTable("destroy");
         $('#peer-systems').bootstrapTable({
             data: []
         });
+        $('#peer-systems').bootstrapTable("showLoading");
     }
 
     var autoRefreshAff = $('#aff-auto-refresh').prop("checked");
@@ -162,52 +167,6 @@ function refreshAffiliations() {
         $('#affiliations').bootstrapTable({
             data: []
         });
-    }
-}
-
-/**
- * 
- * @param {any} value
- * @param {any} row 
- * @param {any} index 
- * @returns {any} value
- */
-function connCellStyle(value, row, index) {
-    if (value === 'YES') {
-        if (row.software === 'UNK_SIMPLE_CONFIG_ONLY') {
-            return {
-                classes: "table-warning"
-            };
-        }
-
-        return {
-            classes: "table-success"
-        };
-    }
-
-    return {
-        classes: "table-danger"
-    };
-}
-
-/**
- * 
- * @param {any} value
- * @param {any} row
- * @param {any} index
- * @returns {any} value
- */
-function connCellFormatter(value, row, index) {
-    if (value === 'YES') {
-        if (row.software === 'UNK_SIMPLE_CONFIG_ONLY') {
-            // exclamation icon
-            return '<div align="center">' + exclamationIcon + '</div>';
-        }
-
-        // check icon
-        return '<div align="center">' + checkIcon + '</div>';
-    } else {
-        return '<div align="center">' + errorIcon + '&nbsp;' + value + '</div>';
     }
 }
 

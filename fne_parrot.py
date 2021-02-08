@@ -209,63 +209,21 @@ class parrotFNE(coreFNE):
 # ---------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    import argparse
-    import sys
-    import os
-    import signal
-
     from fne.fne_core import mk_id_dict
+    from fne.fne_core import setup_fne
     
-    # Change the current directory to the location of the application
-    os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
-
-    # CLI argument parser - handles picking up the config file from the command
-    # line, and sending a "help" message
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', action = 'store', dest = 'ConfigFile', help = '/full/path/to/config.file (usually fne.cfg)')
-    parser.add_argument('-l', '--logging', action = 'store', dest = 'LogLevel', help = 'Override config file logging level.')
-    cli_args = parser.parse_args()
-
-    # Ensure we have a path for the config file, if one wasn't specified, then
-    # use the default (top of file)
-    if not cli_args.ConfigFile:
-        cli_args.ConfigFile = os.path.dirname(os.path.abspath(__file__)) + '/fne.cfg'
-
-    # Call the external routine to build the configuration dictionary
-    config = fne_config.build_config(cli_args.ConfigFile)
-    
-    # Start the system logger
-    if cli_args.LogLevel:
-        config['Log']['LogLevel'] = cli_args.LOG_LEVEL
-    logger = fne_log.config_logging(config['Log'])
+    # perform basic FNE setup
+    config, logger, act_log_file = setup_fne()
     logger.info('Digital Voice Modem Parrot Service D01.00')
-    logger.debug('Logging system started, anything from here on gets logged')
-    logger.info('Parrot FNE - SYSTEM STARTING...')
-    observer = log.PythonLoggingObserver()
-    observer.start()
+
+    # setup FNE report server
+    report_server = config_reports(config, logger, reportFactory)
     
-    # Set up the signal handler
-    def sig_handler(_signal, _frame):
-        logger.info('Digital Voice Modem Parrot FNE is terminating with signal %s', str(_signal))
-        fne_shutdown_handler(_signal, _frame, logger)
-        logger.info('All system handlers executed - stopping reactor')
-        reactor.stop()
-        
-    # Set signal handers so that we can gracefully exit if need be
-    for sig in [signal.SIGTERM, signal.SIGINT]:
-        signal.signal(sig, sig_handler)
-    
-    # Make Dictionaries
+    # make dictionaries
     white_rids = mk_id_dict(config['Aliases']['Path'], config['Aliases']['WhitelistRIDsFile'])
     if white_rids:
         logger.info('ID MAPPER: white_rids dictionary is available')
-        
-    # Initialize the reporting loop
-    report_server = config_reports(config, logger, reportFactory)
 
-    # Initialize activity log
-    act_log_file = setup_activity_log(config, logger)
-    
     # FNE instance creation
     logger.info('Parrot FNE - SYSTEM STARTING...')
     for system in config['Systems']:

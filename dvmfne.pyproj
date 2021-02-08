@@ -25,6 +25,8 @@
     <Content Include="fne\.gitignore" />
     <Content Include="fne-SAMPLE.cfg" />
     <Content Include="fne_bridge-SAMPLE.cfg" />
+    <Content Include="monitor\webroot\rcon.html" />
+    <Content Include="monitor\webroot\rcon.js" />
     <Content Include="monitor\webroot\css\bootstrap-grid.min.css" />
     <Content Include="monitor\webroot\css\bootstrap-grid.min.css.map" />
     <Content Include="monitor\webroot\css\bootstrap-reboot.min.css" />

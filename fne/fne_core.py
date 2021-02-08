@@ -26,6 +26,7 @@
 ###############################################################################
 from __future__ import print_function
 
+import subprocess
 import socket
 import cPickle as pickle
 
@@ -54,19 +55,80 @@ _act_log_lock = False
 # Opcodes for the network-based reporting protocol
 REPORT_OPCODES = {
     'CONFIG_REQ': '\x00',
-    'CONFIG_SND': '\x01',
+    'CONFIG_RSP': '\x01',
     'RRULES_REQ': '\x02',
-    'RRULES_SND': '\x03',
+    'RRULES_RSP': '\x03',
     'CONFIG_UPD': '\x04',
     'RRULES_UPD': '\x05',
     'LINK_EVENT': '\x06',
     'CALL_EVENT': '\x07',
     'GRP_AFF_UPD': '\x08',
+    'RCON_REQ': '\x09',
 }
 
 # ---------------------------------------------------------------------------
 #   Module Routines
 # ---------------------------------------------------------------------------
+
+# Helper to perform initial FNE setup.
+def setup_fne():
+    import argparse
+    import sys
+    import os
+    import signal
+    
+    # Change the current directory to the location of the application
+    os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
+
+    # CLI argument parser - handles picking up the config file from the command
+    # line, and sending a "help" message
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config', action = 'store', dest = 'ConfigFile', help = '/full/path/to/config.file (usually fne.cfg)')
+    parser.add_argument('-l', '--logging', action = 'store', dest = 'LogLevel', help = 'Override config file logging level.')
+    cli_args = parser.parse_args()
+
+    # Ensure we have a path for the config file, if one wasn't specified, then
+    # use the execution directory
+    if not cli_args.ConfigFile:
+        cli_args.ConfigFile = os.path.dirname(os.path.abspath(__file__)) + '/fne.cfg'
+
+    # Call the external routine to build the configuration dictionary
+    config = fne_config.build_config(cli_args.ConfigFile)
+    
+    # Call the external routing to start the system logger
+    if cli_args.LogLevel:
+        config['Log']['LogLevel'] = cli_args.LogLevel
+
+    logger = fne_log.config_logging(config['Log'])
+
+    logger.debug('Logging system started, anything from here on gets logged')
+    logger.info('Digital Voice Modem FNE - SYSTEM STARTING...')
+
+    observer = log.PythonLoggingObserver()
+    observer.start()
+
+    # Set up the signal handler
+    def sig_handler(_signal, _frame):
+        logger.info('Digital Voice Modem FNE is terminating with signal %s', str(_signal))
+        fne_shutdown_handler(_signal, _frame, logger)
+        logger.info('All system handlers executed - stopping reactor')
+        reactor.stop()
+        
+    # Set signal handers so that we can gracefully exit if need be
+    for sig in [signal.SIGTERM, signal.SIGINT]:
+        signal.signal(sig, sig_handler)
+
+    # Initialize activity log
+    act_log_file = setup_activity_log(config, logger)
+
+    return config, logger, act_log_file
+
+# Shut ourselves down gracefully by disconnecting from the masters and clients.
+def fne_shutdown_handler(_signal, _frame, _logger):
+    for system in systems:
+        _logger.info('SHUTDOWN: DE-REGISTER SYSTEM: %s', 
+                     system)
+        systems[system].dereg()
 
 # Timed loop used for reporting HBP status
 # REPORT BASED ON THE TYPE SELECTED IN THE MAIN CONFIG FILE
@@ -95,13 +157,7 @@ def config_reports(_config, _logger, _factory):
    
     return report_server
 
-# Shut ourselves down gracefully by disconnecting from the masters and clients.
-def fne_shutdown_handler(_signal, _frame, _logger):
-    for system in systems:
-        _logger.info('SHUTDOWN: DE-REGISTER SYSTEM: %s', 
-                     system)
-        systems[system].dereg()
-
+# Helper to split a file.
 def split_file(filePath, fin, percentage=0.50):
     foutName = filePath + '.1'
     with open(foutName, 'a+') as fout:
@@ -129,6 +185,7 @@ def split_file(filePath, fin, percentage=0.50):
         fin.flush()
         fin.seek(0, 2)
 
+# Helper to setup the system activity logs.
 def setup_activity_log(_config, _logger):
     if _config['Log']['AllowActTrans'] == False:
         return None
@@ -154,6 +211,7 @@ def setup_activity_log(_config, _logger):
     logsplitter.start(3600)
     return (act_log_file)
 
+# Helper to setup the peer diagnostic logs.
 def setup_peer_diag_log(_config, _logger, _peer_id):
     if _config['Log']['AllowDiagTrans'] == False:
         return None
@@ -889,12 +947,77 @@ class report(NetstringReceiver):
         self.process_message(data)
 
     def process_message(self, _message):
+        global systems
         opcode = _message[:1]
         if opcode == REPORT_OPCODES['CONFIG_REQ']:
             self._factory._logger.info('Reporting client sent \'CONFIG_REQ\': %s', self.transport.getPeer())
             self.send_config()
+        elif opcode == REPORT_OPCODES['RCON_REQ']:
+            _arguments = _message.split(',')
+            if (len(_arguments) < 6):
+                self._factory._logger.error('RCON request contained an invalid number of arguments; RCON_REQ from %s', self.transport.getPeer())
+                return  
+
+            try:
+                _peer_id = int(_arguments[1])
+                _dmr_slot = int(_arguments[4])
+            except:
+                self._factory._logger.error('RCON request contained invalid arguments; RCON_REQ from %s', self.transport.getPeer())
+                return
+
+            _command = _arguments[2]
+            _command_arg = _arguments[3]
+            _mot_mfid = _arguments[5]
+
+            _peer_id = hex_str_4(_peer_id)
+            _peer = {}
+
+            # find peer 
+            for system in systems:
+                if systems[system]._CONFIG['Systems'][system]['Mode'] == 'master':
+                    _peers = systems[system]._CONFIG['Systems'][system]['PEERS']
+                    if (_peer_id in _peers and _peers[_peer_id]['CONNECTION'] == 'YES'):
+                        _peer = _peers[_peer_id]
+                        break
+
+            if not _peer:
+                self._factory._logger.error('RCON request contained invalid PEER ID; RCON_REQ from %s, PEER ID %s', self.transport.getPeer(), int_id(_peer_id))
+                return
+
+            _peer_ip = _peer['IP']
+            _rcon_password = _peer['RCON_PASSWORD']
+            _rcon_port = _peer['RCON_PORT']
+
+            if self._factory._config['Global']['RconTool'] != '':
+                self._factory._logger.info('RCON_REQ from %s: PEER ID %s COMMAND %s DMR SLOT %s ARGUMENT %s MOT MFID %s', 
+                             self.transport.getPeer(), int_id(_peer_id), _command, _dmr_slot, _command_arg, _mot_mfid)
+
+                _root_cmd = [self._factory._config['Global']['RconTool'], '-a', str(_peer_ip), '-p', str(_rcon_port), '-P', str(_rcon_password)]
+
+                # handle P25 commands with mot mfid
+                if _mot_mfid == 'true':
+                    _cmd = list(_root_cmd)
+                    _cmd.append('p25-set-mfid')
+                    _cmd.append('144')
+                    subprocess.call(_cmd)
+
+                _cmd = list(_root_cmd)
+                if _dmr_slot == 0:
+                    _cmd.append(str(_command).strip())
+                    _cmd.append(str(_command_arg).strip())
+                else:
+                    _cmd.append(str(_command).strip())
+                    _cmd.append(str(_dmr_slot))
+                    _cmd.append(str(_command_arg).strip())
+                subprocess.call(_cmd)
+
+                if _mot_mfid == 'true':
+                    _cmd = list(_root_cmd)
+                    _cmd.append('p25-set-mfid')
+                    _cmd.append('0')
+                    subprocess.call(_cmd)
         else:
-            self._factory._logger.error('got unknown opcode')
+            self._factory._logger.error('Report unrecognized opcode %s PACKET %s', int_id(opcode), ahex(_message))
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
@@ -924,67 +1047,4 @@ class reportFactory(Factory):
             
     def send_config(self):
         serialized = pickle.dumps(self._config['Systems'], protocol = pickle.HIGHEST_PROTOCOL)
-        self.send_clients(REPORT_OPCODES['CONFIG_SND'] + serialized)
-
-# ---------------------------------------------------------------------------
-#   Program Entry Point
-# ---------------------------------------------------------------------------
-
-if __name__ == '__main__':
-    import argparse
-    import sys
-    import os
-    import signal
-    
-    # Change the current directory to the location of the application
-    os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
-
-    # CLI argument parser - handles picking up the config file from the command
-    # line, and sending a "help" message
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', action = 'store', dest = 'ConfigFile', help = '/full/path/to/config.file (usually fne.cfg)')
-    parser.add_argument('-l', '--logging', action = 'store', dest = 'LogLevel', help = 'Override config file logging level.')
-    cli_args = parser.parse_args()
-
-    # Ensure we have a path for the config file, if one wasn't specified, then
-    # use the execution directory
-    if not cli_args.ConfigFile:
-        cli_args.ConfigFile = os.path.dirname(os.path.abspath(__file__)) + '/fne.cfg'
-
-    # Call the external routine to build the configuration dictionary
-    config = fne_config.build_config(cli_args.ConfigFile)
-    
-    # Call the external routing to start the system logger
-    if cli_args.LogLevel:
-        config['Log']['LogLevel'] = cli_args.LogLevel
-    logger = fne_log.config_logging(config['Log'])
-    logger.debug('Logging system started, anything from here on gets logged')
-    logger.info('Digital Voice Modem FNE - SYSTEM STARTING...')
-    observer = log.PythonLoggingObserver()
-    observer.start()
-
-    # Set up the signal handler
-    def sig_handler(_signal, _frame):
-        logger.info('Digital Voice Modem FNE is terminating with signal %s', str(_signal))
-        fne_shutdown_handler(_signal, _frame, logger)
-        logger.info('All system handlers executed - stopping reactor')
-        reactor.stop()
-        
-    # Set signal handers so that we can gracefully exit if need be
-    for sig in [signal.SIGTERM, signal.SIGINT]:
-        signal.signal(sig, sig_handler)
-        
-    # Initialize the reporting loop
-    report_server = config_reports(config, logger, reportFactory)
-
-    # Initialize activity log
-    act_log_file = setup_activity_log(config, logger)
-
-    # FNE instance creation
-    for system in config['Systems']:
-        if config['Systems'][system]['Enabled']:
-            systems[system] = coreFNE(system, config, logger, act_log_file, report_server)
-            reactor.listenUDP(config['Systems'][system]['Port'], systems[system], interface = config['Systems'][system]['Address'])
-            logger.debug('%s instance created: %s, %s', config['Systems'][system]['Mode'], system, systems[system])
-
-    reactor.run()
+        self.send_clients(REPORT_OPCODES['CONFIG_RSP'] + serialized)

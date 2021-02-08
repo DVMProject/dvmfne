@@ -20,6 +20,8 @@ var WEBSOCK_OPCODES = {
     'MESSAGE': 'm'
 };
 
+var NO_CONN_MSG = 'No connection to Fixed Network Equipment!';
+
 var config = {};
 var rules = {};
 var affiliations = {};
@@ -77,6 +79,23 @@ function displayHash(hash) {
 
         loadScript(hash.replace("#", "") + ".js");
     }
+}
+
+/**
+ * 
+ * @param {any} message
+ */
+function displayErrorAlert(message) {
+    $('#error-alert-msg').html(message);
+    $('#error-alert').show();
+}
+
+/**
+ * 
+ */
+function closeErrorAlert() {
+    $('#error-alert-msg').html('');
+    $('#error-alert').hide();
 }
 
 /**
@@ -143,6 +162,64 @@ function trueFalseCellStyle(value, row, index) {
 
 /**
  * 
+ * @param {any} value
+ * @param {any} row 
+ * @param {any} index 
+ * @returns {any} value
+ */
+function connCellStyle(value, row, index) {
+    if (value === 'YES') {
+        if (row.software === 'UNK_SIMPLE_CONFIG_ONLY') {
+            return {
+                classes: "table-warning"
+            };
+        }
+
+        return {
+            classes: "table-success"
+        };
+    }
+
+    return {
+        classes: "table-danger"
+    };
+}
+
+/**
+ * 
+ * @param {any} value
+ * @param {any} row
+ * @param {any} index
+ * @returns {any} value
+ */
+function connCellFormatter(value, row, index) {
+    if (value === 'YES') {
+        if (row.software === 'UNK_SIMPLE_CONFIG_ONLY') {
+            // exclamation icon
+            return '<div align="center">' + exclamationIcon + '</div>';
+        }
+
+        // check icon
+        return '<div align="center">' + checkIcon + '</div>';
+    } else {
+        return '<div align="center">' + errorIcon + '&nbsp;' + value + '</div>';
+    }
+}
+
+/**
+ * 
+ * @param {any} table
+ */
+function showTableLoading(table) {
+    $(table).bootstrapTable("destroy");
+    $(table).bootstrapTable({
+        data: []
+    });
+    $(table).bootstrapTable("showLoading");
+}
+
+/**
+ * 
  * @param {any} peerId
  * @param {any} type
  * @param {any} slotNo
@@ -155,7 +232,8 @@ function transmitCommand(peerId, type, slotNo, motMFId, argument) {
     }
 
     if (sock) {
-        sock.send(WEBSOCK_OPCODES.MESSAGE + peerId + ',' + type + ',' + argument + ',' + slotNo + ',' + motMFId);
+        var sockMessage = WEBSOCK_OPCODES.MESSAGE + peerId + ',' + type + ',' + argument + ',' + slotNo + ',' + motMFId;
+        sock.send(sockMessage);
     }
 }
 
@@ -194,13 +272,15 @@ $(document).ready(function () {
     }
 
     if (sock) {
-        sock.onopen = function () {
-            $('#no-connection').hide();
+        sock.onopen = function () {-
             console.log("Connected to " + wsuri);
+
+            // clear any error alerts
+            closeErrorAlert();
         };
 
         sock.onclose = function (e) {
-            $('#no-connection').show();
+            displayErrorAlert(NO_CONN_MSG);
             console.log("Connection closed (wasClean = " + e.wasClean + ", code = " + e.code + ", reason = '" + e.reason + "')");
             sock = null;
         };
@@ -212,7 +292,7 @@ $(document).ready(function () {
             //console.debug(opcode, message);
 
             if (opcode === WEBSOCK_OPCODES['QUIT']) {
-                $('#no-connection').show();
+                displayErrorAlert(NO_CONN_MSG);
 
                 config = {};
                 rules = {};
@@ -259,6 +339,10 @@ $(document).ready(function () {
             }
 
             if (getInfo() === 'overview' && (opcode === WEBSOCK_OPCODES['CONFIG'] || opcode === WEBSOCK_OPCODES['AFFILIATION'])) {
+                onRefresh();
+            }
+
+            if (getInfo() === 'rcon' && opcode === WEBSOCK_OPCODES['CONFIG']) {
                 onRefresh();
             }
 

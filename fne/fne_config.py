@@ -50,7 +50,8 @@ def build_config(_config_file):
                 CONFIG['Global'].update({
                     'Path': config.get(section, 'Path'),
                     'PingTime': config.getint(section, 'PingTime'),
-                    'MaxMissed': config.getint(section, 'MaxMissed')
+                    'MaxMissed': config.getint(section, 'MaxMissed'),
+                    'RconTool': config.get(section, 'RconTool')
                 })
 
             elif section == 'Reports':

@@ -1,0 +1,170 @@
+<h1 class="page-header">Remote Command</h1>
+
+<style type="text/css">
+    .clear-cmd-border {
+        border-left-color: transparent;
+        border-top-color: #000;
+        border-bottom-color: #000;
+        border-right-color: transparent;
+    }
+    
+    .auto-height {
+        height: auto;
+    }
+</style>
+
+<h2 class="sub-header">Master Systems</h2>
+<div class="table-responsive pb-3">
+    <div class="table-controls">
+        <h5>
+            <button type="button" class="btn btn-sm btn-primary" id="refresh">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z" />
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
+                </svg>
+            </button>
+        </h5>
+    </div>
+
+    <table id="master-systems" class="table table-striped table-hover"
+           data-toggle="table" data-multiple-select-row="true" data-click-to-select="true">
+        <thead>
+            <tr>
+                <th data-field="state" data-checkbox="true"></th>
+                <th data-field="masterName" data-formatter="boldFormatter">System</th>
+                <th data-field="peerId">Peer ID</th>
+                <th data-field="identity">Identity</th>
+                <th data-field="ipAddr">IP</th>
+                <th data-field="ipPort">Port</th>
+                <th style="width: 1%;" data-field="connection" data-formatter="connCellFormatter" data-cell-style="connCellStyle">Connection</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<h2 class="sub-header">Command</h2>
+<div class="jumbotron small-pad">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <button class="btn btn-primary btn-outline-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span id="cmd_sel_label">Select Command</span>
+                    </button>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-cc', 'Transmit P25 CC')">Transmit P25 CC</a>
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-rid-page', '[P25] Radio Page')">[P25] Radio Page</a>
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-rid-check', '[P25] Radio Check')">[P25] Radio Check</a>
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-rid-gaq', '[P25] Group Aff. Query')">[P25] Group Aff. Query</a>
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-rid-ureg', '[P25] Unit Reg. Command')">[P25] Unit Reg. Command</a>
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-rid-inhibit', '[P25] Inhibit')"><span class="text-danger">[P25] Inhibit</span></a>
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-rid-uninhibit', '[P25] Uninhibit')"><span class="text-danger">[P25] Uninhibit</span></a>
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-rel-grnts', '[P25] Force Clear Channel Grants')"><span class="text-danger">[P25] Force Clear Channel Grants</span></a>
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-rel-affs', '[P25] Force Clear Group Affiliations')"><span class="text-danger">[P25] Force Clear Group Affiliations</span></a>
+
+                        <div role="separator" class="dropdown-divider"></div>
+
+                        <a class="dropdown-item" onclick="rconSetCmd('dmr-beacon', 'Transmit DMR Beacon')">Transmit DMR Beacon</a>
+                        <a class="dropdown-item" onclick="rconSetCmd('dmr-rid-page', '[DMR] Radio Page')">[DMR] Radio Page</a>
+                        <a class="dropdown-item" onclick="rconSetCmd('dmr-rid-check', '[DMR] Radio Check')">[DMR] Radio Check</a>
+                        <a class="dropdown-item" onclick="rconSetCmd('dmr-rid-inhibit', '[DMR] Inhibit')"><span class="text-danger">[DMR] Inhibit</span></a>
+                        <a class="dropdown-item" onclick="rconSetCmd('dmr-rid-uninhibit', '[DMR] Uninhibit')"><span class="text-danger">[DMR] Uninhibit</span></a>
+                    </div>
+                </div>
+                <div class="input-group-prepend" id="dmr_slot_sel">
+                    <button class="btn btn-primary btn-outline-primary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span id="cmd_dmr_slot_label">DMR Slot</span>
+                    </button>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" onclick="rconSetDmrSlot('1', 'Slot 1')">Slot 1</a>
+                        <a class="dropdown-item" onclick="rconSetDmrSlot('2', 'Slot 2')">Slot 2</a>
+                    </div>
+                </div>
+                <div class="input-group-prepend">
+                    <div class="input-group-text table-primary clear-cmd-border" id="cmd_confirm">
+                        <label>
+                            <input type="checkbox" aria-label="Command Confirm" id="cmd_confirm_check">&nbsp;Confirm
+                        </label>
+                    </div>
+                </div>
+
+                <input type="text" class="form-control clear-cmd-border auto-height" aria-label="Command Argument" id="cmd_argument" />
+
+                <div class="input-group-append">
+                    <div class="input-group-text table-primary clear-cmd-border" id="mot_mfid_check">
+                        <label>
+                            <input type="checkbox" aria-label="Transmit Motorola MFId" id="cmd_mot_mfid">&nbsp;Motorola MFId
+                        </label>
+                    </div>
+                    <button class="btn btn-success btn-outline-primary" type="button" id="cmd_send_btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-wifi" viewBox="0 0 16 16">
+                            <path d="M15.385 6.115a.485.485 0 0 0-.048-.736A12.443 12.443 0 0 0 8 3 12.44 12.44 0 0 0 .663 5.379a.485.485 0 0 0-.048.736.518.518 0 0 0 .668.05A11.448 11.448 0 0 1 8 4c2.507 0 4.827.802 6.717 2.164.204.148.489.13.668-.049z" />
+                            <path d="M13.229 8.271c.216-.216.194-.578-.063-.745A9.456 9.456 0 0 0 8 6c-1.905 0-3.68.56-5.166 1.526a.48.48 0 0 0-.063.745.525.525 0 0 0 .652.065A8.46 8.46 0 0 1 8 7a8.46 8.46 0 0 1 4.577 1.336c.205.132.48.108.652-.065zm-2.183 2.183c.226-.226.185-.605-.1-.75A6.472 6.472 0 0 0 8 9c-1.06 0-2.062.254-2.946.704-.285.145-.326.524-.1.75l.015.015c.16.16.408.19.611.09A5.478 5.478 0 0 1 8 10c.868 0 1.69.201 2.42.56.203.1.45.07.611-.091l.015-.015zM9.06 12.44c.196-.196.198-.52-.04-.66A1.99 1.99 0 0 0 8 11.5a1.99 1.99 0 0 0-1.02.28c-.238.14-.236.464-.04.66l.706.706a.5.5 0 0 0 .708 0l.707-.707z" />
+                        </svg>
+                        Transmit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!--
+<div class="table-responsive">
+    <table id="command" class="table table-striped"
+           data-toggle="table">
+        <colgroup>
+            <col style="width: 20%" />
+            <col style="width: 15%" />
+            <col style="width: 15%" />
+            <col style="width: 5%" />
+            <col style="width: 10%" />
+        </colgroup>
+        <thead>
+            <tr>
+                <th style="width: 20%">Command</th>
+                <th style="width: 20%">Argument</th>
+                <th style="width: 1%;">Mot MFId</th>
+                <th style="width: 20%">&nbsp;</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td align="center">
+                    <select id="cmd_type" style="display: inline-block; width: 85%;">
+                        <option value="p25-cc">Trigger P25 CC</option>
+                        <option value="dmr-beacon">Trigger DMR Beacon</option>
+                        <option value="dmr-rid-page">[DMR] Radio Page</option>
+                        <option value="dmr-rid-check">[DMR] Radio Check</option>
+                        <option class="text-danger" value="dmr-rid-uninhibit">[DMR] Uninhibit</option>
+                        <option value="p25-rid-page">[P25] Radio Page</option>
+                        <option value="p25-rid-check">[P25] Radio Check</option>
+                        <option class="text-danger" value="p25-rid-uninhibit">[P25] Uninhibit</option>
+                        <option value="p25-rid-gaq">[P25] Group Aff. Query</option>
+                        <option value="p25-rid-ureg">[P25] Unit Reg. Command</option>
+                        <option class="text-danger" value="p25-rel-grnts">[P25] Force Clear Channel Grants</option>
+                        <option class="text-danger" value="p25-rel-affs">[P25] Force Clear Group Affiliations</option>
+                    </select>
+                    <input type="checkbox" name="confirm" id="cmd_confirm" value="cmd_confirm" style="display: none;" />
+                </td>
+                <td align="center">
+                    <select id="cmd_slot_no" style="display: none; width: 25%;">
+                        <option value="1">Slot 1</option>
+                        <option value="2">Slot 2</option>
+                    </select>
+                    <input type="number" style="display: inline-block; width: 75%;" name="argument" id="cmd_arg" min="1" max="16777314" value="1" />
+                </td>
+                <td align="center"><input type="checkbox" name="mot_mfid" id="cmd_mot_mfid" value="cmd_mot_mfid" /></td>
+                <td align="center">
+                    <button type="button" class="btn btn-sm btn-primary" id="cmd_send_btn" style="width: 100%;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-wifi" viewBox="0 0 16 16">
+                            <path d="M15.385 6.115a.485.485 0 0 0-.048-.736A12.443 12.443 0 0 0 8 3 12.44 12.44 0 0 0 .663 5.379a.485.485 0 0 0-.048.736.518.518 0 0 0 .668.05A11.448 11.448 0 0 1 8 4c2.507 0 4.827.802 6.717 2.164.204.148.489.13.668-.049z" />
+                            <path d="M13.229 8.271c.216-.216.194-.578-.063-.745A9.456 9.456 0 0 0 8 6c-1.905 0-3.68.56-5.166 1.526a.48.48 0 0 0-.063.745.525.525 0 0 0 .652.065A8.46 8.46 0 0 1 8 7a8.46 8.46 0 0 1 4.577 1.336c.205.132.48.108.652-.065zm-2.183 2.183c.226-.226.185-.605-.1-.75A6.472 6.472 0 0 0 8 9c-1.06 0-2.062.254-2.946.704-.285.145-.326.524-.1.75l.015.015c.16.16.408.19.611.09A5.478 5.478 0 0 1 8 10c.868 0 1.69.201 2.42.56.203.1.45.07.611-.091l.015-.015zM9.06 12.44c.196-.196.198-.52-.04-.66A1.99 1.99 0 0 0 8 11.5a1.99 1.99 0 0 0-1.02.28c-.238.14-.236.464-.04.66l.706.706a.5.5 0 0 0 .708 0l.707-.707z" />
+                        </svg>
+                        Transmit
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+-->

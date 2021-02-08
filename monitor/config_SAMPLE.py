@@ -8,7 +8,6 @@ HTACCESS_USER   = ''                    # HTTP Access Username
 HTACCESS_PASS   = ''                    # HTTP Access Password
 
 ACTIVITY_LOG    = './activity_log.log'  # Remote Activity Log
-PRIMARY_MASTER  = ''                    # Name of the primary master to allow remote commands for
 
 # Full path to the DVM RCON tool
 DVM_CMD_TOOL    = '/opt/dvmfne/monitor/dvmcmd'
