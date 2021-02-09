@@ -251,6 +251,10 @@ def process_act_log(_file):
             _from = actData[0].replace(' ', '')
             _from = _from.replace('\n', '')
 
+            # HACK: remove denied on the _from line
+            if (re.search('(denied)', _from) != None):
+                _from = _from.replace('denied', '')
+
             if (len(actData) > 1):
                 _to = actData[1].replace('  ', ' ')
                 _to = _to.replace('\n', '')
