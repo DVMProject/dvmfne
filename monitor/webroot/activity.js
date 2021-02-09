@@ -154,7 +154,7 @@ function actBERCellStyle(value, row, index) {
         }
         else if (value >= 2.0 && value <= 2.9) {
             return {
-                classes: 'table-warn'
+                classes: 'table-warning'
             };
         }
         else if (value >= 3.0) {
