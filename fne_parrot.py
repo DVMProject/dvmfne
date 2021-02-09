@@ -116,6 +116,12 @@ class parrotFNE(coreFNE):
                 self._logger.info('(%s) DMRD: Previous call was not DMR, mixed call modes! Dropping call data.', self._system)
                 self.CALL_DATA = []
 
+            if (int_id(_rf_src) == 0):
+                self._logger.warning('(%s) DMRD: Received call from SRC_ID %s? Dropping call data.', self._system, int_id(_rf_src))
+                self.CALL_DATA = []
+                self.LAST_MODE = 'P25'
+                return
+
             self.LAST_MODE = 'DMR'
 
             # Is this is a new call stream?
@@ -164,6 +170,12 @@ class parrotFNE(coreFNE):
             if (self.LAST_MODE != 'P25'):
                 self._logger.info('(%s) P25D: Previous call was not P25, mixed call modes! Dropping call data.', self._system)
                 self.CALL_DATA = []
+
+            if (int_id(_rf_src) == 0):
+                self._logger.warning('(%s) P25D: Received call from SRC_ID %s? Dropping call data.', self._system, int_id(_rf_src))
+                self.CALL_DATA = []
+                self.LAST_MODE = 'P25'
+                return
 
             self.LAST_MODE = 'P25'
 
