@@ -76,6 +76,7 @@ def setup_fne():
     import sys
     import os
     import signal
+    import logging
     
     # Change the current directory to the location of the application
     os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
@@ -197,11 +198,11 @@ def setup_activity_log(_config, _logger):
                 
         nLines = sum(1 for line in _actLogFile)
         _actLogFile.seek(0)
-        if (nLines < 1024):
+        if (nLines < 2048):
             _actLogFile.seek(0, 2)
         else:
             _act_log_lock = True
-            split_file(_filePath, _diagLogFile)
+            split_file(_filePath, _actLogFile)
             _actLogFile.seek(0, 2)
             _act_log_lock = False
             

@@ -79,6 +79,11 @@ def config_logging(_logger):
                 'handlers': _logger['LogHandlers'].split(','),
                 'level': _logger['LogLevel'],
                 'propagate': True,
+            },
+            'twisted': {
+                'handlers': _logger['LogHandlers'].split(','),
+                'level': logging.INFO,
+                'propagate': True,
             }
         }
     })
