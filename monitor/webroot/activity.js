@@ -104,9 +104,15 @@ function actTypeFormatter(value, row) {
 function actTypeCellStyle(value, row, index) {
     if (row.type_class === 'danger') {
         return {
-            classes: "table-danger"
+            classes: 'table-danger'
         };
     } else {
+        if (row.alert_class !== '') {
+            return {
+                classes: 'table-' + row.alert_class
+            }
+        }
+
         return {};
     }
 }
@@ -121,7 +127,7 @@ function actTypeCellStyle(value, row, index) {
 function actDurationCellStyle(value, row, index) {
     if (value === 'Timing unavailable') {
         return {
-            classes: "table-disabled"
+            classes: 'table-disabled'
         };
     } else {
         return {};
@@ -138,22 +144,22 @@ function actDurationCellStyle(value, row, index) {
 function actBERCellStyle(value, row, index) {
     if (value === 'No BER data') {
         return {
-            classes: "table-disabled"
+            classes: 'table-disabled'
         };
     } else {
         if (value >= 0.0 && value <= 1.9) {
             return {
-                classes: "table-success"
+                classes: 'table-success'
             };
         }
         else if (value >= 2.0 && value <= 2.9) {
             return {
-                classes: "table-warn"
+                classes: 'table-warn'
             };
         }
         else if (value >= 3.0) {
             return {
-                classes: "table-danger"
+                classes: 'table-danger'
             };
         }
         else {

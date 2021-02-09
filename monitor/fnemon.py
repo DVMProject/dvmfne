@@ -120,7 +120,11 @@ def process_act_log(_file):
         fwd_log = list(log)
         rev_log = reversed(fwd_log)
         for line in rev_log:
-            if (re.search('(received RF|received group grant|received unit-to-unit grant|received unit registration|received group affiliation|received unit deregistration|received status update|received message update|received call alert|received ack response|received cancel service|received radio check|received radio inhibit|recieved radio uninhibit)', line) == None):
+            if (re.search('(RF voice|RF encrypted voice|RF late entry|RF data|RF voice rejection)', line) != None and
+                re.search('(group grant|unit-to-unit grant)', line) != None and
+                re.search('(unit registration|group affiliation|unit deregistration)', line) != None and
+                re.search('(status update|message update|call alert|ack response)', line) != None and
+                re.search('(cancel service|radio check|radio inhibit|radio uninhibit)', line) == None):
                 continue
             if (re.search('(end of)', line) != None):
                 continue
@@ -134,14 +138,18 @@ def process_act_log(_file):
             src = rawData[3]
             type = ''
             typeClass = 'normal'
+            alertClass = ''
 
             if (src == 'Net'):
                 continue
 
+            if (re.search('(voice rejection)', line) != None):
+                alertClass = 'warning'
+                type = 'Voice Transmission (Rejected)'
             if (re.search('(voice transmission|voice header|late entry)', line) != None):
                 if (re.search('(encrypted)', line) != None):
                     typeClass = 'success'
-                    type = 'Voice Transmission (Enc)'
+                    type = 'Voice Transmission (Encrypt)'
                 else:
                     type = 'Voice Transmission'
             if (re.search('(data transmission|data header)', line) != None):
@@ -149,12 +157,27 @@ def process_act_log(_file):
             if (re.search('(group grant request)', line) != None):
                 typeClass = 'success'
                 type = 'Group Grant Request'
+                if (re.search('(denied)', line) != None):
+                    alertClass = 'warning'
+                    type = type + ' (Denied)'
+                if (re.search('(queued)', line) != None):
+                    alertClass = 'info'
+                    type = type + ' (Queued)'
             if (re.search('(unit-to-unit grant request)', line) != None):
                 typeClass = 'success'
                 type = 'Unit-to-Unit Grant Request'
+                if (re.search('(denied)', line) != None):
+                    alertClass = 'warning'
+                    type = type + ' (Denied)'
+                if (re.search('(queued)', line) != None):
+                    alertClass = 'info'
+                    type = type + ' (Queued)'
             if (re.search('(group affiliation request)', line) != None):
                 typeClass = 'warning'
                 type = 'Group Affiliation'
+                if (re.search('(denied)', line) != None):
+                    alertClass = 'warning'
+                    type = type + ' (Denied)'
             if (re.search('(group affiliation query command)', line) != None):
                 typeClass = 'info'
                 type = 'Group Affiliation Query'
@@ -164,6 +187,9 @@ def process_act_log(_file):
             if (re.search('(unit registration request)', line) != None):
                 typeClass = 'warning'
                 type = 'Unit Registration'
+                if (re.search('(denied)', line) != None):
+                    alertClass = 'warning'
+                    type = type + ' (Denied)'
             if (re.search('(unit registration command)', line) != None):
                 typeClass = 'info'
                 type = 'Unit Registration Command'
@@ -307,6 +333,7 @@ def process_act_log(_file):
             entry['peerId'] = peerId
             entry['mode'] = mode
             entry['type_class'] = typeClass
+            entry['alert_class'] = alertClass
             entry['type'] = type
             entry['from'] = _from
             entry['to'] = _to
@@ -725,7 +752,7 @@ if __name__ == '__main__':
     dashboard_server = dashboardFactory('ws://*:9000')
     dashboard_server.protocol = dashboard
     reactor.listenTCP(9000, dashboard_server)
-   
+
     # Start activity update loop
     update_act = task.LoopingCall(gen_activity)
     update_act.start(10)
