@@ -174,6 +174,14 @@ function rconSetCmd(command, label) {
     switch (rconCommand) {
         case 'p25-cc':
         case 'dmr-beacon':
+        case 'p25-cc-bcast':
+        case 'p25-cc-dedicated':
+        case 'p25-en-dump-tsbk':
+        case 'p25-dis-dump-tsbk':
+        case 'p25-en-debug':
+        case 'p25-dis-debug':
+        case 'dmr-en-debug':
+        case 'dmr-dis-debug':
             $('#dmr_slot_sel').hide();
             $('#cmd_argument').prop('disabled', 'disabled');
             $('#mot_mfid_check').hide();
@@ -218,6 +226,35 @@ function rconTransmit() {
     if (commandConfirmed) {
         var argument = $('#cmd_argument').val();
         var motMfId = $("#cmd_mot_mfid").is(':checked');
+
+        switch (rconCommand) {
+            case 'p25-en-dump-tsbk':
+                rconCommand = 'p25-dump-tsbk';
+                argument = '1';
+                break;
+            case 'p25-dis-dump-tsbk':
+                rconCommand = 'p25-dump-tsbk';
+                argument = '0';
+                break;
+
+            case 'p25-en-debug':
+                rconCommand = 'p25-debug';
+                argument = '1 1';
+                break;
+            case 'p25-dis-debug':
+                rconCommand = 'p25-debug';
+                argument = '0 1';
+                break;
+
+            case 'dmr-en-debug':
+                rconCommand = 'dmr-debug';
+                argument = '1 1';
+                break;
+            case 'dmr-dis-debug':
+                rconCommand = 'dmr-debug';
+                argument = '0 1';
+                break;
+        }
 
         // get the selected systems
         var systemSelections = $('#master-systems').bootstrapTable('getSelections');

@@ -64,11 +64,28 @@
 
                         <div role="separator" class="dropdown-divider"></div>
 
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-cc-bcast', '[P25] Enable/Disable CC Broadcast')"><span class="text-danger">[P25] Enable/Disable CC Broadcast</span></a>
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-cc-dedicated', '[P25] Enable/Disable Control Channel')"><span class="text-danger">[P25] Enable/Disable Control Channel</span></a>
+
+                        <div role="separator" class="dropdown-divider"></div>
+
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-en-dump-tsbk', '[P25] Enable TSBK Dump Logging')"><span class="text-warning">[P25] Enable TSBK Dump Logging</span></a>
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-dis-dump-tsbk', '[P25] Disable TSBK Dump Logging')"><span class="text-warning">[P25] Enable TSBK Dump Logging</span></a>
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-en-debug', '[P25] Enable Debug Logging')"><span class="text-warning">[P25] Enable Debug Logging</span></a>
+                        <a class="dropdown-item" onclick="rconSetCmd('p25-dis-debug', '[P25] Disable Debug Logging')"><span class="text-warning">[P25] Disable Debug Logging</span></a>
+
+                        <div role="separator" class="dropdown-divider"></div>
+
                         <a class="dropdown-item" onclick="rconSetCmd('dmr-beacon', 'Transmit DMR Beacon')">Transmit DMR Beacon</a>
                         <a class="dropdown-item" onclick="rconSetCmd('dmr-rid-page', '[DMR] Radio Page')">[DMR] Radio Page</a>
                         <a class="dropdown-item" onclick="rconSetCmd('dmr-rid-check', '[DMR] Radio Check')">[DMR] Radio Check</a>
                         <a class="dropdown-item" onclick="rconSetCmd('dmr-rid-inhibit', '[DMR] Inhibit')"><span class="text-danger">[DMR] Inhibit</span></a>
                         <a class="dropdown-item" onclick="rconSetCmd('dmr-rid-uninhibit', '[DMR] Uninhibit')"><span class="text-danger">[DMR] Uninhibit</span></a>
+
+                        <div role="separator" class="dropdown-divider"></div>
+
+                        <a class="dropdown-item" onclick="rconSetCmd('dmr-en-debug', '[DMR] Enable Debug Logging')"><span class="text-warning">[DMR] Enable Debug Logging</span></a>
+                        <a class="dropdown-item" onclick="rconSetCmd('dmr-dis-debug', '[DMR] Disable Debug Logging')"><span class="text-warning">[DMR] Disable Debug Logging</span></a>
                     </div>
                 </div>
                 <div class="input-group-prepend" id="dmr_slot_sel">
@@ -108,63 +125,3 @@
         </div>
     </div>
 </div>
-<!--
-<div class="table-responsive">
-    <table id="command" class="table table-striped"
-           data-toggle="table">
-        <colgroup>
-            <col style="width: 20%" />
-            <col style="width: 15%" />
-            <col style="width: 15%" />
-            <col style="width: 5%" />
-            <col style="width: 10%" />
-        </colgroup>
-        <thead>
-            <tr>
-                <th style="width: 20%">Command</th>
-                <th style="width: 20%">Argument</th>
-                <th style="width: 1%;">Mot MFId</th>
-                <th style="width: 20%">&nbsp;</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td align="center">
-                    <select id="cmd_type" style="display: inline-block; width: 85%;">
-                        <option value="p25-cc">Trigger P25 CC</option>
-                        <option value="dmr-beacon">Trigger DMR Beacon</option>
-                        <option value="dmr-rid-page">[DMR] Radio Page</option>
-                        <option value="dmr-rid-check">[DMR] Radio Check</option>
-                        <option class="text-danger" value="dmr-rid-uninhibit">[DMR] Uninhibit</option>
-                        <option value="p25-rid-page">[P25] Radio Page</option>
-                        <option value="p25-rid-check">[P25] Radio Check</option>
-                        <option class="text-danger" value="p25-rid-uninhibit">[P25] Uninhibit</option>
-                        <option value="p25-rid-gaq">[P25] Group Aff. Query</option>
-                        <option value="p25-rid-ureg">[P25] Unit Reg. Command</option>
-                        <option class="text-danger" value="p25-rel-grnts">[P25] Force Clear Channel Grants</option>
-                        <option class="text-danger" value="p25-rel-affs">[P25] Force Clear Group Affiliations</option>
-                    </select>
-                    <input type="checkbox" name="confirm" id="cmd_confirm" value="cmd_confirm" style="display: none;" />
-                </td>
-                <td align="center">
-                    <select id="cmd_slot_no" style="display: none; width: 25%;">
-                        <option value="1">Slot 1</option>
-                        <option value="2">Slot 2</option>
-                    </select>
-                    <input type="number" style="display: inline-block; width: 75%;" name="argument" id="cmd_arg" min="1" max="16777314" value="1" />
-                </td>
-                <td align="center"><input type="checkbox" name="mot_mfid" id="cmd_mot_mfid" value="cmd_mot_mfid" /></td>
-                <td align="center">
-                    <button type="button" class="btn btn-sm btn-primary" id="cmd_send_btn" style="width: 100%;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-wifi" viewBox="0 0 16 16">
-                            <path d="M15.385 6.115a.485.485 0 0 0-.048-.736A12.443 12.443 0 0 0 8 3 12.44 12.44 0 0 0 .663 5.379a.485.485 0 0 0-.048.736.518.518 0 0 0 .668.05A11.448 11.448 0 0 1 8 4c2.507 0 4.827.802 6.717 2.164.204.148.489.13.668-.049z" />
-                            <path d="M13.229 8.271c.216-.216.194-.578-.063-.745A9.456 9.456 0 0 0 8 6c-1.905 0-3.68.56-5.166 1.526a.48.48 0 0 0-.063.745.525.525 0 0 0 .652.065A8.46 8.46 0 0 1 8 7a8.46 8.46 0 0 1 4.577 1.336c.205.132.48.108.652-.065zm-2.183 2.183c.226-.226.185-.605-.1-.75A6.472 6.472 0 0 0 8 9c-1.06 0-2.062.254-2.946.704-.285.145-.326.524-.1.75l.015.015c.16.16.408.19.611.09A5.478 5.478 0 0 1 8 10c.868 0 1.69.201 2.42.56.203.1.45.07.611-.091l.015-.015zM9.06 12.44c.196-.196.198-.52-.04-.66A1.99 1.99 0 0 0 8 11.5a1.99 1.99 0 0 0-1.02.28c-.238.14-.236.464-.04.66l.706.706a.5.5 0 0 0 .708 0l.707-.707z" />
-                        </svg>
-                        Transmit
-                    </button>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-</div>
--->
