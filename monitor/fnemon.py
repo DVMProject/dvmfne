@@ -312,26 +312,15 @@ def process_act_log(_file):
                             continue
 
                         rawStats = etLine.split(', ')
-                        if (mode == 'P25'):
-                            if (len(rawStats) >= 2):
-                                dur = rawStats[1].rstrip().replace(' seconds', 's')
-                            else:
-                                dur = '0s'
+                        if (len(rawStats) >= 2):
+                            dur = rawStats[1].rstrip().replace(' seconds', 's')
+                        else:
+                            dur = '0s'
 
-                            if (len(rawStats) >= 3):
-                                ber = rawStats[2].rstrip().replace('BER: ', '').replace('%', '')
-                            else:
-                                ber = '0.0'
-                        elif ((mode == 'DMR TS1') or (mode == 'DMR TS2')):
-                            if (len(rawStats) >= 3):
-                                dur = rawStats[2].rstrip().replace(' seconds', 's')
-                            else:
-                                dur = '0s'
-
-                            if (len(rawStats) >= 4):
-                                ber = rawStats[3].rstrip().replace('BER: ', '').replace('%', '')
-                            else:
-                                ber = '0.0'
+                        if (len(rawStats) >= 3):
+                            ber = rawStats[2].rstrip().replace('BER: ', '').replace('%', '')
+                        else:
+                            ber = '0.0'
 
                         break
 

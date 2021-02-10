@@ -9,6 +9,12 @@
 var sock = null;
 var wsport = 9000;
 
+var RECONN_TIME = 10;
+var RECONN_INTERVAL = 1000;
+var connectTimer = RECONN_TIME;
+var isConnected = false;
+var reconnEvent = null;
+
 var WEBSOCK_OPCODES = {
     'QUIT': 'q',
     'CONFIG': 'c',
@@ -21,6 +27,7 @@ var WEBSOCK_OPCODES = {
 };
 
 var NO_CONN_MSG = 'No connection to Fixed Network Equipment!';
+var RECONN_MSG = 'Reconnecting in ';
 
 var config = {};
 var rules = {};
@@ -247,21 +254,31 @@ function fetchDiagLog(peerId) {
     }
 }
 
-$(document).ready(function () {
-    $('#diag-trace-nav').hide();
-
-    if (window.location.hash) {
-        displayHash(window.location.hash);
+/**
+ * 
+ */
+function reconnectWebsock() {
+    if (!isConnected) {
+        if (connectTimer == 0) {
+            handleWebsock();
+        }
+        else {
+            displayErrorAlert(NO_CONN_MSG + ' ' + RECONN_MSG + connectTimer + ' seconds.');
+            --connectTimer;
+        }
     }
     else {
-        loadScript('overview.js');
+        if (reconnEvent != null) {
+            window.clearInterval(reconnEvent);
+            reconnEvent = null;
+        }
     }
+}
 
-    $(window).on('hashchange', function () {
-        // on every hash change the render function is called with the new hash
-        displayHash(window.location.hash);
-    });
-
+/**
+ * 
+ */
+function handleWebsock() {
     var wsuri = "ws://" + window.location.hostname + ":" + wsport;
     if ("WebSocket" in window) {
         sock = new WebSocket(wsuri);
@@ -272,8 +289,14 @@ $(document).ready(function () {
     }
 
     if (sock) {
-        sock.onopen = function () {-
+        sock.onopen = function () {
             console.log("Connected to " + wsuri);
+            isConnected = true;
+
+            if (reconnEvent != null) {
+                window.clearInterval(reconnEvent);
+                reconnEvent = null;
+            }
 
             // clear any error alerts
             closeErrorAlert();
@@ -283,6 +306,12 @@ $(document).ready(function () {
             displayErrorAlert(NO_CONN_MSG);
             console.log("Connection closed (wasClean = " + e.wasClean + ", code = " + e.code + ", reason = '" + e.reason + "')");
             sock = null;
+
+            if (isConnected) {
+                isConnected = false;
+                connectTimer = RECONN_TIME;
+                reconnEvent = window.setInterval(reconnectWebsock, RECONN_INTERVAL);
+            }
         };
 
         sock.onmessage = function (e) {
@@ -293,6 +322,12 @@ $(document).ready(function () {
 
             if (opcode === WEBSOCK_OPCODES['QUIT']) {
                 displayErrorAlert(NO_CONN_MSG);
+
+                if (isConnected) {
+                    isConnected = false;
+                    connectTimer = RECONN_TIME;
+                    reconnEvent = window.setInterval(reconnectWebsock, RECONN_INTERVAL);
+                }
 
                 config = {};
                 rules = {};
@@ -359,4 +394,22 @@ $(document).ready(function () {
             }
         };
     }
+}
+
+$(document).ready(function () {
+    $('#diag-trace-nav').hide();
+
+    if (window.location.hash) {
+        displayHash(window.location.hash);
+    }
+    else {
+        loadScript('overview.js');
+    }
+
+    $(window).on('hashchange', function () {
+        // on every hash change the render function is called with the new hash
+        displayHash(window.location.hash);
+    });
+
+    handleWebsock();
 });

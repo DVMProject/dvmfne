@@ -118,7 +118,7 @@ h1 {
 }
 
 .pre-trace {
-    height: 64em;
+    height: 75vh;
     overflow-y: scroll;
     text-align: left;
     margin: 0;
