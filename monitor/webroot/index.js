@@ -23,7 +23,8 @@ var WEBSOCK_OPCODES = {
     'ACTIVITY': 'a',
     'LOG': 'l',
     'DIAG_LOG': 'd',
-    'MESSAGE': 'm'
+    'MESSAGE': 'm',
+    'WHITELIST_RID': 'w'
 };
 
 var NO_CONN_MSG = 'No connection to Fixed Network Equipment!';
@@ -33,6 +34,7 @@ var config = {};
 var rules = {};
 var affiliations = {};
 var activity = {};
+var whitelist_rid = [];
 
 var trafficTrace = [];
 var trafficTraceMaxLines = 65535;
@@ -258,9 +260,20 @@ function fetchDiagLog(peerId) {
  * 
  */
 function reconnectWebsock() {
+    if (sock) {
+        return;
+    }
+
     if (!isConnected) {
         if (connectTimer == 0) {
-            handleWebsock();
+            if (sock) {
+                sock.close();
+                sock = null;
+                resetReconnEvent();
+            }
+            else {
+                handleWebsock();
+            }
         }
         else {
             displayErrorAlert(NO_CONN_MSG + ' ' + RECONN_MSG + connectTimer + ' seconds.');
@@ -273,6 +286,20 @@ function reconnectWebsock() {
             reconnEvent = null;
         }
     }
+}
+
+/**
+ * 
+ */
+function resetReconnEvent() {
+    isConnected = false;
+    connectTimer = RECONN_TIME;
+    if (reconnEvent != null) {
+        window.clearInterval(reconnEvent);
+        reconnEvent = null;
+    }
+
+    reconnEvent = window.setInterval(reconnectWebsock, RECONN_INTERVAL);
 }
 
 /**
@@ -305,34 +332,38 @@ function handleWebsock() {
         sock.onclose = function (e) {
             displayErrorAlert(NO_CONN_MSG);
             console.log("Connection closed (wasClean = " + e.wasClean + ", code = " + e.code + ", reason = '" + e.reason + "')");
-            sock = null;
 
-            if (isConnected) {
-                isConnected = false;
-                connectTimer = RECONN_TIME;
-                reconnEvent = window.setInterval(reconnectWebsock, RECONN_INTERVAL);
+            if (sock !== null) {
+                sock.close();
+                sock = null;
             }
+
+            resetReconnEvent();
         };
 
         sock.onmessage = function (e) {
             var opcode = e.data.slice(0, 1);
             var message = e.data.slice(1);
 
+            //console.debug("Websock opcode = ", opcode);
             //console.debug(opcode, message);
 
             if (opcode === WEBSOCK_OPCODES['QUIT']) {
                 displayErrorAlert(NO_CONN_MSG);
 
                 if (isConnected) {
-                    isConnected = false;
-                    connectTimer = RECONN_TIME;
-                    reconnEvent = window.setInterval(reconnectWebsock, RECONN_INTERVAL);
+                    resetReconnEvent();
                 }
 
                 config = {};
                 rules = {};
                 talkgroups = {};
                 activity = {};
+
+                if (sock !== null) {
+                    sock.close();
+                    sock = null;
+                }
             }
             else if (opcode === WEBSOCK_OPCODES['CONFIG']) {
                 config = JSON.parse(message);
@@ -357,6 +388,9 @@ function handleWebsock() {
             }
             else if (opcode === WEBSOCK_OPCODES['ACTIVITY']) {
                 activity = JSON.parse(message);
+            }
+            else if (opcode === WEBSOCK_OPCODES['WHITELIST_RID']) {
+                whitelist_rid = JSON.parse(message);
             }
             else if (opcode === WEBSOCK_OPCODES['LOG']) {
                 trafficTrace.reverse();
@@ -393,6 +427,8 @@ function handleWebsock() {
                 onRefresh(JSON.parse(message));
             }
         };
+    } else {
+        resetReconnEvent();
     }
 }
 

@@ -72,6 +72,7 @@ REPORT_OPCODES = {
     'CALL_EVENT': '\x07',
     'GRP_AFF_UPD': '\x08',
     'RCON_REQ': '\x09',
+    'WHITELIST_RID_UPD': '\x10',
 }
 
 WEBSOCK_OPCODES = {
@@ -83,16 +84,23 @@ WEBSOCK_OPCODES = {
     'LOG': 'l',
     'DIAG_LOG': 'd',
     'MESSAGE': 'm',
+    'WHITELIST_RID': 'w',
 }
 
-# Global Variables:
+# Global Variables
 CONFIG           = {}
 CTABLE           = {'MASTERS': {}, 'MASTER_CNT': 0, 'PEERS': {}, 'PEER_CNT': 0}
+
 RULES            = {}
 RTABLE           = {}
 RTABLE['RULES']  = {}
+
 GRP_AFF          = {}
 GATABLE          = {}
+
+WLIST_RID        = {}
+WRIDTABLE        = {}
+
 RULES_RX         = ''
 CONFIG_RX        = ''
 LOGBUF           = deque(100*[''], 100)
@@ -379,6 +387,18 @@ def build_grp_aff_table(_grp_aff):
     return _table
 
 # ---------------------------------------------------------------------------
+#   Whitelist RID Table Routines
+# ---------------------------------------------------------------------------
+
+def build_whitelist_rid_table(_whitelist_rid):
+    _table = []
+    
+    for _rid, _data in _whitelist_rid.iteritems():
+        _table.append(_rid)
+  
+    return _table
+
+# ---------------------------------------------------------------------------
 #   Connections Table Routines
 # ---------------------------------------------------------------------------
 
@@ -501,10 +521,13 @@ def websock_update():
     if GRP_AFF:
         table = WEBSOCK_OPCODES['AFFILIATION'] + json.dumps(GATABLE)
         dashboard_server.broadcast(table)
+    if WLIST_RID:
+        table = WEBSOCK_OPCODES['WHITELIST_RID'] + json.dumps(WRIDTABLE)
+        dashboard_server.broadcast(table)
 
 # Process in coming messages and take the correct action depending on the opcode
 def process_message(_message):
-    global CTABLE, CONFIG, RULES, RTABLE, GRP_AFF, GATABLE, CONFIG_RX, RULES_RX, WEBSOCK_OPCODES
+    global CTABLE, CONFIG, RULES, RTABLE, GRP_AFF, GATABLE, WLIST_RID, WRIDTABLE, CONFIG_RX, RULES_RX, WEBSOCK_OPCODES
     opcode = _message[:1]
     _now = strftime('%Y-%m-%d %H:%M:%S %Z', localtime(time()))
     
@@ -565,13 +588,19 @@ def process_message(_message):
             
         dashboard_server.broadcast(WEBSOCK_OPCODES['LOG'] + log_message)
         LOGBUF.append(log_message)
+    
+    elif opcode == REPORT_OPCODES['WHITELIST_RID_UPD']:
+        logging.debug('got WHITELIST_RID_UPD opcode')
+        WLIST_RID = load_dictionary(_message)
+        WRIDTABLE = build_whitelist_rid_table(WLIST_RID)
+
     else:
         self._factory._logger.error('Report unrecognized opcode %s PACKET %s', int_id(opcode), ahex(_message))
         
 def load_dictionary(_message):
     data = _message[1:]
-    return loads(data)
     logging.debug('Successfully decoded dictionary')
+    return loads(data)
  
 # ---------------------------------------------------------------------------
 #   Class Declaration
@@ -751,7 +780,7 @@ if __name__ == '__main__':
 
     # Start activity update loop
     update_act = task.LoopingCall(gen_activity)
-    update_act.start(10)
+    update_act.start(ACT_FREQUENCY)
 
     siteResource = File('./webroot')
 

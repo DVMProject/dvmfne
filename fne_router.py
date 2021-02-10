@@ -1026,6 +1026,10 @@ class routeReportFactory(reportFactory):
 
         grpAffSerialized = pickle.dumps(GRP_AFF, protocol=pickle.HIGHEST_PROTOCOL)
         self.send_clients(REPORT_OPCODES['GRP_AFF_UPD'] + grpAffSerialized)
+
+        if white_rids:
+            wridSerialized = pickle.dumps(white_rids, protocol=pickle.HIGHEST_PROTOCOL)
+            self.send_clients(REPORT_OPCODES['WHITELIST_RID_UPD'] + wridSerialized)
         
     def send_routeEvent(self, _data):
         self.send_clients(REPORT_OPCODES['CALL_EVENT'] + _data)

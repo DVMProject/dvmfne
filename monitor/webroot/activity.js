@@ -181,3 +181,31 @@ function peerIdFormatter(value) {
         return value;
     }
 }
+
+/**
+ * 
+ * @param {any} value
+ * @param {any} row
+ * @param {any} index
+ * @returns {any} value
+ */
+function srcIdFormatter(value, row, index) {
+    if (value === 'SYSTEM') {
+        return value;
+    }
+
+    if (whitelist_rid.length > 0) {
+        var rid = parseInt(value);
+        if (rid === NaN) {
+            return value;
+        }
+
+        if (!whitelist_rid.includes(rid)) {
+            return '<span class="text-danger">' + value + '</span>';
+        } else {
+            return value;
+        }
+    }
+
+    return value;
+}

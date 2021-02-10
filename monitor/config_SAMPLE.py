@@ -2,6 +2,7 @@ REPORT_NAME     = 'system.domain.name'  # Name of the monitored HBlink system
 FNEMON_IP       = '127.0.0.1'           # FNE's IP Address
 FNEMON_PORT     = 4321                  # FNE's TCP reporting socket
 FREQUENCY       = 10                    # Frequency to push updates to web clients
+ACT_FREQUENCY   = 10                    # Frequency to push activity updates to web clients
 WEB_SERVER_PORT = 8080                  # Has to be above 1024 if you're not running as root
 
 HTACCESS_USER   = ''                    # HTTP Access Username
