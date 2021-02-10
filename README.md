@@ -2,7 +2,7 @@
 
 The DVM FNE provides server-side linking software to connect multiple DVMs together in an integrated network.
 
-This project is a direct fork of the HBlink (https://github.com/n0mjs710/HBlink) project.
+This project is a direct fork of the HBlink (https://github.com/HBLink-org/HBLink) project.
 
 ## License
 
