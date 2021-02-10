@@ -6,6 +6,11 @@
  * @package DVM / FNE
  */
 
+var peerId = 0;
+var refreshEvent = {};
+
+var REFRESH_INTERVAL = 10000; // 10 sec
+
 /*
 ** Page View Routines
 */
@@ -25,10 +30,17 @@ function onLoad() {
     $.get("diag-trace.html", function (data) {
         $('#diag-trace-nav').show();
 
+        $('#diag-auto-refresh').prop("checked", false);
+        $('#diag-refresh').click(function () {
+            fetchDiagLog(peerId);
+        });
+
+        refreshEvent = window.setInterval(autoRefreshEvent, REFRESH_INTERVAL);
+
         $('#content-section').html(data);
         var hash = window.location.hash;
         if (hash) {
-            var peerId = hash.split('/')[1];
+            peerId = hash.split('/')[1];
 
             $('#diag-trace-link').attr('href', '#diag-trace/' + peerId);
             if (peerId in peerMap) {
@@ -49,6 +61,7 @@ function onLoad() {
 function onUnload() {
     $('#diag-trace-nav').hide();
     $('#diag-trace-link').attr('href', '#diag-trace');
+    window.clearInterval(refreshEvent);
 }
 
 /**
@@ -63,4 +76,16 @@ function onRefresh(json) {
     }
 
     ellog.scrollTop = ellog.scrollHeight;
+}
+
+/**
+ * 
+ */
+function autoRefreshEvent() {
+    var autoRefresh = $('#diag-auto-refresh').prop("checked");
+
+    // populate bootstrap table
+    if (autoRefresh) {
+        fetchDiagLog(peerId);
+    }
 }
