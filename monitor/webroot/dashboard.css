@@ -81,6 +81,11 @@ h1 {
     text-transform: uppercase;
 }
 
+.dropdown-menu {
+    overflow-y: auto;
+    max-height: 45vh;
+}
+
 /*
  * Content
  */

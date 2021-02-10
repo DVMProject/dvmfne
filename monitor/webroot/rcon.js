@@ -182,6 +182,9 @@ function rconSetCmd(command, label) {
         case 'p25-dis-debug':
         case 'dmr-en-debug':
         case 'dmr-dis-debug':
+        case 'dynamic-mode':
+        case 'dmr-mode':
+        case 'p25-mode':
             $('#dmr_slot_sel').hide();
             $('#cmd_argument').prop('disabled', 'disabled');
             $('#mot_mfid_check').hide();
@@ -253,6 +256,19 @@ function rconTransmit() {
             case 'dmr-dis-debug':
                 rconCommand = 'dmr-debug';
                 argument = '0 1';
+                break;
+
+            case 'dynamic-mode':
+                rconCommand = 'mdm-mode';
+                argument = 'idle';
+                break;
+            case 'dmr-mode':
+                rconCommand = 'mdm-mode';
+                argument = 'dmr';
+                break;
+            case 'p25-mode':
+                rconCommand = 'mdm-mode';
+                argument = 'p25';
                 break;
         }
 
