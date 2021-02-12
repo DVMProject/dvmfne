@@ -207,6 +207,12 @@ def process_act_log(_file):
                 if (re.search('(denied)', line) != None):
                     alertClass = 'warning'
                     type = type + ' (Not Registered)'
+            if (re.search('(location registration request)', line) != None):
+                typeClass = 'warning'
+                type = 'Location Registration'
+                if (re.search('(denied)', line) != None):
+                    alertClass = 'warning'
+                    type = type + ' (Denied)'
             if (re.search('(status update)', line) != None):
                 typeClass = 'info'
                 type = 'Status Update'
