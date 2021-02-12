@@ -130,7 +130,7 @@ def process_act_log(_file):
         for line in rev_log:
             if (re.search('(RF voice|RF encrypted voice|RF late entry|RF data|RF voice rejection)', line) != None and
                 re.search('(group grant|unit-to-unit grant)', line) != None and
-                re.search('(unit registration|group affiliation|unit deregistration)', line) != None and
+                re.search('(unit registration|group affiliation|unit deregistration|location registration request)', line) != None and
                 re.search('(status update|message update|call alert|ack response)', line) != None and
                 re.search('(cancel service|radio check|radio inhibit|radio uninhibit)', line) == None):
                 continue
