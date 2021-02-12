@@ -284,7 +284,8 @@ def process_act_log(_file):
 
             if (re.search('(unit registration|group affiliation|unit deregistration|location registration)', line) != None or
                 re.search('(status update|message update|cancel service)', line) != None):
-                _to = '16777213'    # WUID for SYSTEM
+                if (_to == ''):
+                    _to = '16777213'    # WUID for SYSTEM
 
             if (_from == ''):
                 continue
