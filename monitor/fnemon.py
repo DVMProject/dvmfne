@@ -282,7 +282,7 @@ def process_act_log(_file):
             if (re.search('(data transmission)', line) != None):
                 _to = 'N/A'
 
-            if (re.search('(unit registration|group affiliation|unit deregistration|location registration request)', line) != None and
+            if (re.search('(unit registration|group affiliation|unit deregistration|location registration)', line) != None or
                 re.search('(status update|message update|cancel service)', line) != None):
                 _to = '16777213'    # WUID for SYSTEM
 
