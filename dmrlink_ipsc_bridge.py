@@ -106,13 +106,13 @@ class ambeIPSC(IPSC):
             _value = config.get(sec, opt).split(None)[0]            # Get the value from the named section
         except ConfigParser.NoOptionError as e:
             try:
-                _value = config.get('DEFAULTS', opt).split(None)[0] # Try the global DEFAULTS section
+                _value = config.get('BridgeGlobal', opt).split(None)[0] # Try the global BridgeGlobal section
             except ConfigParser.NoOptionError as e:
                 _value = defaultValue                               # Not found anywhere, use the default value
         logger.info(opt + ' = ' + str(_value))
         return _value
 
-    def readConfigFile(self, configFileName, sec, networkName='DEFAULTS'):
+    def readConfigFile(self, configFileName, sec, networkName='BridgeGlobal'):
         config = ConfigParser.ConfigParser()
         try:
             config.read(configFileName)

@@ -287,7 +287,7 @@ class IPSC(DatagramProtocol):
     def __init__(self, _name, _config, _logger, _report):
         # Housekeeping: create references to the configuration and status data for this IPSC instance.
         # Some configuration objects that are used frequently and have lengthy names are shortened
-        # such as (self._master_sock) expands to (self._config['MASTER']['IP'], self._config['MASTER']['PORT']).
+        # such as (self._master_sock) expands to (self._config['Master']['IP'], self._config['Master']['Port']).
         # Note that many of them reference each other... this is the Pythonic way.
         self._system = _name
         self._CONFIG = _config
@@ -529,27 +529,27 @@ class IPSC(DatagramProtocol):
         self.reset_keep_alive(_peerid)
         self._peers[_peerid]['STATUS']['KEEP_ALIVES_RECEIVED'] += 1
         self._peers[_peerid]['STATUS']['KEEP_ALIVE_RX_TIME'] = int(time())
-        self._logger.debug('(%s) Keep-Alive Reply (we sent the request) Received from Peer %s, %s:%s', self._system, int_id(_peerid), self._peers[_peerid]['IP'], self._peers[_peerid]['PORT'])
+        self._logger.debug('(%s) Keep-Alive Reply (we sent the request) Received from Peer %s, %s:%s', self._system, int_id(_peerid), self._peers[_peerid]['IP'], self._peers[_peerid]['Port'])
     
     # SOMEONE HAS ANSWERED OUR REQEST TO REGISTER WITH THEM - KEEP TRACK OF IT
     def peer_reg_reply(self, _peerid):
         if _peerid in self._peers.keys():
             self._peers[_peerid]['STATUS']['CONNECTED'] = True
-            self._logger.info('(%s) Registration Reply From: %s, %s:%s', self._system, int_id(_peerid), self._peers[_peerid]['IP'], self._peers[_peerid]['PORT'])
+            self._logger.info('(%s) Registration Reply From: %s, %s:%s', self._system, int_id(_peerid), self._peers[_peerid]['IP'], self._peers[_peerid]['Port'])
 
     # OUR MASTER HAS ANSWERED OUR KEEP-ALIVE REQUEST - KEEP TRACK OF IT
     def master_alive_reply(self, _peerid):
         self.reset_keep_alive(_peerid)
         self._master['STATUS']['KEEP_ALIVES_RECEIVED'] += 1
         self._master['STATUS']['KEEP_ALIVE_RX_TIME'] = int(time())
-        self._logger.debug('(%s) Keep-Alive Reply (we sent the request) Received from the Master %s, %s:%s', self._system, int_id(_peerid), self._master['IP'], self._master['PORT'])
+        self._logger.debug('(%s) Keep-Alive Reply (we sent the request) Received from the Master %s, %s:%s', self._system, int_id(_peerid), self._master['IP'], self._master['Port'])
     
     # OUR MASTER HAS SENT US A PEER LIST - PROCESS IT
     def peer_list_reply(self, _data, _peerid):
         self._master['STATUS']['PEER_LIST'] = True
         if len(_data) > 18:
             self.process_peer_list(_data)
-        self._logger.debug('(%s) Peer List Reply Received From Master %s, %s:%s', self._system, int_id(_peerid), self._master['IP'], self._master['PORT'])
+        self._logger.debug('(%s) Peer List Reply Received From Master %s, %s:%s', self._system, int_id(_peerid), self._master['IP'], self._master['Port'])
     
     # OUR MASTER HAS ANSWERED OUR REQUEST TO REGISTER - LOTS OF INFORMATION TO TRACK
     def master_reg_reply(self, _data, _peerid):

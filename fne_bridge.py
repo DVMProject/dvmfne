@@ -194,6 +194,7 @@ class bridgeFNE(coreFNE):
 
 if __name__ == '__main__':
     import argparse
+    import os
 
     from fne.fne_core import mk_id_dict
     from fne.fne_core import setup_fne
