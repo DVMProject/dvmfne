@@ -161,11 +161,11 @@ class bridgeFNE(coreFNE):
             sys.exit('Configuration file \'' + _file_name + '\' is not a valid configuration file! Exiting...')
         try:
             for section in config.sections():
-                if section == 'Defaults':
+                if section == 'BridgeGlobal':
                     self._ambeRxPort = int(config.get(section, 'FromGatewayPort').split(None)[0])           # Port to listen on for AMBE frames to transmit to all peers
                     self._gateway = config.get(section, 'Gateway').split(None)[0]                           # IP address of bridge app
                     self._gateway_port = int(config.get(section, 'ToGatewayPort').split(None)[0])           # Port bridge is listening on for AMBE frames to decode
-                if section == 'Rules':
+                if section == 'RewriteRules':
                     for rule in config.items(section):
                         _old_tg, _new_tg, _new_slot = rule[1].split(',')
                         translate.add_rule(hex_str_3(int(_old_tg)), (hex_str_3(int(_new_tg)), int(_new_slot)))
@@ -200,7 +200,7 @@ if __name__ == '__main__':
     
     # perform basic FNE setup
     config, logger, act_log_file = setup_fne()
-    logger.info('Digital Voice Modem IPSC Bridge Service D01.00')
+    logger.info('Digital Voice Modem FNE -> IPSC Bridge Service D01.00')
 
     # CLI argument parser - handles picking up the config file from the command
     # line, and sending a "help" message

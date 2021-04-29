@@ -504,6 +504,11 @@ class AMBE_HB(AMBE_BASE):
             _tx_slot.lostFrame += 1
         _tx_slot.lastSeq = _seq
 
+# ---------------------------------------------------------------------------
+#   Class Declaration
+#
+# ---------------------------------------------------------------------------
+
 class AMBE_IPSC(AMBE_BASE):
     def __init__(self, _parent, _name, _config, _logger, _port):
         AMBE_BASE.__init__(self, _parent, _name, _config, _logger, _port)
@@ -516,6 +521,7 @@ class AMBE_IPSC(AMBE_BASE):
 
         self.load_template()
         pass
+
     def send_voice_header(self, _rx_slot):
         AMBE_BASE.send_voice_header(self, _rx_slot)
         self._seq = randint(0,32767)                    # A transmission uses a random number to begin its sequence (16 bit)
@@ -525,6 +531,7 @@ class AMBE_IPSC(AMBE_BASE):
             self.rewriteFrame(self._tempHead[i], _rx_slot.slot, _rx_slot.dst_id, _rx_slot.rf_src, _rx_slot.repeater_id)
             sleep(0.06)
         pass
+
     def send_voice72(self, _rx_slot, _ambe):
         ambe72_1 = BitArray('0x' + ahex(_ambe[0:9]))[0:72]
         ambe72_2 = BitArray('0x' + ahex(_ambe[9:18]))[0:72]
@@ -543,6 +550,7 @@ class AMBE_IPSC(AMBE_BASE):
         self.rewriteFrame(_frame, _rx_slot.slot, _rx_slot.dst_id, _rx_slot.rf_src, _rx_slot.repeater_id)
         _rx_slot.vf = (_rx_slot.vf + 1) % 6                         # the voice frame counter which is always mod 6
         pass
+
     def send_voice49(self, _rx_slot, _ambe):
         ambe49_1 = BitArray('0x' + ahex(_ambe[0:7]))[0:50]
         ambe49_2 = BitArray('0x' + ahex(_ambe[7:14]))[0:50]
@@ -553,9 +561,11 @@ class AMBE_IPSC(AMBE_BASE):
         self.rewriteFrame(_frame, _rx_slot.slot, _rx_slot.dst_id, _rx_slot.rf_src, _rx_slot.repeater_id)
         _rx_slot.vf = (_rx_slot.vf + 1) % 6                         # the voice frame counter which is always mod 6
         pass
+
     def send_voice_term(self, _rx_slot):
         self.rewriteFrame(self._tempTerm, _rx_slot.slot, _rx_slot.dst_id, _rx_slot.rf_src, _rx_slot.repeater_id)
         pass
+
     def rewriteFrame( self, _frame, _newSlot, _newGroup, _newSourceID, _newPeerID ):
         
         _peerid         = _frame[1:5]                 # int32 peer who is sending us a packet
@@ -623,6 +633,7 @@ class AMBE_IPSC(AMBE_BASE):
             else:
                 _notEOF = False
         return _data
+
     def load_template(self):
         try:
             _t = open('template.bin', 'rb')             # Open the template file.  This was recorded OTA
@@ -639,64 +650,9 @@ class AMBE_IPSC(AMBE_BASE):
             self._logger.error('Can not open template.bin file')
             exit()
         self._logger.debug('IPSC templates loaded')
+
     def export_voice(self, _tx_slot, _seq, _ambe):
         self.send_tlv(TAG_AMBE_49, struct.pack("b",_tx_slot.slot) + _ambe)    # send AMBE
         if _seq != ((_tx_slot.lastSeq+1) & 0xff):
             _tx_slot.lostFrame += 1
         _tx_slot.lastSeq = _seq
-
-
-############################################################################################################
-#      MAIN PROGRAM LOOP STARTS HERE
-############################################################################################################
-
-class TEST_HARNESS:
-    def get_globals(self):
-        return (subscriber_ids, talkgroup_ids, peer_ids)
-    def get_repeater_id(self, import_id):
-        return import_id
-    def error(self, *_str):
-        print('Error', _str[0] % _str[1:])
-    def info(self, *_str):
-        print('Info', _str[0] % _str[1:])
-    def debug(self, *_str):
-        print('Debug', _str[0] % _str[1:])
-    def send_system(self, _frame):
-        print('send system', ahex(_frame),'\n')
-    def send_to_ipsc(self, _frame):
-        print('send_to_ipsc', ahex(_frame),'\n')
-    def play_thread(self,obj):
-        obj.play_ambe_file('ambe_capture.bin', obj.rx[1])
-        obj.stop_listening()
-    def runTest(self, obj):
-        obj._logger.info('mike was here')
-        _rx_slot = obj.rx[1]
-        
-        _rx_slot.slot = 1
-        _rx_slot.rf_src = hex_str_3(3113043)
-        _rx_slot.repeater_id = hex_str_4(311317)
-        _rx_slot.dst_id = hex_str_3(9)
-        _rx_slot.cc = 1
-
-        obj.sendBlankAmbe(_rx_slot, hex_str_4(randint(0,0xFFFFFFFF)))
-        thread.start_new_thread( self.play_thread, (obj,) )
-    def testIPSC(self):
-        self._busy_slots = [0,0,0]                               # Keep track of activity on each slot.  Make sure app is polite
-        self.runTest( AMBE_IPSC(self, 'TEST_HARNESS', '', self, 37003) )
-    def testHB(self):
-        self.runTest( AMBE_HB(self, 'TEST_HARNESS', '', self, 37003) )
-
-if __name__ == '__main__':
-    subscriber_ids = {3113043:'N4IRR'}
-    peer_ids = {311317:'N4IRR'}
-    talkgroup_ids = {9:'Non-Routed'}
-    
-    harness = TEST_HARNESS()
-    ##harness.testHB()
-    ##harness.testIPSC()
-    ## I am too lazy to do a state machine
-    task.deferLater(reactor, 1, harness.testHB)
-    task.deferLater(reactor, 15, harness.testIPSC)
-    task.deferLater(reactor, 30, reactor.stop)
-
-    reactor.run()

@@ -22,9 +22,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include="blacklist_ids_SAMPLE.csv" />
+    <Content Include="dmrlink_ipsc_bridge_SAMPLE.cfg" />
+    <Content Include="dmrlink_SAMPLE.cfg" />
     <Content Include="fne\.gitignore" />
     <Content Include="fne-SAMPLE.cfg" />
     <Content Include="fne_bridge-SAMPLE.cfg" />
+    <Content Include="monitor\requirements.txt" />
     <Content Include="monitor\webroot\rcon.html" />
     <Content Include="monitor\webroot\rcon.js" />
     <Content Include="monitor\webroot\css\bootstrap-grid.min.css" />
@@ -59,6 +62,8 @@
     <Content Include="whitelist_ids_SAMPLE.csv" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="dmrlink.py" />
+    <Compile Include="dmrlink_ipsc_bridge.py" />
     <Compile Include="dmr_utils\ambe.py" />
     <Compile Include="dmr_utils\ambe_bridge.py" />
     <Compile Include="dmr_utils\ambe_utils.py" />
@@ -78,6 +83,11 @@
     </Compile>
     <Compile Include="fne\fne_core.py" />
     <Compile Include="fne\__init__.py" />
+    <Compile Include="ipsc\dmrlink_config.py" />
+    <Compile Include="ipsc\dmrlink_log.py" />
+    <Compile Include="ipsc\ipsc_const.py" />
+    <Compile Include="ipsc\ipsc_mask.py" />
+    <Compile Include="ipsc\__init__.py" />
     <Compile Include="monitor\config_SAMPLE.py" />
     <Compile Include="monitor\fnemon.py" />
     <Compile Include="fne_bridge.py" />
@@ -93,6 +103,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="dmr_utils\" />
+    <Folder Include="ipsc\" />
     <Folder Include="monitor\" />
     <Folder Include="monitor\webroot\" />
     <Folder Include="fne\" />
