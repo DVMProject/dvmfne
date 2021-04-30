@@ -243,7 +243,7 @@ def log_peer_status(_system, _logger, _config):
  
 # Gratuitous print-out of Master info.. Pretty much debug stuff.
 def log_master(_system, _logger, _config):
-    if _config['Systems'][_network]['LOCAL']['MasterPeer']:
+    if _config['Systems'][_system]['LOCAL']['MasterPeer']:
         _logger.info('(%s) DMRlink is Master', _system)
     else:
         _master = _config['Systems'][_system]['MASTER']
