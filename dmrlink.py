@@ -226,24 +226,20 @@ def log_peer_status(_system, _logger, _config):
     for peer in _peers.keys():
         _this_peer = _peers[peer]
         _this_peer_stat = _this_peer['STATUS']
-        
-        if peer == _config['Systems'][_system]['LOCAL']['PEER_ID']:
-            me = '(self)'
-        else:
-            me = ''
 
-        modeValue = ''
+        modeValue = 'N/A'
         if _this_peer['MODE_DECODE']:
+            modeValue = ''
             for name, value in _this_peer['MODE_DECODE'].items():
-                modeValue += name + ': ' + value + '; '
+                modeValue += name + ': ' + str(value) + '; '
 
-        flagValue = ''
+        flagValue = 'N/A'
         if _this_peer['FLAGS_DECODE']:
+            flagValue = ''
             for name, value in _this_peer['FLAGS_DECODE'].items():
-                flagValue += name + ': ' + value + ','
+                flagValue += name + ': ' + str(value) + ','
 
-        _logger.info('(%s) PEER ID: %s %s, %s:%s, Modes: %s, Service Flags: %s, Status: %s, KeepAlives [Sent: %s, Outstanding: %s, Missed: %s, Received: %s]', int_id(peer), me, _this_peer['IP'], _this_peer['PORT'], modeValue, flagValue, 
-                     _this_peer_stat['CONNECTED'], _this_peer_stat['KEEP_ALIVES_SENT'], _this_peer_stat['KEEP_ALIVES_OUTSTANDING'], _this_peer_stat['KEEP_ALIVES_MISSED'], _this_peer_stat['KEEP_ALIVES_RECEIVED'])
+        _logger.info('(%s) PEER ID: %s, %s:%s, Modes: %s, Service Flags: %s, Status: %s, KeepAlives [Sent: %s, Outstanding: %s, Missed: %s, Received: %s]', _system, int_id(peer), _this_peer['IP'], _this_peer['PORT'], modeValue, flagValue, _this_peer_stat['CONNECTED'], _this_peer_stat['KEEP_ALIVES_SENT'], _this_peer_stat['KEEP_ALIVES_OUTSTANDING'], _this_peer_stat['KEEP_ALIVES_MISSED'], _this_peer_stat['KEEP_ALIVES_RECEIVED'])
  
 # Gratuitous print-out of Master info.. Pretty much debug stuff.
 def log_master(_system, _logger, _config):
@@ -252,18 +248,19 @@ def log_master(_system, _logger, _config):
     else:
         _master = _config['Systems'][_system]['MASTER']
 
-        modeValue = ''
+        modeValue = 'N/A'
         if _master['MODE_DECODE']:
+            modeValue = ''
             for name, value in _master['MODE_DECODE'].items():
-                modeValue += name + ': ' + value + '; '
+                modeValue += name + ': ' + str(value) + '; '
 
-        flagValue = ''
+        flagValue = 'N/A'
         if _master['FLAGS_DECODE']:
+            flagValue = ''
             for name, value in _master['FLAGS_DECODE'].items():
-                flagValue += name + ': ' + value + ','
+                flagValue += name + ': ' + str(value) + ','
 
-        _logger.info('(%s) PEER ID: %s, Modes: %s, Service Flags: %s, Status: %s, KeepAlives [Sent: %s, Outstanding: %s, Missed: %s, Received: %s]', int(ahex(_master['PEER_ID']), 16), modeValue, flagValue, 
-                     _master['STATUS']['CONNECTED'], _master['STATUS']['KEEP_ALIVES_SENT'], _master['STATUS']['KEEP_ALIVES_OUTSTANDING'], _master['STATUS']['KEEP_ALIVES_MISSED'], _master['STATUS']['KEEP_ALIVES_RECEIVED'])
+        _logger.info('(%s) PEER ID: %s, Modes: %s, Service Flags: %s, Status: %s, KeepAlives [Sent: %s, Outstanding: %s, Missed: %s, Received: %s]', _system, int(ahex(_master['PEER_ID']), 16), modeValue, flagValue, _master['STATUS']['CONNECTED'], _master['STATUS']['KEEP_ALIVES_SENT'], _master['STATUS']['KEEP_ALIVES_OUTSTANDING'], _master['STATUS']['KEEP_ALIVES_MISSED'], _master['STATUS']['KEEP_ALIVES_RECEIVED'])
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
