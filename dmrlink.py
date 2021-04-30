@@ -38,6 +38,7 @@ from csv import DictReader as csv_dict_reader
 from socket import inet_ntoa as IPAddr
 from socket import inet_aton as IPHexStr
 from time import time
+from pprint import pprint
 
 from twisted.python import log
 from twisted.internet.protocol import DatagramProtocol, Factory, Protocol
@@ -505,12 +506,15 @@ class IPSC(DatagramProtocol):
             _hash = bhex((hmac_new(self._local['AuthKey'], _packet, sha1)).hexdigest()[:20])
             _packet = _packet + _hash
 
+        #pprint(self._master['STATUS'])
+
         # Send to the Master
         if self._master['STATUS']['CONNECTED']:
             self.transport.write(_packet, (self._master['IP'], self._master['PORT']))
 
         # Send to each connected Peer
         for peer in self._peers.keys():
+            #pprint(self._peers[peer]['STATUS'])
             if self._peers[peer]['STATUS']['CONNECTED']:
                 self.transport.write(_packet, (self._peers[peer]['IP'], self._peers[peer]['PORT']))
         
@@ -792,104 +796,104 @@ class IPSC(DatagramProtocol):
     # Once they're done, we move on to the processing or callbacks for each packet type.
     #
     # Callbacks are iterated in the order of "more likely" to "less likely" to reduce processing time
-    def datagramReceived(self, data, (host, port)):
+    def _datagramReceived(self, _data, (_host, _port)):
         if self._CONFIG['Log']['RawPacketTrace']:
-            self._logger.debug('(%s) Network Received (from %s:%s) -- %s', self._system, host, port, ahex(data))
+            self._logger.debug('(%s) Network Received (from %s:%s) -- %s', self._system, _host, _port, ahex(_data))
 
-        _packetType = data[0:1]
-        _peerId     = data[1:5]
-        _ipsc_seq   = data[5:6]
+        _packetType = _data[0:1]
+        _peerId     = _data[1:5]
+        _ipsc_seq   = _data[5:6]
     
         # AUTHENTICATE THE PACKET
         if self._local['AuthEnabled']:
-            if not self.validate_auth(self._local['AuthKey'], data):
-                self._logger.warning('(%s) AuthError: IPSC packet failed authentication. Type %s: Peer: %s, %s:%s', self._system, ahex(_packetType), int_id(_peerId), host, port)
+            if not self.validate_auth(self._local['AuthKey'], _data):
+                self._logger.warning('(%s) AuthError: IPSC packet failed authentication. Type %s: Peer: %s, %s:%s', self._system, ahex(_packetType), int_id(_peerId), _host, _port)
                 return
             
             # REMOVE SHA-1 AUTHENTICATION HASH: WE NO LONGER NEED IT
             else:
-                data = self.strip_hash(data)
+                _data = self.strip_hash(_data)
 
         # PACKETS THAT WE RECEIVE FROM ANY VALID PEER OR VALID MASTER
         if _packetType in ANY_PEER_REQUIRED:
             if not(self.valid_master(_peerId) == False or self.valid_peer(_peerId) == False):
-                self._logger.warning('(%s) PeerError: Peer not in peer-list: %s, %s:%s', self._system, int_id(_peerId), host, port)
+                self._logger.warning('(%s) PeerError: Peer not in peer-list: %s, %s:%s', self._system, int_id(_peerId), _host, _port)
                 return
                 
             # ORIGINATED BY SUBSCRIBER UNITS - a.k.a someone transmitted
             if _packetType in USER_PACKETS:
                 # Extract IPSC header not already extracted
-                _src_sub    = data[6:9]
-                _dst_sub    = data[9:12]
-                _call_type  = data[12:13]
-                _unknown_1  = data[13:17]
-                _call_info  = int_id(data[17:18])                
+                _src_sub    = _data[6:9]
+                _dst_sub    = _data[9:12]
+                _call_type  = _data[12:13]
+                _unknown_1  = _data[13:17]
+                _call_info  = int_id(_data[17:18])                
                 _ts         = bool(_call_info & TS_CALL_MSK) + 1
                 _end        = bool(_call_info & END_MSK)
 
                 # parse out the RTP values
-                _rtp_byte_1 = int_id(_frame[18:19])                 # Call Ctrl Src
-                _rtp_byte_2 = int_id(_frame[19:20])                 # Type
-                _rtp_seq    = int_id(_frame[20:22])                 # Call Seq No
-                _rtp_tmstmp = int_id(_frame[22:26])                 # Timestamp
-                _rtp_ssid   = int_id(_frame[26:30])                 # Sync Src Id
+                _rtp_byte_1 = int_id(_data[18:19])                 # Call Ctrl Src
+                _rtp_byte_2 = int_id(_data[19:20])                 # Type
+                _rtp_seq    = int_id(_data[20:22])                 # Call Seq No
+                _rtp_tmstmp = int_id(_data[22:26])                 # Timestamp
+                _rtp_ssid   = int_id(_data[26:30])                 # Sync Src Id
 
                 # Extract RTP Payload Data Fields
-                _payload_type   = _frame[30]                       # int8  VOICE_HEAD, VOICE_TERM, SLOT1_VOICE, SLOT2_VOICE
+                _payload_type   = _data[30]                       # int8  VOICE_HEAD, VOICE_TERM, SLOT1_VOICE, SLOT2_VOICE
 
                 # User Voice and Data Call Types:
                 if _packetType == GROUP_VOICE:
                     self.reset_keep_alive(_peerId)
-                    self.group_voice(_src_sub, _dst_sub, _ts, _end, _peerId, data)
+                    self.group_voice(_src_sub, _dst_sub, _ts, _end, _peerId, _data)
                     return
             
                 elif _packetType == PVT_VOICE:
                     self.reset_keep_alive(_peerId)
-                    self.private_voice(_src_sub, _dst_sub, _ts, _end, _peerId, data)
+                    self.private_voice(_src_sub, _dst_sub, _ts, _end, _peerId, _data)
                     return
                     
                 elif _packetType == GROUP_DATA:
                     self.reset_keep_alive(_peerId)
-                    self.group_data(_src_sub, _dst_sub, _ts, _end, _peerId, data)
+                    self.group__data(_src_sub, _dst_sub, _ts, _end, _peerId, _data)
                     return
                     
                 elif _packetType == PVT_DATA:
                     self.reset_keep_alive(_peerId)
-                    self.private_data(_src_sub, _dst_sub, _ts, _end, _peerId, data)
+                    self.private__data(_src_sub, _dst_sub, _ts, _end, _peerId, _data)
                     return
                 return
 
             # MOTOROLA XCMP/XNL CONTROL PROTOCOL: We don't process these (yet)   
             elif _packetType == XCMP_XNL:
-                self.xcmp_xnl(data)
+                self.xcmp_xnl(_data)
                 return
 
             # ORIGINATED BY PEERS, NOT IPSC MAINTENANCE: Call monitoring is all we've found here so far 
             elif _packetType == CALL_MON_STATUS:
-                self.call_mon_status(data)
+                self.call_mon_status(_data)
                 return
                 
             elif _packetType == CALL_MON_RPT:
-                self.call_mon_rpt(data)
+                self.call_mon_rpt(_data)
                 return
                 
             elif _packetType == CALL_MON_NACK:
-                self.call_mon_nack(data)
+                self.call_mon_nack(_data)
                 return
 
             # IPSC CONNECTION MAINTENANCE MESSAGES
             elif _packetType == DE_REG_REQ:
                 self.de_register_peer(_peerId)
-                self._logger.warning('(%s) Peer De-Registration Request From: %s, %s:%s', self._system, int_id(_peerId), host, port)
+                self._logger.warning('(%s) Peer De-Registration Request From: %s, %s:%s', self._system, int_id(_peerId), _host, _port)
                 return
             
             elif _packetType == DE_REG_REPLY:
-                self._logger.warning('(%s) Peer De-Registration Reply From: %s, %s:%s', self._system, int_id(_peerId), host, port)
+                self._logger.warning('(%s) Peer De-Registration Reply From: %s, %s:%s', self._system, int_id(_peerId), _host, _port)
                 return
                 
             elif _packetType == RPT_WAKE_UP:
-                self.repeater_wake_up(data)
-                self._logger.debug('(%s) Repeater Wake-Up Packet From: %s, %s:%s', self._system, int_id(_peerId), host, port)
+                self.repeater_wake_up(_data)
+                self._logger.debug('(%s) Repeater Wake-Up Packet From: %s, %s:%s', self._system, int_id(_peerId), _host, _port)
                 return
             return
 
@@ -898,16 +902,16 @@ class IPSC(DatagramProtocol):
         # ONLY ACCEPT FROM A PREVIOUSLY VALIDATED PEER
         if _packetType in PEER_REQUIRED:
             if not self.valid_peer(_peerId):
-                self._logger.warning('(%s) PeerError: Peer not in peer list: %s, %s:%s', self._system, int_id(_peerId), host, port)
+                self._logger.warning('(%s) PeerError: Peer not in peer list: %s, %s:%s', self._system, int_id(_peerId), _host, _port)
                 return
             
             # REQUESTS FROM PEERS: WE MUST REPLY IMMEDIATELY FOR IPSC MAINTENANCE
             if _packetType == PEER_ALIVE_REQ:
-                self.peer_alive_req(data, _peerId, host, port)
+                self.peer_alive_req(_data, _peerId, _host, _port)
                 return
                                 
             elif _packetType == PEER_REG_REQ:
-                self.peer_reg_req(_peerId, host, port)
+                self.peer_reg_req(_peerId, _host, _port)
                 return
                 
             # ANSWERS FROM REQUESTS WE SENT TO PEERS: WE DO NOT REPLY
@@ -926,7 +930,7 @@ class IPSC(DatagramProtocol):
         # PACKETS WE ONLY ACCEPT IF WE HAVE FINISHED REGISTERING WITH OUR MASTER
         if _packetType in MASTER_REQUIRED:
             if not self.valid_master(_peerId):
-                self._logger.warning('(%s) MasterError: %s, %s:%s is not the master peer', self._system, int_id(_peerId), host, port)
+                self._logger.warning('(%s) MasterError: %s, %s:%s is not the master peer', self._system, int_id(_peerId), _host, _port)
                 return
             
             # ANSWERS FROM REQUESTS WE SENT TO THE MASTER: WE DO NOT REPLY    
@@ -935,13 +939,13 @@ class IPSC(DatagramProtocol):
                 return
             
             elif _packetType == PEER_LIST_REPLY:
-                self.peer_list_reply(data, _peerId)
+                self.peer_list_reply(_data, _peerId)
                 return
             return
             
         # THIS MEANS WE HAVE SUCCESSFULLY REGISTERED TO OUR MASTER - RECORD MASTER INFORMATION
         elif _packetType == MASTER_REG_REPLY:
-            self.master_reg_reply(data, _peerId)
+            self.master_reg_reply(_data, _peerId)
             return
 
         # THE FOLLOWING PACKETS ARE RECEIVED ONLLY IF WE ARE OPERATING AS A MASTER
@@ -949,12 +953,12 @@ class IPSC(DatagramProtocol):
 
         # REQUEST TO REGISTER TO THE IPSC
         elif _packetType == MASTER_REG_REQ:
-            self.master_reg_req(data, _peerId, host, port)           
+            self.master_reg_req(_data, _peerId, _host, _port)           
             return
 
         # REQUEST FOR A KEEP-ALIVE REPLY (WE KNOW THE PEER IS STILL ALIVE TOO) 
         elif _packetType == MASTER_ALIVE_REQ:
-            self.master_alive_req(_peerId, host, port)
+            self.master_alive_req(_peerId, _host, _port)
             return
 
         # REQUEST FOR A PEER LIST
@@ -964,7 +968,7 @@ class IPSC(DatagramProtocol):
 
         # PACKET IS OF AN UNKNOWN TYPE. LOG IT AND IDENTTIFY IT!
         else:
-            self.unknown_message(_packetType, _peerId, data)
+            self.unknown_message(_packetType, _peerId, _data)
             return
 
 # ---------------------------------------------------------------------------
