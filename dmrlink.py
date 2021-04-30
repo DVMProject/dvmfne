@@ -689,6 +689,8 @@ class IPSC(DatagramProtocol):
 
         if self._CONFIG['Log']['LogMasterStatus']:
             log_master(self._system, self._logger, self._CONFIG)
+        if self._CONFIG['Log']['LogPeerStatus']:
+            log_peer_status(self._system, self._logger, self._CONFIG)
     
     # Timed loop used for IPSC connection Maintenance when we are a PEER
     def peer_maintenance_loop(self):
@@ -769,6 +771,8 @@ class IPSC(DatagramProtocol):
                     self._peers[peer]['STATUS']['KEEP_ALIVES_SENT'] += 1
                     self._peers[peer]['STATUS']['KEEP_ALIVES_OUTSTANDING'] += 1
 
+        if self._CONFIG['Log']['LogMasterStatus']:
+            log_master(self._system, self._logger, self._CONFIG)
         if self._CONFIG['Log']['LogPeerStatus']:
             log_peer_status(self._system, self._logger, self._CONFIG)
 
