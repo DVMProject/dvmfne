@@ -71,7 +71,8 @@ def build_config(_config_file):
                     'LogFile': config.get(section, 'LogFile'),
                     'LogHandlers': config.get(section, 'LogHandlers'),
                     'LogLevel': config.get(section, 'LogLevel'),
-                    'LogName': config.get(section, 'LogName')
+                    'LogName': config.get(section, 'LogName'),
+                    'RawPacketTrace': config.getboolean(section, 'RawPacketTrace')
                 })
                 
             elif section == 'Aliases':
