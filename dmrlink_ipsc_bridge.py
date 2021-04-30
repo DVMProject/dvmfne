@@ -292,8 +292,8 @@ if __name__ == '__main__':
 
     # INITIALIZE AN IPSC OBJECT (SELF SUSTAINING) FOR EACH CONFIGUED IPSC
     for system in CONFIG['Systems']:
-        if CONFIG['Systems'][system]['Local']['Enabled']:
+        if CONFIG['Systems'][system]['LOCAL']['Enabled']:
             systems[system] = ambeIPSC(system, CONFIG, logger, report_server)
-            reactor.listenUDP(CONFIG['Systems'][system]['Local']['Port'], systems[system], interface=CONFIG['Systems'][system]['Local']['IP'])
+            reactor.listenUDP(CONFIG['Systems'][system]['LOCAL']['PORT'], systems[system], interface=CONFIG['Systems'][system]['LOCAL']['IP'])
     
     reactor.run()
