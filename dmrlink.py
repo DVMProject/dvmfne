@@ -237,7 +237,7 @@ def log_peer_status(_system, _logger, _config):
         if _this_peer['FLAGS_DECODE']:
             flagValue = ''
             for name, value in _this_peer['FLAGS_DECODE'].items():
-                flagValue += name + ': ' + str(value) + ','
+                flagValue += name + ': ' + str(value) + '; '
 
         _logger.info('(%s) PEER ID: %s, %s:%s, Modes: %s, Service Flags: %s, Status: %s, KeepAlives [Sent: %s, Outstanding: %s, Missed: %s, Received: %s]', _system, int_id(peer), _this_peer['IP'], _this_peer['PORT'], modeValue, flagValue, _this_peer_stat['CONNECTED'], _this_peer_stat['KEEP_ALIVES_SENT'], _this_peer_stat['KEEP_ALIVES_OUTSTANDING'], _this_peer_stat['KEEP_ALIVES_MISSED'], _this_peer_stat['KEEP_ALIVES_RECEIVED'])
  
@@ -258,7 +258,7 @@ def log_master(_system, _logger, _config):
         if _master['FLAGS_DECODE']:
             flagValue = ''
             for name, value in _master['FLAGS_DECODE'].items():
-                flagValue += name + ': ' + str(value) + ','
+                flagValue += name + ': ' + str(value) + '; '
 
         _logger.info('(%s) PEER ID: %s, Modes: %s, Service Flags: %s, Status: %s, KeepAlives [Sent: %s, Outstanding: %s, Missed: %s, Received: %s]', _system, int(ahex(_master['PEER_ID']), 16), modeValue, flagValue, _master['STATUS']['CONNECTED'], _master['STATUS']['KEEP_ALIVES_SENT'], _master['STATUS']['KEEP_ALIVES_OUTSTANDING'], _master['STATUS']['KEEP_ALIVES_MISSED'], _master['STATUS']['KEEP_ALIVES_RECEIVED'])
 
@@ -845,12 +845,12 @@ class IPSC(DatagramProtocol):
                     
                 elif _packetType == GROUP_DATA:
                     self.reset_keep_alive(_peerId)
-                    self.group__data(_src_sub, _dst_sub, _ts, _end, _peerId, _data)
+                    self.group_data(_src_sub, _dst_sub, _ts, _end, _peerId, _data)
                     return
                     
                 elif _packetType == PVT_DATA:
                     self.reset_keep_alive(_peerId)
-                    self.private__data(_src_sub, _dst_sub, _ts, _end, _peerId, _data)
+                    self.private_data(_src_sub, _dst_sub, _ts, _end, _peerId, _data)
                     return
                 return
 
