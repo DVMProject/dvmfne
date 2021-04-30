@@ -480,6 +480,7 @@ class IPSC(DatagramProtocol):
             _packet = _packet + _hash
 
         self.transport.write(_packet, (_host, _port))
+
         # USE THE FOLLOWING ONLY UNDER DIRE CIRCUMSTANCES -- PERFORMANCE IS ADVERSLY AFFECTED!
         #self._logger.debug('(%s) TX Packet to %s on port %s: %s', self._system, _host, _port, ahex(_packet))
         
@@ -488,8 +489,6 @@ class IPSC(DatagramProtocol):
         if self._local['AuthEnabled']:
             _hash = bhex((hmac_new(self._local['AuthKey'], _packet, sha1)).hexdigest()[:20])
             _packet = _packet + _hash
-
-        #pprint(self._master['STATUS'])
 
         # Send to the Master
         if self._master['STATUS']['CONNECTED']:
@@ -500,6 +499,9 @@ class IPSC(DatagramProtocol):
             #pprint(self._peers[peer]['STATUS'])
             if self._peers[peer]['STATUS']['CONNECTED']:
                 self.transport.write(_packet, (self._peers[peer]['IP'], self._peers[peer]['PORT']))
+
+        # USE THE FOLLOWING ONLY UNDER DIRE CIRCUMSTANCES -- PERFORMANCE IS ADVERSLY AFFECTED!
+        #self._logger.debug('(%s) TX Packet to %s on port %s: %s', self._system, _host, _port, ahex(_packet))
         
     # SOMEONE HAS SENT US A KEEP ALIVE - WE MUST ANSWER IT
     def peer_alive_req(self, _data, _peerId, _host, _port):
