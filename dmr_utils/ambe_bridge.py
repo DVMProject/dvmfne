@@ -201,7 +201,7 @@ class AMBE_BASE:
     # Twisted callback with data from socket
     def import_datagramReceived(self, _data, (_host, _port)):
         subscriber_ids, talkgroup_ids, peer_ids = self._parent.get_globals()
-        self._logger.debug('(%s) import_datagramReceived', self._system)
+
         _slot = self._slot
         _rx_slot = self.rx[_slot]
         

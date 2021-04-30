@@ -99,7 +99,7 @@ class ambeIPSC(IPSC):
         return ({}, {}, {})
 
     def get_repeater_id(self, import_id):
-        return self._config['Local']['RadioID']
+        return self._config['LOCAL']['PEER_ID']
 
     # Now read the configuration file and parse out the values we need
     def defaultOption( self, config, sec, opt, defaultValue ):
