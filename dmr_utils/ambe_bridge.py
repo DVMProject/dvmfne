@@ -47,43 +47,10 @@ from twisted.internet import task
 
 # Things we import from the core modules
 from fne.fne_core import hex_str_3, hex_str_4, int_id
+
 from dmr_utils import decode, bptc, const, golay, qr
+
 import ambe_utils
-
-
-'''
-Take ambe from external source (ASL or IPSC) and import it into an HB network
-Take ambe from HB network and export it to a foreign network (ie IPSC or ASL)
-Need to support both slots.  This means segmenting the data structures using slot based keys
-Every slot should remember its TG, slot, cc, source ID, destination ID and repeater ID
-Export should just pass through metadata unless a rule is found which could change the TG or slot being idetified.
-Import should use the current metadata (last seen) for a slot untill it sees a new set
-
-The app can be configured as a master:
-    This is useful when connecting a MMDVM repeater or hotspot to the network
-    Configure the MMDVMHost to point to this instance
-Or a peer on an existing master
-    This is useful when connecting to Brandmeister, DMRPlus or an existing HB network.
-    Use this when you want to share your IPSC repeater on an HB network
-    USe this when you want to use dongle mode to access Brandmeister or any HB nework
-    
-Import:
-    Wait for metadata from external network
-    Once seen, set up slot based values for source, destination and repeater IDs, color code
-    For each AMBE packet from that foreign source, read the data and construct DMR and HB structures around the new metadata
-    Send the HB packet to the network
-Export
-    For each session, construct a metadata packet to pass to the foreign repeater with source, destination, repeater IDs, slot and CC
-    Send AMBE to the foreign reprater over UDP (decorated with slot)
-    At end of session signal termination to the foreign repeater
-    
-Translation of TG/Slot information
-    Used when
-        local and foreigh repeaters do not have same mapping
-        Need to block export or import of a specific TG
-        DMO where only one slot is supported (map import to slot 2, export to foreign specs)
-
-'''
 
 # ---------------------------------------------------------------------------
 #   Constants
@@ -184,7 +151,7 @@ class AMBE_BASE:
         self._ambeRxPort = _port                                # Port to listen on for AMBE frames to transmit to all peers
         self._dmrgui = '127.0.0.1'
 
-        self._sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         self._slot = 2                                          # "current slot"
         self.rx = [0, RX_SLOT(1, 0, 0, 0, 1), RX_SLOT(2, 0, 0, 0, 1)]
@@ -223,7 +190,7 @@ class AMBE_BASE:
         self.send_voice_header(_rx_slot)
         sleep(0.06)
         silence = '\xAC\AA\x40\x20\x00\x44\x40\x80\x80'
-        self._logger.info('(%s) Playing %d frames', self._system, _frames)
+        self._logger.info('(%s) Silence %d frames', self._system, _frames)
         while _frames > 0:
             self.send_voice72(_rx_slot, silence+silence+silence)
             sleep(0.06)
@@ -246,19 +213,18 @@ class AMBE_BASE:
                 v = _data[2:]
                 if (v):
                     t = ord(t)
-                    if (t == TAG_BEGIN_TX) or (t == TAG_SET_INFO):
-                        
+                    if (t == TAG_BEGIN_TX) or (t == TAG_SET_INFO):                    
                         if ord(l) > 1:
                             _slot = int_id(v[10:11])
                             _rx_slot = self.rx[_slot]
                             _rx_slot.slot = _slot
                             _rx_slot.rf_src = hex_str_3(int_id(v[0:3]))
-                            _rx_slot.repeater_id = self._parent.get_repeater_id( hex_str_4(int_id(v[3:7])) )
+                            _rx_slot.repeater_id = self._parent.get_repeater_id(hex_str_4(int_id(v[3:7])))
                             _rx_slot.dst_id = hex_str_3(int_id(v[7:10]))
                             _rx_slot.cc = int_id(v[11:12])
 
                         if t == TAG_BEGIN_TX:
-                            _rx_slot.stream_id = hex_str_4(randint(0,0xFFFFFFFF))   # Every stream has a unique ID
+                            _rx_slot.stream_id = hex_str_4(randint(0, 0xFFFFFFFF))   # Every stream has a unique ID
                             self._logger.info('(%s) Begin AMBE encode STREAM ID: %s SUB: %s REPEATER: %s TGID %s, TS %s', \
                                           self._system, int_id(_rx_slot.stream_id), int_id(_rx_slot.rf_src), int_id(_rx_slot.repeater_id), int_id(_rx_slot.dst_id), _slot)
                             self.send_voice_header(_rx_slot)
@@ -281,7 +247,7 @@ class AMBE_BASE:
                         if _rx_slot.frame_count > 0:
                             self.send_voice_term(_rx_slot)
                         
-                        self._logger.debug('(%s) End AMBE encode STREAM ID: %d FRAMES: %d', self._system, int_id(_rx_slot.stream_id), _rx_slot.frame_count)
+                        self._logger.info('(%s) End AMBE encode STREAM ID: %d FRAMES: %d', self._system, int_id(_rx_slot.stream_id), _rx_slot.frame_count)
                         
                         # set it back to zero so any random AMBE frames are ignored.
                         _rx_slot.frame_count = 0
@@ -321,16 +287,10 @@ class AMBE_BASE:
         _tx_slot.lostFrame = 0
         _tx_slot.lastSeq = _seq
 
-    # Export voice frame to partner (actually done in sub classes for 49 or 72 bits)               
-    def export_voice(self, _tx_slot, _seq, _ambe):
-        if _seq != ((_tx_slot.lastSeq+1) & 0xff):
-            _tx_slot.lostFrame += 1
-        _tx_slot.lastSeq = _seq
-
     # End export call to partner                
     def end_call(self, _tx_slot):
         # end transmission
-        self.send_tlv(TAG_END_TX, struct.pack("b",_tx_slot.slot))
+        self.send_tlv(TAG_END_TX, struct.pack("b", _tx_slot.slot))
         
         call_duration = time() - _tx_slot.start_time
         _lost_percentage = ((_tx_slot.lostFrame / float(_tx_slot.frame_count)) * 100.0) if _tx_slot.frame_count > 0 else 0.0
@@ -343,6 +303,12 @@ class AMBE_BASE:
         
         self._logger.info('Voice Transmission End {:.2f} seconds loss rate: {:.2f}% ({}/{})'.format(call_duration, _lost_percentage, _tx_slot.frame_count - _tx_slot.lostFrame, _tx_slot.frame_count))
 
+    # Export voice frame to partner (actually done in sub classes for 49 or 72 bits)               
+    def export_voice(self, _tx_slot, _seq, _ambe):
+        if _seq != ((_tx_slot.lastSeq + 1) & 0xff):
+            _tx_slot.lostFrame += 1
+        _tx_slot.lastSeq = _seq
+
     def send_tlv(self, _tag, _value):
         _tlv = struct.pack("bb", _tag, len(_value)) + _value
         for _gateway in self._gateways:
@@ -353,7 +319,7 @@ class AMBE_BASE:
 #
 # ---------------------------------------------------------------------------
 
-class AMBE_HB(AMBE_BASE):
+class AMBE_FNE(AMBE_BASE):
     def __init__(self, _parent, _name, _config, _logger, _port):
         AMBE_BASE.__init__(self, _parent, _name, _config, _logger, _port)
         
@@ -371,7 +337,7 @@ class AMBE_HB(AMBE_BASE):
     def send_voice_header(self, _rx_slot):
         AMBE_BASE.send_voice_header(self, _rx_slot)
         flag = header_flag(_rx_slot.slot) # DT_VOICE_LC_HEADER
-        dmr = self.encode_voice_header( _rx_slot )
+        dmr = self.encode_voice_header(_rx_slot)
         for j in range(0,2):
             self.send_frameTo_system(_rx_slot, flag, dmr)
             sleep(0.06)
@@ -380,7 +346,7 @@ class AMBE_HB(AMBE_BASE):
         flag = voice_flag(_rx_slot.slot, _rx_slot.vf) # calc flag value
         
         # Construct the dmr frame from AMBE(108 bits) + sync/CACH (48 bits) + AMBE(108 bits)
-        _new_frame = self.encode_voice( BitArray('0x'+ahex(_ambe)), _rx_slot ) 
+        _new_frame = self.encode_voice(BitArray('0x' + ahex(_ambe)), _rx_slot) 
         
         self.send_frameTo_system(_rx_slot, flag, _new_frame.tobytes())
 
@@ -406,8 +372,9 @@ class AMBE_HB(AMBE_BASE):
 
     # Construct DMR frame, HB header and send result to all peers on network
     def send_frameTo_system(self, _rx_slot, _flag, _dmr_frame):
-        frame = self.make_dmrd(_rx_slot.seq, _rx_slot.rf_src, _rx_slot.dst_id, _rx_slot.repeater_id, _flag, _rx_slot.stream_id, _dmr_frame)         # Make the HB frame, ready to send
-        self.send_system( _rx_slot, frame )       # Send  the frame to all peers or master
+        # Make the HB frame, ready to send
+        frame = self.make_dmrd(_rx_slot.seq, _rx_slot.rf_src, _rx_slot.dst_id, _rx_slot.repeater_id, _flag, _rx_slot.stream_id, _dmr_frame)         
+        self.send_system(_rx_slot, frame)       # Send  the frame to all peers or master
         _rx_slot.seq += 1                       # Convienent place for this increment
         _rx_slot.frame_count += 1               # update count (used for stats and to make sure header was sent)
 
@@ -436,7 +403,7 @@ class AMBE_HB(AMBE_BASE):
 
                 _repeaterID = hex_str_4(int(_peerDict['PEER_ID']))
                 for _index in range(0,4):   # Force the repeater ID to be the "destination" ID of the client (fne will not accept it otherwise)
-                    _frame[_index+11] = _repeaterID[_index]
+                    _frame[_index + 11] = _repeaterID[_index]
 
                 self._parent.send_peer(_peer, _frame)
                 self._DMOTimeout = time() + 0.50
@@ -444,7 +411,7 @@ class AMBE_HB(AMBE_BASE):
             self._parent.send_master(_frame)
 
     # Construct a complete HB frame from passed parameters
-    def make_dmrd( self, _seq, _rf_src, _dst_id, _repeater_id, _flag, _stream_id, _dmr_frame):
+    def make_dmrd(self, _seq, _rf_src, _dst_id, _repeater_id, _flag, _stream_id, _dmr_frame):
         frame = bytearray('DMRD')                   # HB header type DMRD
         frame += struct.pack("i", _seq)[0]          # add sequence number
         frame += _rf_src[0:3]                       # add source ID
@@ -457,33 +424,38 @@ class AMBE_HB(AMBE_BASE):
         return frame
     
     # Private function to create a voice header or terminator DMR frame
-    def __encode_voice_header( self, _rx_slot, _sync, _dtype ):
+    def __encode_voice_header(self, _rx_slot, _sync, _dtype):
         _src_id = _rx_slot.rf_src
         _dst_id = _rx_slot.dst_id
         _cc = _rx_slot.cc
+
         # create lc
         lc = '\x00\x00\x00' + _dst_id + _src_id         # PF + Reserved + FLCO + FID + Service Options + Group Address + Source Address
+
         # encode lc into info
         full_lc_encode = bptc.encode_header_lc(lc)
         _rx_slot.emblc = bptc.encode_emblc(lc)          # save off the emb lc for voice frames B-E
         _rx_slot.emblc[5] = bitarray(32)                # NULL message (F)
+
         # create slot_type
         slot_type = chr((_cc << 4) | (_dtype & 0x0f))   # data type is Header or Term
+
         # generate FEC for slot type
         slot_with_fec  = BitArray(uint=golay.encode_2087(slot_type), length=20)
+
         # construct final frame - info[0:98] + slot_type[0:10] + DMR_DATA_SYNC_MS + slot_type[10:20] + info[98:196]
         frame_bits = full_lc_encode[0:98] + slot_with_fec[0:10] + decode.to_bits(_sync) + slot_with_fec[10:20] + full_lc_encode[98:196]
         return decode.to_bytes(frame_bits)
     
     # Create a voice header DMR frame
-    def encode_voice_header( self, _rx_slot ):
-        return self.__encode_voice_header( _rx_slot, DMR_DATA_SYNC_MS, 1 ) # data_type=Voice_LC_Header
+    def encode_voice_header(self, _rx_slot):
+        return self.__encode_voice_header(_rx_slot, DMR_DATA_SYNC_MS, 1) # data_type=Voice_LC_Header
     
-    def encode_voice( self, _ambe1, _ambe2, _ambe3, _emb ):
+    def encode_voice(self, _ambe1, _ambe2, _ambe3, _emb):
         pass
     
     # Create a voice DMR frame A-F frame type
-    def encode_voice( self, _ambe, _rx_slot ):
+    def encode_voice(self, _ambe, _rx_slot):
         _frame_type = _rx_slot.vf
         if _frame_type > 0:                                                 # if not a SYNC frame cccxss
             index = (_rx_slot.cc << 3) | self.lcss[_frame_type]             # index into the encode table makes this a simple lookup
@@ -495,11 +467,12 @@ class AMBE_HB(AMBE_BASE):
         return _new_frame
     
     # Create a voice terminator DMR frame
-    def encode_voice_term( self, _rx_slot ):
-        return self.__encode_voice_header( _rx_slot, DMR_DATA_SYNC_MS, 2 )   # data_type=Voice_LC_Terminator
+    def encode_voice_term(self, _rx_slot):
+        return self.__encode_voice_header(_rx_slot, DMR_DATA_SYNC_MS, 2)   # data_type=Voice_LC_Terminator
+
     def export_voice(self, _tx_slot, _seq, _ambe):
-        self.send_tlv(TAG_AMBE_72, struct.pack("b",_tx_slot.slot) + _ambe)    # send AMBE
-        if _seq != ((_tx_slot.lastSeq+1) & 0xff):
+        self.send_tlv(TAG_AMBE_72, struct.pack("b", _tx_slot.slot) + _ambe)    # send AMBE
+        if _seq != ((_tx_slot.lastSeq + 1) & 0xff):
             self._logger.info('(%s) Seq number not found.  got %d expected %d', self._system, _seq, _tx_slot.lastSeq+1)
             _tx_slot.lostFrame += 1
         _tx_slot.lastSeq = _seq
@@ -567,23 +540,21 @@ class AMBE_IPSC(AMBE_BASE):
         pass
 
     def rewriteFrame( self, _frame, _newSlot, _newGroup, _newSourceID, _newPeerID ):
-        
-        _peerid         = _frame[1:5]                 # int32 peer who is sending us a packet
+        _peerId         = _frame[1:5]                 # int32 peer who is sending us a packet
         _src_sub        = _frame[6:9]                 # int32 Id of source
         _burst_data_type = _frame[30]
         _group          = _frame[9:12]
 
         ########################################################################
         # re-Write the peer radio ID to that of this program
-        _frame = _frame.replace(_peerid, _newPeerID, 1)
+        _frame = _frame.replace(_peerId, _newPeerID, 1)
         # re-Write the source subscriber ID + destination Group ID combo in the IPSC Header
         _frame = _frame.replace(_src_sub + _group, _newSourceID + _newGroup, 1)
         # Re-Write the destination Group ID + source subscriber ID combo in the decoded LCs
         _frame = _frame.replace(_group + _src_sub, _newGroup + _newSourceID, 1)
-        
-        
+
         _frame = _frame[:5] + struct.pack("i", self.ipsc_seq)[0] + _frame[6:]   # ipsc sequence number increments on each transmission (stream id)
-        
+
         # Re-Write IPSC timeslot value
         _call_info = int_id(_frame[17:18])
         if _newSlot == 1:
@@ -592,11 +563,11 @@ class AMBE_IPSC(AMBE_BASE):
             _call_info |= 1 << 5
         _call_info = chr(_call_info)
         _frame = _frame[:17] + _call_info + _frame[18:]
-    
+
         _x = struct.pack("i", self._seq)
         _frame = _frame[:20] + _x[1] + _x[0] + _frame[22:]          # rtp sequence number increments for EACH frame sent out
         self._seq = self._seq + 1
-        
+
         # Re-Write DMR timeslot value
         # Determine if the slot is present, so we can translate if need be
         if _burst_data_type == BURST_DATA_TYPE['SLOT1_VOICE'] or _burst_data_type == BURST_DATA_TYPE['SLOT2_VOICE']:
@@ -606,7 +577,7 @@ class AMBE_IPSC(AMBE_BASE):
             elif _newSlot == 2:
                 _burst_data_type = BURST_DATA_TYPE['SLOT2_VOICE']
             _frame = _frame[:30] + _burst_data_type + _frame[31:]
-        
+
         if (time() - self._parent._busy_slots[_newSlot]) >= 0.10 :          # slot is not busy so it is safe to transmit
             # Send the packet to all peers in the target IPSC
             self._parent.send_to_ipsc(_frame)
@@ -652,7 +623,7 @@ class AMBE_IPSC(AMBE_BASE):
         self._logger.debug('IPSC templates loaded')
 
     def export_voice(self, _tx_slot, _seq, _ambe):
-        self.send_tlv(TAG_AMBE_49, struct.pack("b",_tx_slot.slot) + _ambe)    # send AMBE
-        if _seq != ((_tx_slot.lastSeq+1) & 0xff):
+        self.send_tlv(TAG_AMBE_49, struct.pack("b", _tx_slot.slot) + _ambe)    # send AMBE
+        if _seq != ((_tx_slot.lastSeq + 1) & 0xff):
             _tx_slot.lostFrame += 1
         _tx_slot.lastSeq = _seq

@@ -8,7 +8,7 @@
 #
 ###############################################################################
 #   Copyright (C) 2016 Cortney T.  Buffington, N0MJS <n0mjs@me.com>
-#   Copyright (C) 2017-2019 Bryan Biedenkapp <gatekeep@gmail.com>
+#   Copyright (C) 2017-2021 Bryan Biedenkapp <gatekeep@gmail.com>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -52,41 +52,8 @@ from twisted.internet import reactor, task
 from fne.fne_core import hex_str_3, int_id, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
 from fne import fne_config, fne_log, fne_const
 
-from dmr_utils.ambe_bridge import AMBE_HB
+from dmr_utils.ambe_bridge import AMBE_FNE
 from dmr_utils import decode, bptc, const, golay, qr, ambe_utils
-
-# ---------------------------------------------------------------------------
-#   Class Declaration
-#     
-# ---------------------------------------------------------------------------
-
-mutex = Lock()  # Used to synchronize Peer I/O in different threads
-class Translate:
-    def __init__(self, config_file):
-        self.translate = {}
-        self.load_config(config_file)
-        pass
-
-    def add_rule(self, tg, export_rule):
-        self.translate[str(tg)] = export_rule
-        #print(int_id(tg), export_rule)
-
-    def delete_rule(self, tg):
-        if str(tg) in self.translate:
-            del self.translate[str(tg)]
-
-    def find_rule(self, tg, slot):
-        if str(tg) in self.translate:
-            return self.translate[str(tg)]
-        return (tg, slot)
-
-    def load_config(self, config_file):
-        print('load config file', config_file)
-        pass
-
-# translation structure.  IMPORT_TO translates foreign (TG,TS) to local.
-# EXPORT_AS translates local (TG,TS) to foreign values
-translate = Translate('config.file')
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
@@ -103,8 +70,8 @@ class bridgeFNE(coreFNE):
 
         self.load_configuration(_bridge_config)
 
-        self.hb_ambe = AMBE_HB(self, _name, _config, _logger, self._ambeRxPort)
-        self._sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        self.fne_ambe = AMBE_FNE(self, _name, _config, _logger, self._ambeRxPort)
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def dmrd_validate(self, _peer_id, _rf_src, _dst_id, _slot, _call_type, _frame_type, _dtype_vseq, _stream_id):
         return True
@@ -112,22 +79,21 @@ class bridgeFNE(coreFNE):
     # Callback with DMR data from peer/master.  Send this data to any
     # partner listening
     def dmrd_received(self, _peer_id, _rf_src, _dst_id, _seq, _slot, _call_type, _frame_type, _dtype_vseq, _stream_id, _data):
-        _dst_id, _slot = translate.find_rule(_dst_id, _slot)
-        _tx_slot = self.hb_ambe.tx[_slot]
+        _tx_slot = self.fne_ambe.tx[_slot]
         _seq = ord(_data[4])
         _tx_slot.frame_count += 1
 
         if (_stream_id != _tx_slot.stream_id):
-            self.hb_ambe.begin_call(_slot, _rf_src, _dst_id, _peer_id, _tx_slot.cc, _seq, _stream_id)
+            self.fne_ambe.begin_call(_slot, _rf_src, _dst_id, _peer_id, _tx_slot.cc, _seq, _stream_id)
             _tx_slot.lastSeq = _seq
 
         if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.FT_SLT_VTERM) and (_tx_slot.type != fne_const.FT_SLT_VTERM):
-            self.hb_ambe.end_call(_tx_slot)
+            self.fne_ambe.end_call(_tx_slot)
 
         if (int_id(_data[15]) & 0x20) == 0:
             _dmr_frame = BitArray('0x' + ahex(_data[20:]))
             _ambe = _dmr_frame[0:108] + _dmr_frame[156:264]
-            self.hb_ambe.export_voice(_tx_slot, _seq, _ambe.tobytes())
+            self.fne_ambe.export_voice(_tx_slot, _seq, _ambe.tobytes())
         else:
             _tx_slot.lastSeq = _seq
 
@@ -165,10 +131,6 @@ class bridgeFNE(coreFNE):
                     self._ambeRxPort = int(config.get(section, 'FromGatewayPort').split(None)[0])           # Port to listen on for AMBE frames to transmit to all peers
                     self._gateway = config.get(section, 'Gateway').split(None)[0]                           # IP address of bridge app
                     self._gateway_port = int(config.get(section, 'ToGatewayPort').split(None)[0])           # Port bridge is listening on for AMBE frames to decode
-                if section == 'RewriteRules':
-                    for rule in config.items(section):
-                        _old_tg, _new_tg, _new_slot = rule[1].split(',')
-                        translate.add_rule(hex_str_3(int(_old_tg)), (hex_str_3(int(_new_tg)), int(_new_slot)))
 
         except ConfigParser.Error, err:
             traceback.print_exc()

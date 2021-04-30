@@ -83,9 +83,9 @@ def build_config(_config_file):
                 })
                 
             elif config.getboolean(section, 'Enabled'):
-                CONFIG['Systems'].update({section: {'Local': {}, 'Master': {}, 'Peers': {}}})
+                CONFIG['Systems'].update({section: {'LOCAL': {}, 'MASTER': {}, 'PEERS': {}}})
                     
-                CONFIG['Systems'][section]['Local'].update({
+                CONFIG['Systems'][section]['LOCAL'].update({
                     # In case we want to keep config, but not actually connect to the network
                     'Enabled':      config.getboolean(section, 'Enabled'),
                 
@@ -109,18 +109,19 @@ def build_config(_config_file):
                     'Flags': '',
                 
                     # Things we need to know to connect and be a peer in this IPSC
-                    'RadioID':      hex(int(config.get(section, 'RadioID')))[2:].rjust(8,'0').decode('hex'),
+                    'PEER_ID':      hex(int(config.get(section, 'PeerId')))[2:].rjust(8, '0').decode('hex'),
                     'IP':           gethostbyname(config.get(section, 'IP')),
-                    'Port':         config.getint(section, 'Port'),
+                    'PORT':         config.getint(section, 'Port'),
                     'AliveTimer':   config.getint(section, 'AliveTimer'),
                     'MaxMissed':    config.getint(section, 'MaxMissed'),
                     'AuthKey':      (config.get(section, 'AuthKey').rjust(40,'0')).decode('hex'),
                     'GroupHangtime': config.getint(section, 'GroupHangtime'),
-                    'NumPeers': 0,
+                    'NUM_PEERS': 0,
                     })
+
                 # Master means things we need to know about the master peer of the network
-                CONFIG['Systems'][section]['Master'].update({
-                    'RadioID': '\x00\x00\x00\x00',
+                CONFIG['Systems'][section]['MASTER'].update({
+                    'PEER_ID': '\x00\x00\x00\x00',
                     'MODE': '\x00',
                     'MODE_DECODE': '',
                     'FLAGS': '\x00\x00\x00\x00',
@@ -135,12 +136,13 @@ def build_config(_config_file):
                         'KEEP_ALIVE_RX_TIME':      0
                         },
                     'IP': '',
-                    'Port': ''
+                    'PORT': ''
                     })
-                if not CONFIG['Systems'][section]['Local']['MasterPeer']:
-                    CONFIG['Systems'][section]['Master'].update({
+
+                if not CONFIG['Systems'][section]['LOCAL']['MasterPeer']:
+                    CONFIG['Systems'][section]['MASTER'].update({
                         'IP': gethostbyname(config.get(section, 'MasterIP')),
-                        'Port': config.getint(section, 'MasterPort')
+                        'PORT': config.getint(section, 'MasterPort')
                     })
             
                 # Temporary locations for building MODE and FLAG data
@@ -149,44 +151,44 @@ def build_config(_config_file):
                 FLAG_2 = 0
             
                 # Construct and store the MODE field
-                if CONFIG['Systems'][section]['Local']['PeerOper']:
+                if CONFIG['Systems'][section]['LOCAL']['PeerOper']:
                     MODE_BYTE |= 1 << 6
-                if CONFIG['Systems'][section]['Local']['IPSCMode'] == 'ANALOG':
+                if CONFIG['Systems'][section]['LOCAL']['IPSCMode'] == 'ANALOG':
                     MODE_BYTE |= 1 << 4
-                elif CONFIG['Systems'][section]['Local']['IPSCMode'] == 'DIGITAL':
+                elif CONFIG['Systems'][section]['LOCAL']['IPSCMode'] == 'DIGITAL':
                     MODE_BYTE |= 1 << 5
-                if CONFIG['Systems'][section]['Local']['TS1Link']:
+                if CONFIG['Systems'][section]['LOCAL']['TS1Link']:
                     MODE_BYTE |= 1 << 3
                 else:
                     MODE_BYTE |= 1 << 2
-                if CONFIG['Systems'][section]['Local']['TS2Link']:
+                if CONFIG['Systems'][section]['LOCAL']['TS2Link']:
                     MODE_BYTE |= 1 << 1
                 else:
                     MODE_BYTE |= 1 << 0
-                CONFIG['Systems'][section]['Local']['MODE'] = chr(MODE_BYTE)
+                CONFIG['Systems'][section]['LOCAL']['MODE'] = chr(MODE_BYTE)
 
                 # Construct and store the FLAGS field
-                if CONFIG['Systems'][section]['Local']['CSBKCall']:
+                if CONFIG['Systems'][section]['LOCAL']['CSBKCall']:
                     FLAG_1 |= 1 << 7  
-                if CONFIG['Systems'][section]['Local']['RCM']:
+                if CONFIG['Systems'][section]['LOCAL']['RCM']:
                     FLAG_1 |= 1 << 6
-                if CONFIG['Systems'][section]['Local']['ConApp']:
+                if CONFIG['Systems'][section]['LOCAL']['ConApp']:
                     FLAG_1 |= 1 << 5
-                if CONFIG['Systems'][section]['Local']['XNL_Call']:
+                if CONFIG['Systems'][section]['LOCAL']['XNL_Call']:
                     FLAG_2 |= 1 << 7    
-                if CONFIG['Systems'][section]['Local']['XNL_Call'] and CONFIG['Systems'][section]['Local']['XNL_Master']:
+                if CONFIG['Systems'][section]['LOCAL']['XNL_Call'] and CONFIG['Systems'][section]['Local']['XNL_Master']:
                     FLAG_2 |= 1 << 6
-                elif CONFIG['Systems'][section]['Local']['XNL_Call'] and not CONFIG['Systems'][section]['Local']['XNL_Master']:
+                elif CONFIG['Systems'][section]['LOCAL']['XNL_Call'] and not CONFIG['Systems'][section]['Local']['XNL_Master']:
                     FLAG_2 |= 1 << 5
-                if CONFIG['Systems'][section]['Local']['AuthEnabled']:
+                if CONFIG['Systems'][section]['LOCAL']['AuthEnabled']:
                     FLAG_2 |= 1 << 4
-                if CONFIG['Systems'][section]['Local']['DataCall']:
+                if CONFIG['Systems'][section]['LOCAL']['DataCall']:
                     FLAG_2 |= 1 << 3
-                if CONFIG['Systems'][section]['Local']['VoiceCall']:
+                if CONFIG['Systems'][section]['LOCAL']['VoiceCall']:
                     FLAG_2 |= 1 << 2
-                if CONFIG['Systems'][section]['Local']['MasterPeer']:
+                if CONFIG['Systems'][section]['LOCAL']['MasterPeer']:
                     FLAG_2 |= 1 << 0
-                CONFIG['Systems'][section]['Local']['FLAGS'] = '\x00\x00' + chr(FLAG_1) + chr(FLAG_2)
+                CONFIG['Systems'][section]['LOCAL']['FLAGS'] = '\x00\x00' + chr(FLAG_1) + chr(FLAG_2)
     
     except ConfigParser.Error, err:
         print(err)
@@ -194,9 +196,10 @@ def build_config(_config_file):
         
     return CONFIG
 
+# ---------------------------------------------------------------------------
+#   Program Entry Point
+# ---------------------------------------------------------------------------
 
-# Used to run this file direclty and print the config,
-# which might be useful for debugging
 if __name__ == '__main__':
     import sys
     import os
