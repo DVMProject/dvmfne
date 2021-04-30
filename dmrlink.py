@@ -734,10 +734,10 @@ class IPSC(DatagramProtocol):
             # Ask the master for a peer-list
             if self._local['NUM_PEERS']:
                 self.send_packet(self.PEER_LIST_REQ_PKT, self._master_sock)
-                self._logger.info('(%s), No Peer List - Requesting One From the Master', self._system)
+                self._logger.info('(%s) No Peer List - Requesting One From the Master', self._system)
             else:
                 self._master_stat['PEER_LIST'] = True
-                self._logger.debug('(%s), Skip asking for a Peer List, we are the only Peer', self._system)
+                self._logger.info('(%s) Skip asking for a Peer List, we are the only Peer', self._system)
 
         # If we do have a peer-list, we need to register with the peers and send keep-alives...
         if self._master_stat['PEER_LIST']:
