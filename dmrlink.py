@@ -726,7 +726,7 @@ class IPSC(DatagramProtocol):
                 self._logger.info('(%s) Master Keep-Alive Missed: %s:%s', self._system, self._master['IP'], self._master['PORT'])
             
             # If we have missed too many keep-alives, de-register the master and start over.
-            if self._master_stat['KEEP_ALIVES_OUTSTANDING'] >= self._local['MAX_MISSED']:
+            if self._master_stat['KEEP_ALIVES_OUTSTANDING'] >= self._local['MaxMissed']:
                 self._master_stat['CONNECTED'] = False
                 self._master_stat['KEEP_ALIVES_OUTSTANDING'] = 0
                 self._logger.error('(%s) Maximum Master Keep-Alives Missed -- De-registering the Master: %s:%s', self._system, self._master['IP'], self._master['PORT'])
@@ -740,7 +740,6 @@ class IPSC(DatagramProtocol):
             self._logger.error('->> (%s) Master in UNKOWN STATE: %s:%s', self._system, self._master_sock)
             self._master_stat['CONNECTED'] = False
         
-        
         # If the master is connected and we don't have a peer-list yet....
         if (self._master_stat['CONNECTED'] == True) and (self._master_stat['PEER_LIST'] == False):
             # Ask the master for a peer-list
@@ -750,7 +749,6 @@ class IPSC(DatagramProtocol):
             else:
                 self._master_stat['PEER_LIST'] = True
                 self._logger.debug('(%s), Skip asking for a Peer List, we are the only Peer', self._system)
-
 
         # If we do have a peer-list, we need to register with the peers and send keep-alives...
         if self._master_stat['PEER_LIST']:
