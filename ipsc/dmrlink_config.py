@@ -53,13 +53,11 @@ def build_config(_config_file):
 
             elif section == 'Reports':
                 CONFIG['Reports'].update({
-                    'ReportNetworks': config.get(section, 'ReportNetworks'),
+                    'Report': config.getboolean(section, 'Report'),
                     'ReportRCM': config.get(section, 'ReportRCM'),
                     'ReportInterval': config.getint(section, 'ReportInterval'),
                     'ReportPort': config.get(section, 'ReportPort'),
-                    'ReportClients': config.get(section, 'ReportClients').split(','),
-                    'PrintPeersIncMode': config.getboolean(section, 'PrintPeersIncMode'),
-                    'PrintPeersIncFlags': config.getboolean(section, 'PrintPeersIncFlags')
+                    'ReportClients': config.get(section, 'ReportClients').split(',')
                 })
                 if CONFIG['Reports']['ReportPort']:
                     CONFIG['Reports']['ReportPort'] = int(CONFIG['Reports']['ReportPort'])
@@ -72,7 +70,9 @@ def build_config(_config_file):
                     'LogHandlers': config.get(section, 'LogHandlers'),
                     'LogLevel': config.get(section, 'LogLevel'),
                     'LogName': config.get(section, 'LogName'),
-                    'RawPacketTrace': config.getboolean(section, 'RawPacketTrace')
+                    'RawPacketTrace': config.getboolean(section, 'RawPacketTrace'),
+                    'LogPeerStatus': config.getboolean(section, 'LogPeerStatus'),
+                    'LogMasterStatus': config.getboolean(section, 'LogMasterStatus')
                 })
                 
             elif section == 'Aliases':

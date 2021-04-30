@@ -114,18 +114,7 @@ def get_alias(_id, _dict, *args):
 # Timed loop used for reporting IPSC status
 # REPORT BASED ON THE TYPE SELECTED IN THE MAIN CONFIG FILE
 def config_reports(_config, _logger, _factory): 
-    if _config['Reports']['ReportNetworks'] == 'PRINT':
-        def reporting_loop(_logger):
-            _logger.debug('Periodic Reporting Loop Started (PRINT)')
-            for system in _config['Systems']:
-                print_master(_config, system)
-                print_peer_list(_config, system)
-        
-        reporting = task.LoopingCall(reporting_loop, _logger)
-        reporting.start(_config['Reports']['ReportInterval'])
-        report_server = False
-                
-    elif _config['Reports']['ReportNetworks'] == 'NETWORK':
+    if _config['Reports']['Report']:
         def reporting_loop(_logger, _server):
             _logger.debug('Periodic Reporting Loop Started (NETWORK)')
             _server.send_config()
@@ -225,60 +214,56 @@ def build_peer_list(_peers):
     return peer_list
 
 # Gratuitous print-out of the peer list.. Pretty much debug stuff.
-def print_peer_list(_config, _network):
-    _peers = _config['Systems'][_network]['PEERS']
-    
-    _status = _config['Systems'][_network]['MASTER']['STATUS']['PEER_LIST']
+def log_peer_status(_system, _logger, _config):
+    _peers = _config['Systems'][_system]['PEERS']
+    _status = _config['Systems'][_system]['MASTER']['STATUS']['PEER_LIST']
     #print('Peer List Status for {}: {}' .format(_network, _status))
     
-    if _status and not _config['Systems'][_network]['PEERS']:
-        print('We are the only peer for: %s' % _network)
-        print('')
+    if _status and not _config['Systems'][_system]['PEERS']:
+        _logger.info('(%s) We are the only peer', _system)
         return
              
-    print('Peer List for: %s' % _network)
     for peer in _peers.keys():
         _this_peer = _peers[peer]
         _this_peer_stat = _this_peer['STATUS']
         
-        if peer == _config['Systems'][_network]['LOCAL']['PEER_ID']:
+        if peer == _config['Systems'][_system]['LOCAL']['PEER_ID']:
             me = '(self)'
         else:
             me = ''
-             
-        print('\tPEER ID: {} {}' .format(int_id(peer), me))
-        print('\t\tIP Address: {}:{}' .format(_this_peer['IP'], _this_peer['PORT']))
-        if _this_peer['MODE_DECODE'] and _config['Reports']['PrintPeersIncMode']:
-            print('\t\tMode Values:')
+
+        modeValue = ''
+        if _this_peer['MODE_DECODE']:
             for name, value in _this_peer['MODE_DECODE'].items():
-                print('\t\t\t{}: {}' .format(name, value))
-        if _this_peer['FLAGS_DECODE'] and _config['Reports']['PrintPeersIncFlags']:
-            print('\t\tService Flags:')
+                modeValue += name + ': ' + value + '; '
+
+        flagValue = ''
+        if _this_peer['FLAGS_DECODE']:
             for name, value in _this_peer['FLAGS_DECODE'].items():
-                print('\t\t\t{}: {}' .format(name, value))
-        print('\t\tStatus: {},  KeepAlives Sent: {},  KeepAlives Outstanding: {},  KeepAlives Missed: {}' .format(_this_peer_stat['CONNECTED'], _this_peer_stat['KEEP_ALIVES_SENT'], _this_peer_stat['KEEP_ALIVES_OUTSTANDING'], _this_peer_stat['KEEP_ALIVES_MISSED']))
-        print('\t\t                KeepAlives Received: {},  Last KeepAlive Received at: {}' .format(_this_peer_stat['KEEP_ALIVES_RECEIVED'], _this_peer_stat['KEEP_ALIVE_RX_TIME']))
-        
-    print('')
+                flagValue += name + ': ' + value + ','
+
+        _logger.info('(%s) PEER ID: %s %s, %s:%s, Modes: %s, Service Flags: %s, Status: %s, KeepAlives [Sent: %s, Outstanding: %s, Missed: %s, Received: %s]', int_id(peer), me, _this_peer['IP'], _this_peer['PORT'], modeValue, flagValue, 
+                     _this_peer_stat['CONNECTED'], _this_peer_stat['KEEP_ALIVES_SENT'], _this_peer_stat['KEEP_ALIVES_OUTSTANDING'], _this_peer_stat['KEEP_ALIVES_MISSED'], _this_peer_stat['KEEP_ALIVES_RECEIVED'])
  
 # Gratuitous print-out of Master info.. Pretty much debug stuff.
-def print_master(_config, _network):
+def log_master(_system, _logger, _config):
     if _config['Systems'][_network]['LOCAL']['MasterPeer']:
-        print('DMRlink is the Master for %s' % _network)
+        _logger.info('(%s) DMRlink is Master', _system)
     else:
-        _master = _config['Systems'][_network]['MASTER']
-        print('Master for %s' % _network)
-        print('\tPEER ID: {}' .format(int(ahex(_master['PEER_ID']), 16)))
-        if _master['MODE_DECODE'] and _config['Reports']['PrintPeersIncMode']:
-            print('\t\tMode Values:')
+        _master = _config['Systems'][_system]['MASTER']
+
+        modeValue = ''
+        if _master['MODE_DECODE']:
             for name, value in _master['MODE_DECODE'].items():
-                print('\t\t\t{}: {}' .format(name, value))
-        if _master['FLAGS_DECODE'] and _config['Reports']['PrintPeersIncFlags']:
-            print('\t\tService Flags:')
+                modeValue += name + ': ' + value + '; '
+
+        flagValue = ''
+        if _master['FLAGS_DECODE']:
             for name, value in _master['FLAGS_DECODE'].items():
-                print('\t\t\t{}: {}' .format(name, value))
-        print('\t\tStatus: {},  KeepAlives Sent: {},  KeepAlives Outstanding: {},  KeepAlives Missed: {}' .format(_master['STATUS']['CONNECTED'], _master['STATUS']['KEEP_ALIVES_SENT'], _master['STATUS']['KEEP_ALIVES_OUTSTANDING'], _master['STATUS']['KEEP_ALIVES_MISSED']))
-        print('\t\t                KeepAlives Received: {},  Last KeepAlive Received at: {}' .format(_master['STATUS']['KEEP_ALIVES_RECEIVED'], _master['STATUS']['KEEP_ALIVE_RX_TIME']))
+                flagValue += name + ': ' + value + ','
+
+        _logger.info('(%s) PEER ID: %s, Modes: %s, Service Flags: %s, Status: %s, KeepAlives [Sent: %s, Outstanding: %s, Missed: %s, Received: %s]', int(ahex(_master['PEER_ID']), 16), modeValue, flagValue, 
+                     _master['STATUS']['CONNECTED'], _master['STATUS']['KEEP_ALIVES_SENT'], _master['STATUS']['KEEP_ALIVES_OUTSTANDING'], _master['STATUS']['KEEP_ALIVES_MISSED'], _master['STATUS']['KEEP_ALIVES_RECEIVED'])
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
@@ -704,6 +689,9 @@ class IPSC(DatagramProtocol):
                 self.de_register_peer(peer)
                 self.send_to_ipsc(self.PEER_LIST_REPLY_PKT + build_peer_list(self._peers))
                 self._logger.warning('(%s) Timeout Exceeded for Peer %s, De-registering', self._system, int_id(peer))
+
+        if self._CONFIG['Log']['LogMasterStatus']:
+            log_master(self._system, self._logger, self._CONFIG)
     
     # Timed loop used for IPSC connection Maintenance when we are a PEER
     def peer_maintenance_loop(self):
@@ -783,6 +771,9 @@ class IPSC(DatagramProtocol):
                     # Update our stats before moving on...
                     self._peers[peer]['STATUS']['KEEP_ALIVES_SENT'] += 1
                     self._peers[peer]['STATUS']['KEEP_ALIVES_OUTSTANDING'] += 1
+
+        if self._CONFIG['Log']['LogPeerStatus']:
+            log_peer_status(self._system, self._logger, self._CONFIG)
 
     # ************************************************
     #  MESSAGE RECEIVED - TAKE ACTION
