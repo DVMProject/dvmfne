@@ -486,22 +486,14 @@ class IPSC(DatagramProtocol):
         
     # Accept a complete packet, ready to be sent, and send it to all active peers + master in an IPSC
     def send_to_ipsc(self, _packet):
-        if self._local['AuthEnabled']:
-            _hash = bhex((hmac_new(self._local['AuthKey'], _packet, sha1)).hexdigest()[:20])
-            _packet = _packet + _hash
-
         # Send to the Master
         if self._master['STATUS']['CONNECTED']:
-            self.transport.write(_packet, (self._master['IP'], self._master['PORT']))
+            self.send_packet(_packet, (self._master['IP'], self._master['PORT']))
 
         # Send to each connected Peer
         for peer in self._peers.keys():
-            #pprint(self._peers[peer]['STATUS'])
             if self._peers[peer]['STATUS']['CONNECTED']:
-                self.transport.write(_packet, (self._peers[peer]['IP'], self._peers[peer]['PORT']))
-
-        # USE THE FOLLOWING ONLY UNDER DIRE CIRCUMSTANCES -- PERFORMANCE IS ADVERSLY AFFECTED!
-        #self._logger.debug('(%s) TX Packet to %s on port %s: %s', self._system, _host, _port, ahex(_packet))
+                self.send_packet(_packet, (self._peers[peer]['IP'], self._peers[peer]['PORT']))
         
     # SOMEONE HAS SENT US A KEEP ALIVE - WE MUST ANSWER IT
     def peer_alive_req(self, _data, _peerId, _host, _port):
