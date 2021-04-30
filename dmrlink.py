@@ -496,6 +496,7 @@ class IPSC(DatagramProtocol):
         if self._local['AuthEnabled']:
             _hash = bhex((hmac_new(self._local['AuthKey'], _packet, sha1)).hexdigest()[:20])
             _packet = _packet + _hash
+
         self.transport.write(_packet, (_host, _port))
         # USE THE FOLLOWING ONLY UNDER DIRE CIRCUMSTANCES -- PERFORMANCE IS ADVERSLY AFFECTED!
         #self._logger.debug('(%s) TX Packet to %s on port %s: %s', self._system, _host, _port, ahex(_packet))
@@ -796,7 +797,7 @@ class IPSC(DatagramProtocol):
     # Once they're done, we move on to the processing or callbacks for each packet type.
     #
     # Callbacks are iterated in the order of "more likely" to "less likely" to reduce processing time
-    def _datagramReceived(self, _data, (_host, _port)):
+    def datagramReceived(self, _data, (_host, _port)):
         if self._CONFIG['Log']['RawPacketTrace']:
             self._logger.debug('(%s) Network Received (from %s:%s) -- %s', self._system, _host, _port, ahex(_data))
 
