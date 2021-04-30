@@ -793,6 +793,9 @@ class IPSC(DatagramProtocol):
     #
     # Callbacks are iterated in the order of "more likely" to "less likely" to reduce processing time
     def datagramReceived(self, data, (host, port)):
+        if self._CONFIG['Log']['RawPacketTrace']:
+            self._logger.debug('(%s) Network Received (from %s:%s) -- %s', self._system, _host, _port, ahex(_data))
+
         _packetType = data[0:1]
         _peerId     = data[1:5]
         _ipsc_seq   = data[5:6]
