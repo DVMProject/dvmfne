@@ -78,7 +78,7 @@ class bridgeIPSC(IPSC):
         #
         
         self._currentNetwork = str(_name)
-        self.readConfigFile(self._bridge_config, None, self._currentNetwork)
+        self.readConfigFile(_bridge_config, None, self._currentNetwork)
     
         logger.info('DMRLink IPSC Bridge')
 
