@@ -833,8 +833,8 @@ class IPSC(DatagramProtocol):
 
                 _rtp         = RTP(_data)
 
-                _ts         = bool(_call_info & TS_CALL_MSK) + 1
-                _end        = bool(_call_info & END_MSK)
+                _ts         = bool(_control & TS_CALL_MSK) + 1
+                _end        = bool(_control & END_MSK)
 
                 # User Voice and Data Call Types:
                 if _packetType == GROUP_VOICE:

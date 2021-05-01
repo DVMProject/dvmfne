@@ -61,8 +61,8 @@ import ambe_utils
 #   Constants
 # ---------------------------------------------------------------------------
 
-DMR_DATA_SYNC_MS    =   '\xD5\xD7\xF7\x7F\xD7\x57'
-DMR_VOICE_SYNC_MS   =   '\x7F\x7D\x5D\xD5\x7D\xFD'
+DMR_DATA_SYNC_MS    =   '0xD5D7F77FD757'
+DMR_VOICE_SYNC_MS   =   '0x7F7D5DD57DFD'
 
 # TLV tag definitions
 TAG_BEGIN_TX    = 0         # Begin transmission with optional metadata
@@ -428,10 +428,10 @@ class tlvFNE(tlvBase):
         _rx_slot.emblc[5] = bitarray(32)                    # NULL message (F)
 
         # create slot_type
-        slot_type = chr((_cc << 4) | (_dtype & 0x0f))       # data type is Header or Term
+        slot_type = chr((_cc << 4) | (ord(_dtype) & 0x0f))  # data type is Header or Term
 
         # generate FEC for slot type
-        slot_with_fec  = BitArray(uint=golay.encode_2087(slot_type), length=20)
+        slot_with_fec = BitArray(uint=golay.encode_2087(slot_type), length=20)
 
         # construct final frame - info[0:98] + slot_type[0:10] + DMR_DATA_SYNC_MS + slot_type[10:20] + info[98:196]
         frame_bits = full_lc_encode[0:98] + slot_with_fec[0:10] + decode.to_bits(_sync) + slot_with_fec[10:20] + full_lc_encode[98:196]
