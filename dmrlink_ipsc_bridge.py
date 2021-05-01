@@ -50,17 +50,10 @@ from ipsc.ipsc_const import *
 from ipsc.ipsc_mask import *
 
 from dmr_utils import ambe_utils
-from dmr_utils.ambe_bridge import AMBE_IPSC
+from dmr_utils.tlv import tlvIPSC
 
-try:
-    from ipsc.ipsc_const import *
-except ImportError:
-    sys.exit('IPSC constants file not found or invalid')
-
-try:
-    from ipsc.ipsc_mask import *
-except ImportError:
-    sys.exit('IPSC mask values file not found or invalid')
+from ipsc.ipsc_const import *
+from ipsc.ipsc_mask import *
     
 from fne.fne_core import hex_str_3, hex_str_4, int_id
 
@@ -69,47 +62,40 @@ from fne.fne_core import hex_str_3, hex_str_4, int_id
 #     
 # ---------------------------------------------------------------------------
 
-class ambeIPSC(IPSC):
-    _configFile = 'dmrlink_ipsc_bridge.cfg'             # Name of the config file to over-ride these default values
-    
-    _ambeRxPort = 31003                                 # Port to listen on for AMBE frames to transmit to all peers
-    _gateway = "127.0.0.1"                              # IP address of  app
-    _gateway_port = 31000                               # Port Analog_Bridge is listening on for AMBE frames to decode
-    
-    _busy_slots = [0,0,0]                               # Keep track of activity on each slot.  Make sure app is polite
-
-    _currentNetwork = ""
-    cc = 1
-
-    def __init__(self, _name, _config, _logger, _report):
+class bridgeIPSC(IPSC):
+    def __init__(self, _name, _config, _bridge_config, _logger, _report):
         IPSC.__init__(self, _name, _config, _logger, _report)
+
+        self._busy_slots = [0, 0, 0]                        # Keep track of activity on each slot.  Make sure app is polite
+        self.cc = 1
+
+        self._tlvPort = 31003                               # Port to listen on for TLV frames to transmit to all peers
+        self._gateway = "127.0.0.1"                         # IP address of bridge app
+        self._gateway_port = 31000                          # Port bridge is listening on for TLV frames to decode
         
         #
         # Define default values for operation.  These will be overridden by the .cfg file if found
         #
         
         self._currentNetwork = str(_name)
-        self.readConfigFile(self._configFile, None, self._currentNetwork)
+        self.readConfigFile(self._bridge_config, None, self._currentNetwork)
     
         logger.info('DMRLink IPSC Bridge')
 
-        self.ipsc_ambe = AMBE_IPSC(self, _name, _config, _logger, self._ambeRxPort)
+        self.tlv_ipsc = tlvIPSC(self, _name, _config, _logger, self._tlvPort)
 
-    def get_globals(self):
-        return ({}, {}, {})
-
-    def get_repeater_id(self, import_id):
+    def get_peer_id(self, import_id):
         return self._config['LOCAL']['PEER_ID']
 
     # Now read the configuration file and parse out the values we need
-    def defaultOption( self, config, sec, opt, defaultValue ):
+    def defaultOption(self, config, sec, opt, defaultValue):
         try:
-            _value = config.get(sec, opt).split(None)[0]            # Get the value from the named section
+            _value = config.get(sec, opt).split(None)[0]    # Get the value from the named section
         except ConfigParser.NoOptionError as e:
             try:
                 _value = config.get('BridgeGlobal', opt).split(None)[0] # Try the global BridgeGlobal section
             except ConfigParser.NoOptionError as e:
-                _value = defaultValue                               # Not found anywhere, use the default value
+                _value = defaultValue                       # Not found anywhere, use the default value
         logger.info(opt + ' = ' + str(_value))
         return _value
 
@@ -124,7 +110,7 @@ class ambeIPSC(IPSC):
                 logger.info('Section ' + sec + ' was not found, using BridgeGlobal')
                 sec = 'BridgeGlobal'
 
-            self._ambeRxPort = int(self.defaultOption(config, sec, 'FromGatewayPort', self._ambeRxPort))
+            self._tlvPort = int(self.defaultOption(config, sec, 'FromGatewayPort', self._tlvPort))
             self._gateway = self.defaultOption(config, sec, 'Gateway', self._gateway)
             self._gateway_port = int(self.defaultOption(config, sec, 'ToGatewayPort', self._gateway_port))
 
@@ -137,43 +123,43 @@ class ambeIPSC(IPSC):
     # ************************************************
     #  CALLBACK FUNCTIONS FOR USER PACKET TYPES
     # ************************************************
-    def group_voice(self, _src_sub, _dst_sub, _ts, _end, _peerId, _data):
-        _tx_slot = self.ipsc_ambe.tx[_ts]
+    def group_voice(self, _src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data):
+        _tx_slot = self.tlv_ipsc.tx[_ts]
         _payload_type = _data[30:31]
         _seq = int_id(_data[20:22])
         _tx_slot.frame_count += 1
 
-        if _payload_type == BURST_DATA_TYPE['VOICE_HEAD']:
-            _stream_id       = int_id(_data[5:6])                 # int8  looks like a sequence number for a packet
+        if _payload_type == BURST_DATA_TYPE['VOICE_HEADER']:
+            _stream_id       = int_id(_data[5:6])           # int8  looks like a sequence number for a packet
             if (_stream_id != _tx_slot.stream_id):
-                self.ipsc_ambe.begin_call(_ts, _src_sub, _dst_sub, _peerId, self.cc, _seq, _stream_id)
+                self.tlv_ipsc.begin_call(_ts, _src_sub, _dst_sub, _peerId, self.cc, _seq, _stream_id)
             _tx_slot.lastSeq = _seq
 
-        if _payload_type == BURST_DATA_TYPE['VOICE_TERM']:
-            self.ipsc_ambe.end_call(_tx_slot)
+        if _payload_type == BURST_DATA_TYPE['VOICE_TERMINATOR']:
+            self.tlv_ipsc.end_call(_tx_slot)
 
         if (_payload_type == BURST_DATA_TYPE['SLOT1_VOICE']) or (_payload_type == BURST_DATA_TYPE['SLOT2_VOICE']):
             _ambe_frames = BitArray('0x' + h(_data[33:52]))
             _ambe_frame1 = _ambe_frames[0:49]
             _ambe_frame2 = _ambe_frames[50:99]
             _ambe_frame3 = _ambe_frames[100:149]
-            self.ipsc_ambe.export_voice(_tx_slot, _seq, _ambe_frame1.tobytes() + _ambe_frame2.tobytes() + _ambe_frame3.tobytes())
+            self.tlv_ipsc.export_voice(_tx_slot, _seq, _ambe_frame1.tobytes() + _ambe_frame2.tobytes() + _ambe_frame3.tobytes())
 
-    def private_voice(self, _src_sub, _dst_sub, _ts, _end, _peerId, _data):
+    def private_voice(self, _src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data):
         print('private voice')
 
     # ************************************************
     #  Debug: print IPSC frame on console
     # ************************************************
     def dumpIPSCFrame(self, _frame):
-        _packetType     = int_id(_frame[0:1])                 # int8  GROUP_VOICE, PVT_VOICE, GROUP_DATA, PVT_DATA, CALL_MON_STATUS, CALL_MON_RPT, CALL_MON_NACK, XCMP_XNL, RPT_WAKE_UP, DE_REG_REQ
-        _peerId         = int_id(_frame[1:5])                 # int32 peer who is sending us a packet
-        _ipsc_seq       = int_id(_frame[5:6])                 # int8  looks like a sequence number for a packet
-        _src_sub        = int_id(_frame[6:9])                 # int32 Id of source
-        _dst_sub        = int_id(_frame[9:12])                # int32 Id of destination
-        _call_type      = int_id(_frame[12:13])               # int8 Priority Voice/Data
-        _call_ctrl_info  = int_id(_frame[13:17])              # int32
-        _call_info      = int_id(_frame[17:18])               # int8  Bits 6 and 7 defined as TS and END
+        _packetType     = int_id(_frame[0:1])               # int8  GROUP_VOICE, PVT_VOICE, GROUP_DATA, PVT_DATA, CALL_MON_STATUS, CALL_MON_RPT, CALL_MON_NACK, XCMP_XNL, RPT_WAKE_UP, DE_REG_REQ
+        _peerId         = int_id(_frame[1:5])               # int32 peer who is sending us a packet
+        _ipsc_seq       = int_id(_frame[5:6])               # int8  looks like a sequence number for a packet
+        _src_sub        = int_id(_frame[6:9])               # int32 Id of source
+        _dst_sub        = int_id(_frame[9:12])              # int32 Id of destination
+        _call_type      = int_id(_frame[12:13])             # int8 Priority Voice/Data
+        _call_ctrl_info  = int_id(_frame[13:17])            # int32
+        _call_info      = int_id(_frame[17:18])             # int8  Bits 6 and 7 defined as TS and END
 
         # parse out the RTP values
         _rtp_byte_1 = int_id(_frame[18:19])                 # Call Ctrl Src
@@ -183,15 +169,15 @@ class ambeIPSC(IPSC):
         _rtp_ssid   = int_id(_frame[26:30])                 # Sync Src Id
 
         # Extract RTP Payload Data Fields
-        _payload_type   = _frame[30]                       # int8  VOICE_HEAD, VOICE_TERM, SLOT1_VOICE, SLOT2_VOICE
+        _payload_type   = _frame[30]                        # int8  VOICE_HEAD, VOICE_TERM, SLOT1_VOICE, SLOT2_VOICE
         
         _ts             = bool(_call_info & TS_CALL_MSK)
         _end            = bool(_call_info & END_MSK)
 
-        if _payload_type == BURST_DATA_TYPE['VOICE_HEAD']:
+        if _payload_type == BURST_DATA_TYPE['VOICE_HEADER']:
             print('HEAD:', h(_frame))
 
-        if _payload_type == BURST_DATA_TYPE['VOICE_TERM']:
+        if _payload_type == BURST_DATA_TYPE['VOICE_TERMINATOR']:
             _ipsc_rssi_threshold_and_parity = int_id(_frame[31])
             _ipsc_length_to_follow = int_id(_frame[32:34])
             _ipsc_rssi_status = int_id(_frame[34])
@@ -217,7 +203,7 @@ class ambeIPSC(IPSC):
             _ambe           = _frame[33:52]
             print('SLOT2:', h(_frame))
 
-        print("pt={:02X} pid={} seq={:02X} src={} dst={} ct={:02X} uk={} ci={} rsq={}".format(_packetType, _peerId,_ipsc_seq, _src_sub,_dst_sub,_call_type,_call_ctrl_info,_call_info,_rtp_seq))
+        print("pt={:02X} pid={} seq={:02X} src={} dst={} ct={:02X} uk={} ci={} rsq={}".format(_packetType, _peerId, _ipsc_seq, _src_sub, _dst_sub, _call_type, _call_ctrl_info, _call_info, _rtp_seq))
 
 # ---------------------------------------------------------------------------
 #   Program Entry Point
@@ -249,13 +235,13 @@ if __name__ == '__main__':
         cli_args.BridgeFile = os.path.dirname(os.path.abspath(__file__)) + '/dmrlink_ipsc_bridge.cfg'
     
     # Call the external routine to build the configuration dictionary
-    CONFIG = build_config(cli_args.ConfigFile)
+    config = build_config(cli_args.ConfigFile)
     
     # Call the external routing to start the system logger
     if cli_args.LogLevel:
-        CONFIG['Log']['LogLevel'] = cli_args.LogLevel
+        config['Log']['LogLevel'] = cli_args.LogLevel
 
-    logger = config_logging(CONFIG['Log'])  
+    logger = config_logging(config['Log'])  
 
     logger.debug('Logging system started, anything from here on gets logged')
     logger.info('Digital Voice Modem IPSC -> FNE Bridge Service D01.00')
@@ -264,11 +250,11 @@ if __name__ == '__main__':
     observer.start()
 
     # Make Dictionaries
-    white_rids = mk_id_dict(CONFIG['Aliases']['Path'], CONFIG['Aliases']['WhitelistRIDsFile'])
+    white_rids = mk_id_dict(config['Aliases']['Path'], config['Aliases']['WhitelistRIDsFile'])
     if white_rids:
         logger.info('ID MAPPER: white_rids dictionary is available')
 
-    black_rids = mk_id_dict(CONFIG['Aliases']['Path'], CONFIG['Aliases']['BlacklistRIDsFile'])
+    black_rids = mk_id_dict(config['Aliases']['Path'], config['Aliases']['BlacklistRIDsFile'])
     if black_rids:
         logger.info('ID MAPPER: black_rids dictionary is available')
     
@@ -287,13 +273,14 @@ if __name__ == '__main__':
     for sig in [signal.SIGTERM, signal.SIGINT, signal.SIGQUIT]:
         signal.signal(sig, sig_handler)
 
-    # INITIALIZE THE REPORTING LOOP
-    report_server = config_reports(CONFIG, logger, reportFactory)
+    # setup the reporting loop
+    report_server = config_reports(config, logger, reportFactory)
 
-    # INITIALIZE AN IPSC OBJECT (SELF SUSTAINING) FOR EACH CONFIGUED IPSC
-    for system in CONFIG['Systems']:
-        if CONFIG['Systems'][system]['LOCAL']['Enabled']:
-            systems[system] = ambeIPSC(system, CONFIG, logger, report_server)
-            reactor.listenUDP(CONFIG['Systems'][system]['LOCAL']['PORT'], systems[system], interface=CONFIG['Systems'][system]['LOCAL']['IP'])
+    # IPSC instance creation
+    for system in config['Systems']:
+        if config['Systems'][system]['LOCAL']['Enabled']:
+            systems[system] = bridgeIPSC(system, config, cli_args.BridgeFile, logger, report_server)
+            reactor.listenUDP(config['Systems'][system]['LOCAL']['PORT'], systems[system], interface = config['Systems'][system]['LOCAL']['IP'])
+            logger.debug('Instance created: %s, %s', system, systems[system])
     
     reactor.run()

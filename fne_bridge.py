@@ -52,7 +52,7 @@ from twisted.internet import reactor, task
 from fne.fne_core import hex_str_3, int_id, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
 from fne import fne_config, fne_log, fne_const
 
-from dmr_utils.ambe_bridge import AMBE_FNE
+from dmr_utils.tlv import tlvFNE
 from dmr_utils import decode, bptc, const, golay, qr, ambe_utils
 
 # ---------------------------------------------------------------------------
@@ -64,13 +64,13 @@ class bridgeFNE(coreFNE):
     def __init__(self, _name, _config, _bridge_config, _logger, _act_log_file, _report):
         coreFNE.__init__(self, _name, _config, _logger, _act_log_file, _report)
 
-        self._ambeRxPort = 31003        # Port to listen on for AMBE frames to transmit to all peers
-        self._gateway = "127.0.0.1"     # IP address of bridge app
-        self._gateway_port = 31000      # Port bridge is listening on for AMBE frames to decode
+        self._tlvPort = 31003                               # Port to listen on for TLV frames to transmit to all peers
+        self._gateway = "127.0.0.1"                         # IP address of bridge app
+        self._gateway_port = 31000                          # Port bridge is listening on for TLV frames to decode
 
         self.load_configuration(_bridge_config)
 
-        self.fne_ambe = AMBE_FNE(self, _name, _config, _logger, self._ambeRxPort)
+        self.fne_ambe = AMBE_FNE(self, _name, _config, _logger, self._tlvPort)
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def dmrd_validate(self, _peer_id, _rf_src, _dst_id, _slot, _call_type, _frame_type, _dtype_vseq, _stream_id):
@@ -112,11 +112,8 @@ class bridgeFNE(coreFNE):
     def peer_connected(self, _peer_id, _peer):
         return
 
-    def get_globals(self):
-        return ({}, {}, {})
-
-    def get_repeater_id(self, import_id):
-        if self._config['Mode'] == 'peer':    # only peers have PeerId defined, masters do not
+    def get_peer_id(self, import_id):
+        if self._config['Mode'] == 'peer': # only peers have PeerId defined, masters do not
             return self._config['PeerId']
         return import_id
 
@@ -128,9 +125,9 @@ class bridgeFNE(coreFNE):
         try:
             for section in config.sections():
                 if section == 'BridgeGlobal':
-                    self._ambeRxPort = int(config.get(section, 'FromGatewayPort').split(None)[0])           # Port to listen on for AMBE frames to transmit to all peers
-                    self._gateway = config.get(section, 'Gateway').split(None)[0]                           # IP address of bridge app
-                    self._gateway_port = int(config.get(section, 'ToGatewayPort').split(None)[0])           # Port bridge is listening on for AMBE frames to decode
+                    self._tlvPort = int(config.get(section, 'FromGatewayPort').split(None)[0])    # Port to listen on for AMBE frames to transmit to all peers
+                    self._gateway = config.get(section, 'Gateway').split(None)[0]                 # IP address of bridge app
+                    self._gateway_port = int(config.get(section, 'ToGatewayPort').split(None)[0]) # Port bridge is listening on for AMBE frames to decode
 
         except ConfigParser.Error, err:
             traceback.print_exc()

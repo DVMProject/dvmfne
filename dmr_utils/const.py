@@ -42,8 +42,35 @@ SYNC = {
     'BS_DATA':  BS_DATA_SYNC
 }
 
+SYNC_TYPE_NONE = 0x00
+SYNC_TYPE_VOICE = 0x01
+SYNC_TYPE_DATA = 0x02
+
+# Feature Set
+FID_ETSI = '\x00'
+FID_DMRA = '\x10'
+
 # LC Options - Use for Group Voice
 LC_OPT = '\x00\x00\x20'
+
+LC_GROUP_VOICE = '\x00'
+LC_PRIVATE_VOICE = '\x01'
+
+LC_SVC_OPT_EMERGENCY = '\x80'
+LC_SVC_OPT_PRIVACY = '\x40'
+LC_SVC_OPT_BCAST = '\x08'
+LC_SVC_OPT_OVCM = '\x04'
+
+CALL_PRIORITY_NONE = '\x00'
+CALL_PRIORITY_1 = '\x01'
+CALL_PRIORITY_2 = '\x02'    # Default Priority
+CALL_PRIORITY_3 = '\x03'
+
+# Voice Control
+VC_EMBEDDED_LC_BITS = 0x02
+VC_EMB = 0x04
+VC_EMBEDDED_LC = 0x10
+VC_SYNC = 0x40
 
 # Precomputed EMB values, where CC always = 1, and PI always = 0
 EMB = {

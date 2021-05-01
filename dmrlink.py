@@ -264,6 +264,23 @@ def log_master(_system, _logger, _config):
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
+#
+# ---------------------------------------------------------------------------
+
+class RTP:
+    def __init__(self, _data):
+        # parse out the RTP values
+        #self._rtp_byte_1 = int_id(_data[18:19])           # Call Ctrl Src
+        self.rtp_payload_type = int_id(_data[19:20])      # Type
+        self.seq = int_id(_data[20:22])                   # Seq No
+        self.timestamp = int_id(_data[22:26])             # Timestamp
+        self.ssrc = int_id(_data[26:30])                  # Sync Src Id
+
+        # Extract RTP Payload Data Fields
+        self.ipsc_payload_type = _data[30]                # int8  VOICE_HEAD, VOICE_TERM, SLOT1_VOICE, SLOT2_VOICE
+
+# ---------------------------------------------------------------------------
+#   Class Declaration
 #     Used to handle IPSC network traffic.
 # ---------------------------------------------------------------------------
 
@@ -271,7 +288,7 @@ class IPSC(DatagramProtocol):
     def __init__(self, _name, _config, _logger, _report):
         # Housekeeping: create references to the configuration and status data for this IPSC instance.
         # Some configuration objects that are used frequently and have lengthy names are shortened
-        # such as (self._master_sock) expands to (self._config['Master']['IP'], self._config['Master']['Port']).
+        # such as (self._master_sock) expands to (self._config['MASTER']['IP'], self._config['MASTER']['PORT']).
         # Note that many of them reference each other... this is the Pythonic way.
         self._system = _name
         self._CONFIG = _config
@@ -454,16 +471,16 @@ class IPSC(DatagramProtocol):
     def repeater_wake_up(self, _data):
         self._logger.info('(%s) Repeater Wake-Up Packet Received: %s', self._system, ahex(_data))
         
-    def group_voice(self, _src_sub, _dst_sub, _ts, _end, _peerId, _data):
+    def group_voice(self, _src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data):
         self._logger.info('(%s) Group Voice Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerId), int_id(_dst_sub))
     
-    def private_voice(self, _src_sub, _dst_sub, _ts, _end, _peerId, _data):
+    def private_voice(self, _src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data):
         self._logger.info('(%s) Private Voice Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerId), int_id(_dst_sub))
     
-    def group_data(self, _src_sub, _dst_sub, _ts, _end, _peerId, _data):    
+    def group_data(self, _src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data):    
         self._logger.info('(%s) Group Data Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerId), int_id(_dst_sub))
     
-    def private_data(self, _src_sub, _dst_sub, _ts, _end, _peerId, _data):    
+    def private_data(self, _src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data):    
         self._logger.info('(%s) Private Data Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerId), int_id(_dst_sub))
 
     def unknown_message(self, _packetType, _peerId, _data):
@@ -808,43 +825,36 @@ class IPSC(DatagramProtocol):
             # ORIGINATED BY SUBSCRIBER UNITS - a.k.a someone transmitted
             if _packetType in USER_PACKETS:
                 # Extract IPSC header not already extracted
-                _src_sub    = _data[6:9]
-                _dst_sub    = _data[9:12]
-                _call_type  = _data[12:13]
-                _unknown_1  = _data[13:17]
-                _call_info  = int_id(_data[17:18])                
+                _src_sub = _data[6:9]
+                _dst_sub = _data[9:12]
+                _call_priority = _data[12:13]
+                _call_tag = _data[13:17]
+                _control = int_id(_data[17:18])
+
+                _rtp         = RTP(_data)
+
                 _ts         = bool(_call_info & TS_CALL_MSK) + 1
                 _end        = bool(_call_info & END_MSK)
-
-                # parse out the RTP values
-                _rtp_byte_1 = int_id(_data[18:19])                 # Call Ctrl Src
-                _rtp_byte_2 = int_id(_data[19:20])                 # Type
-                _rtp_seq    = int_id(_data[20:22])                 # Call Seq No
-                _rtp_tmstmp = int_id(_data[22:26])                 # Timestamp
-                _rtp_ssid   = int_id(_data[26:30])                 # Sync Src Id
-
-                # Extract RTP Payload Data Fields
-                _payload_type   = _data[30]                       # int8  VOICE_HEAD, VOICE_TERM, SLOT1_VOICE, SLOT2_VOICE
 
                 # User Voice and Data Call Types:
                 if _packetType == GROUP_VOICE:
                     self.reset_keep_alive(_peerId)
-                    self.group_voice(_src_sub, _dst_sub, _ts, _end, _peerId, _data)
+                    self.group_voice(_src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data)
                     return
             
                 elif _packetType == PVT_VOICE:
                     self.reset_keep_alive(_peerId)
-                    self.private_voice(_src_sub, _dst_sub, _ts, _end, _peerId, _data)
+                    self.private_voice(_src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data)
                     return
                     
                 elif _packetType == GROUP_DATA:
                     self.reset_keep_alive(_peerId)
-                    self.group_data(_src_sub, _dst_sub, _ts, _end, _peerId, _data)
+                    self.group_data(_src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data)
                     return
                     
                 elif _packetType == PVT_DATA:
                     self.reset_keep_alive(_peerId)
-                    self.private_data(_src_sub, _dst_sub, _ts, _end, _peerId, _data)
+                    self.private_data(_src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data)
                     return
                 return
 
@@ -1040,13 +1050,13 @@ if __name__ == '__main__':
         cli_args.ConfigFile = os.path.dirname(os.path.abspath(__file__)) + '/dmrlink.cfg'
     
     # Call the external routine to build the configuration dictionary
-    CONFIG = build_config(cli_args.ConfigFile)
+    config = build_config(cli_args.ConfigFile)
     
     # Call the external routing to start the system logger
     if cli_args.LogLevel:
-        CONFIG['Log']['LogLevel'] = cli_args.LogLevel
+        config['Log']['LogLevel'] = cli_args.LogLevel
 
-    logger = config_logging(CONFIG['Log'])  
+    logger = config_logging(config['Log'])  
 
     logger.debug('Logging system started, anything from here on gets logged')
     logger.info('Digital Voice Modem DMRlink Service D01.00')
@@ -1065,14 +1075,14 @@ if __name__ == '__main__':
         signal.signal(sig, sig_handler)
     
     # INITIALIZE THE REPORTING LOOP
-    report_server = config_reports(CONFIG, logger, reportFactory)
+    report_server = config_reports(config, logger, reportFactory)
     
     # Make Dictionaries
-    white_rids = mk_id_dict(CONFIG['Aliases']['Path'], CONFIG['Aliases']['WhitelistRIDsFile'])
+    white_rids = mk_id_dict(config['Aliases']['Path'], config['Aliases']['WhitelistRIDsFile'])
     if white_rids:
         logger.info('ID MAPPER: white_rids dictionary is available')
 
-    black_rids = mk_id_dict(CONFIG['Aliases']['Path'], CONFIG['Aliases']['BlacklistRIDsFile'])
+    black_rids = mk_id_dict(config['Aliases']['Path'], config['Aliases']['BlacklistRIDsFile'])
     if black_rids:
         logger.info('ID MAPPER: black_rids dictionary is available')
 
@@ -1080,8 +1090,8 @@ if __name__ == '__main__':
     subscriber_ids = {}
     local_ids = {}
         
-    # INITIALIZE AN IPSC OBJECT (SELF SUSTAINING) FOR EACH CONFIGRUED IPSC
-    systems = mk_ipsc_systems(CONFIG, logger, systems, IPSC, report_server)
+    # INITIALIZE AN IPSC OBJECT (SELF SUSTAINING) FOR EACH configRUED IPSC
+    systems = mk_ipsc_systems(config, logger, systems, IPSC, report_server)
 
     # INITIALIZATION COMPLETE -- START THE REACTOR
     reactor.run()

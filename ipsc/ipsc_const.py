@@ -7,6 +7,7 @@
 #
 ###############################################################################
 #   Copyright (C) 2016  Cortney T. Buffington, N0MJS <n0mjs@me.com>
+#   Copyright (C) 2021  Bryan Biedenkapp, N2PLL <gatekeep@gmail.com>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -35,7 +36,7 @@ PVT_VOICE             = '\x81'
 GROUP_DATA            = '\x83'
 PVT_DATA              = '\x84'
 RPT_WAKE_UP           = '\x85' # Similar to OTA DMR "wake up"
-UNKNOWN_COLLISION     = '\x86' # Seen when two dmrlinks try to transmit at once
+INTERRUPT_REQUEST     = '\x86' 
 MASTER_REG_REQ        = '\x90' # FROM peer TO master
 MASTER_REG_REPLY      = '\x91' # FROM master TO peer
 PEER_LIST_REQ         = '\x92' # From peer TO master
@@ -64,10 +65,15 @@ LINK_TYPE_IPSC        = '\x04'
 
 # Burst Data Types
 BURST_DATA_TYPE = {
-    'VOICE_HEAD':  '\x01',
-    'VOICE_TERM':  '\x02',
-    'SLOT1_VOICE': '\x0A',
-    'SLOT2_VOICE': '\x8A'   
+    'PI_HEADER':        '\x00',
+    'VOICE_HEADER':     '\x01',
+    'VOICE_TERMINATOR': '\x02',
+    'CSBK':             '\x03',
+    'DATA_HEADER':      '\x06',
+    'UNCONFIRMED_DATA': '\x07',
+    'CONFIRMED_DATA':   '\x08',
+    'SLOT1_VOICE':      '\x0A',
+    'SLOT2_VOICE':      '\x8A'   # This is really a flip of bit 7; of the SLOT1_VOICE data type
 }
 
 # IPSC Version and Link Type are Used for a 4-byte version field in registration packets
@@ -85,8 +91,15 @@ MASTER_REQUIRED = [PEER_LIST_REPLY, MASTER_ALIVE_REPLY]
 # User-Generated Packet Types
 USER_PACKETS = [GROUP_VOICE, PVT_VOICE, GROUP_DATA, PVT_DATA]
 
-# RCM (Repeater Call Monitor) Constants
+# RTP Constants (https://en.wikipedia.org/wiki/Real-time_Transport_Protocol)
 
+RTP_VER = '\x80'                    # Actually; this isn't just the version but Version, Padding Flag, Extension Flag and 4-bit CC
+
+RTP_PAYLOAD_VOICE_HEADER = '\xDD'   # Based on fuzzy analysis of Wireshark dumps of IPSC -- 0xDD seems to be used for VOICE HEADER (its just VOICE with bit 8 set)
+RTP_PAYLOAD_VOICE = '\x5D'          # Based on fuzzy analysis of Wireshark dumps of IPSC -- 0x5D seems to be used for VOICE HEADER and VOICE
+RTP_PAYLOAD_TERM = '\x5E'           # Based on fuzzy analysis of Wireshark dumps of IPSC -- 0x5E seems to be used for VOICE TERMINATOR
+
+# RCM (Repeater Call Monitor) Constants
 TS = {
     '\x00': '1',
     '\x01': '2'
@@ -142,14 +155,4 @@ REPEAT = {
     '\x02': 'Idle',
     '\x03': 'TS Disabled',
     '\x04': 'TS Enabled'
-}
-
-
-# DMR IPSC Contants (in the RTP Payload)
-
-BURST_DATA_TYPE = {
-    'VOICE_HEAD':  '\x01',
-    'VOICE_TERM':  '\x02',
-    'SLOT1_VOICE': '\x0A',
-    'SLOT2_VOICE': '\x8A'   
 }

@@ -65,7 +65,7 @@
     <Compile Include="dmrlink.py" />
     <Compile Include="dmrlink_ipsc_bridge.py" />
     <Compile Include="dmr_utils\ambe.py" />
-    <Compile Include="dmr_utils\ambe_bridge.py" />
+    <Compile Include="dmr_utils\tlv.py" />
     <Compile Include="dmr_utils\ambe_utils.py" />
     <Compile Include="dmr_utils\bptc.py" />
     <Compile Include="dmr_utils\const.py" />
