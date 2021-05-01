@@ -70,7 +70,7 @@ class bridgeFNE(coreFNE):
 
         self.load_configuration(_bridge_config)
 
-        self.fne_ambe = AMBE_FNE(self, _name, _config, _logger, self._tlvPort)
+        self.fne_ambe = tlvFNE(self, _name, _config, _logger, self._tlvPort)
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def dmrd_validate(self, _peer_id, _rf_src, _dst_id, _slot, _call_type, _frame_type, _dtype_vseq, _stream_id):
