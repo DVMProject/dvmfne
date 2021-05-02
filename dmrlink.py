@@ -495,8 +495,8 @@ class IPSC(DatagramProtocol):
 
         self.transport.write(_packet, (_host, _port))
 
-        # USE THE FOLLOWING ONLY UNDER DIRE CIRCUMSTANCES -- PERFORMANCE IS ADVERSLY AFFECTED!
-        #self._logger.debug('(%s) TX Packet to %s on port %s: %s', self._system, _host, _port, ahex(_packet))
+        if self._CONFIG['Log']['RawPacketTrace']:
+            self._logger.debug('(%s) Network Transmitted (to %s:%s) -- %s', self._system, _host, _port, ahex(_packet))
         
     # Accept a complete packet, ready to be sent, and send it to all active peers + master in an IPSC
     def send_to_ipsc(self, _packet):

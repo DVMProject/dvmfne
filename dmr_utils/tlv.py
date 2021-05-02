@@ -316,6 +316,8 @@ class tlvBase:
     def pi_params(self, _slot, _dst_id, _alg_id, _key_id, _mi):
         metadata = _dst_id[0:3] + _alg_id + _key_id + _mi[0:4] + struct.pack('B', _slot)
 
+        sleep(0.06)
+
         # start transmission
         self.send_tlv(TAG_PI_INFO, metadata)    
 
