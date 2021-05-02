@@ -70,7 +70,7 @@
     <Compile Include="dmr_utils\bptc.py" />
     <Compile Include="dmr_utils\const.py" />
     <Compile Include="dmr_utils\crc.py" />
-    <Compile Include="dmr_utils\decode.py" />
+    <Compile Include="dmr_utils\lc.py" />
     <Compile Include="dmr_utils\golay.py" />
     <Compile Include="dmr_utils\golay_tables.py" />
     <Compile Include="dmr_utils\hamming.py" />

@@ -29,6 +29,7 @@ from __future__ import print_function
 import sys, traceback
 import cPickle as pickle
 
+from binascii import b2a_hex as ahex
 from bitarray import bitarray
 from time import time
 from importlib import import_module
@@ -41,7 +42,7 @@ from twisted.internet import reactor, task
 from fne.fne_core import hex_str_3, int_id, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
 from fne import fne_config, fne_log, fne_const
 
-from dmr_utils import decode, bptc, const
+from dmr_utils import lc, bptc, const
 
 # ---------------------------------------------------------------------------
 #   Module Routines
@@ -313,8 +314,8 @@ class routerFNE(coreFNE):
                 # If we can, use the LC from the voice header as to keep all
                 # options intact
                 if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
-                    lc = decode.decode_lc_header(dmrpkt)
-                    self.STATUS[_slot]['RX_LC'] = lc['LC'][:9]
+                    lcHeader = lc.decode_lc_header(dmrpkt)
+                    self.STATUS[_slot]['RX_LC'] = lcHeader['LC'][:9]
                 
                 # If we don't have a voice header then don't wait to decode it
                 # from the Embedded LC
@@ -323,6 +324,7 @@ class routerFNE(coreFNE):
                 else:
                     self.STATUS[_slot]['RX_LC'] = const.LC_OPT + _dst_id + _rf_src
 
+                self._logger.debug('(%s) TS %s [STREAM ID %s] RX_LC %s', self._system, _slot, int_id(_stream_id), ahex(self.STATUS[_slot]['RX_LC']))
 
             for rule in RULES[self._system]['GROUP_VOICE']:
                 _target = rule['DST_NET']
@@ -395,6 +397,9 @@ class routerFNE(coreFNE):
                         _target_status[rule['DST_TS']]['TX_H_LC'] = bptc.encode_header_lc(dst_lc)
                         _target_status[rule['DST_TS']]['TX_T_LC'] = bptc.encode_terminator_lc(dst_lc)
                         _target_status[rule['DST_TS']]['TX_EMB_LC'] = bptc.encode_emblc(dst_lc)
+
+                        self._logger.debug('(%s) TS %s [STREAM ID %s] TX_H_LC %s', self._system, _slot, int_id(_stream_id), ahex(dst_lc))
+
                         self._logger.debug('(%s) DMR Packet DST TGID %s does not match SRC TGID %s - Generating FULL and EMB LCs', 
                                            self._system, int_id(rule['DST_GROUP']), int_id(_dst_id))
                         self._logger.info('(%s) DMRD: Call routed to SYSTEM %s TS %s TGID %s',

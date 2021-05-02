@@ -40,8 +40,6 @@ from twisted.internet import reactor, task
 from fne.fne_core import hex_str_3, int_id, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
 from fne import fne_config, fne_log, fne_const
 
-from dmr_utils import decode, bptc, const
-
 # ---------------------------------------------------------------------------
 #   Class Declaration
 #     This implements the parrot network FNE logic.

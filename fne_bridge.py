@@ -53,7 +53,7 @@ from fne.fne_core import hex_str_3, int_id, coreFNE, systems, fne_shutdown_handl
 from fne import fne_config, fne_log, fne_const
 
 from dmr_utils.tlv import tlvFNE
-from dmr_utils import decode, bptc, const, golay, qr, ambe_utils
+from dmr_utils import lc, bptc, const, golay, qr, ambe_utils
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
@@ -89,11 +89,10 @@ class bridgeFNE(coreFNE):
             _tx_slot.lastSeq = _seq
 
         if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_VOICE_PI_HEADER):
-            header = decode.decode_lc_header(dmrpkt)
-            lc = header['LC']
-            _alg_id = lc[0]
-            _key_id = lc[2]
-            _mi = lc[3:7]
+            lcHeader = lc.decode_lc_header(dmrpkt)
+            _alg_id = lcHeader['LC'][0]
+            _key_id = lcHeader['LC'][2]
+            _mi = lcHeader['LC'][3:7]
             self.tlv_fne.pi_params(_slot, _dst_id, _alg_id, _key_id, _mi)
 
         if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC) and (_tx_slot.type != fne_const.DT_TERMINATOR_WITH_LC):

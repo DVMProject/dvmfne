@@ -50,7 +50,7 @@ from twisted.internet import task
 # Things we import from the core modules
 from fne.fne_core import hex_str_3, hex_str_4, int_id
 
-from dmr_utils import decode, bptc, const, golay, qr, rs129
+from dmr_utils import lc, bptc, const, golay, qr, rs129
 
 from ipsc.ipsc_const import *
 from dmr_utils.const import *
@@ -452,18 +452,18 @@ class tlvFNE(tlvBase):
     # Construct a complete HB frame from passed parameters
     def make_dmrd(self, _seq, _src_id, _dst_id, _peer_id, _flag, _stream_id, _dmr_frame):
         frame = bytearray('DMRD')                           # Header type DMRD
-        frame += struct.pack("i", _seq)[0]                  # Sequence number
+        frame += struct.pack('I', _seq)[0]                  # Sequence number
         frame += _src_id[0:3]                               # Source ID
         frame += _dst_id[0:3]                               # Destination ID
         frame += _peer_id[0:4]                              # Peer ID (4 bytes)
-        frame += struct.pack("i", _flag)[0:1]               # Flag to packet
+        frame += struct.pack('I', _flag)[0:1]               # Flag to packet
         frame += _stream_id[0:4]                            # Stream ID (same for all packets in a transmission)
         frame += _dmr_frame                                 # DMR frame
-        frame += struct.pack("i", 0)[0:2]                   # RSSI and err count
+        frame += struct.pack('I', 0)[0:2]                   # RSSI and err count
         return frame
     
     # Private function to create a voice header or terminator DMR frame
-    def encode_lc(self, _rx_slot, _sync, _dtype):
+    def encode_lc(self, _rx_slot, _dtype):
         _src_id = _rx_slot.src_id
         _dst_id = _rx_slot.dst_id
         _cc = _rx_slot.cc
@@ -473,26 +473,13 @@ class tlvFNE(tlvBase):
             _fid = FID_DMRA
 
         # create lc
-        lc = '\x00' + _fid + '\x00' + _dst_id + _src_id     # PF + Reserved + FLCO + FID + Service Options + Destination Address + Source Address
+        lcHeader = '\x00' + _fid + '\x00' + _dst_id + _src_id     # PF + Reserved + FLCO + FID + Service Options + Destination Address + Source Address
 
-        # encode lc into info
-        full_lc_encode = bptc.encode_header_lc(lc)
-        _rx_slot.emblc = bptc.encode_emblc(lc)              # save off the emb lc for voice frames B-E
-        _rx_slot.emblc[5] = bitarray(32)                    # NULL message (F)
-
-        # create slot_type
-        slot_type = chr((_cc << 4) | (ord(_dtype) & 0x0f))
-
-        # generate FEC for slot type
-        slot_with_fec = BitArray(uint=golay.encode_2087(slot_type), length=20)
-
-        # construct final frame - info[0:98] + slot_type[0:10] + DMR_DATA_SYNC_MS + slot_type[10:20] + info[98:196]
-        frame_bits = full_lc_encode[0:98] + slot_with_fec[0:10] + decode.to_bits(_sync) + slot_with_fec[10:20] + full_lc_encode[98:196]
-        return decode.to_bytes(frame_bits)
+        return lc.encode_lc_header(lcHeader, _cc, _dtype, MS_DATA_SYNC)
     
     # Create a voice header DMR frame
     def encode_voice_header(self, _rx_slot):
-        return self.encode_lc(_rx_slot, DMR_DATA_SYNC_MS, DT_VOICE_LC_HEADER)
+        return self.encode_lc(_rx_slot, DT_VOICE_LC_HEADER)
 
     # Create a voice PI header DMR frame
     def encode_pi_header(self, _rx_slot):
@@ -503,27 +490,15 @@ class tlvFNE(tlvBase):
         _cc = _rx_slot.cc
 
         _dtype = DT_VOICE_PI_HEADER
-        _sync = DMR_DATA_SYNC_MS
 
         _fid = FID_ETSI
         if (_rx_slot.secure == True):
             _fid = FID_DMRA
 
         # create lc
-        lc = _alg_id + _fid + _key_id  + _mi + _dst_id + '\x00\x00' # AlgID + FID + KeyID + MI + Destination Address + CRC-CCITT16
+        lcHeader = _alg_id + _fid + _key_id  + _mi + _dst_id + '\x00\x00' # AlgID + FID + KeyID + MI + Destination Address + CRC-CCITT16
 
-        # encode lc into info
-        full_lc_encode = bptc.encode_header_pi(lc)
-
-        # create slot_type
-        slot_type = chr((_cc << 4) | (ord(_dtype) & 0x0f))
-
-        # generate FEC for slot type
-        slot_with_fec = BitArray(uint=golay.encode_2087(slot_type), length=20)
-
-        # construct final frame - info[0:98] + slot_type[0:10] + DMR_DATA_SYNC_MS + slot_type[10:20] + info[98:196]
-        frame_bits = full_lc_encode[0:98] + slot_with_fec[0:10] + decode.to_bits(_sync) + slot_with_fec[10:20] + full_lc_encode[98:196]
-        return decode.to_bytes(frame_bits)
+        return lc.encode_lc_header(lcHeader, _cc, _dtype, MS_DATA_SYNC)
     
     # Create a voice DMR frame A-F frame type
     def encode_voice(self, _ambe, _rx_slot):
@@ -533,13 +508,13 @@ class tlvFNE(tlvBase):
             emb = bitarray(format(qr.ENCODE_1676[ index ], '016b')) # create emb of 16 bits
             embedded = emb[8:16] + _rx_slot.emblc[_frame_type] + emb[0:8] # Take emb and a chunk of the embedded LC and combine them into 48 bits
         else:
-            embedded = BitArray(DMR_VOICE_SYNC_MS)          # Voice SYNC (48 bits)
-        _new_frame = _ambe[0:108] +  embedded + _ambe[108:216] # Construct the dmr frame from AMBE(108 bits) + sync/emb (48 bits) + AMBE(108 bits)
+            embedded = MS_VOICE_SYNC                        # Voice SYNC (48 bits)
+        _new_frame = _ambe[0:108] + embedded + _ambe[108:216] # Construct the dmr frame from AMBE(108 bits) + sync/emb (48 bits) + AMBE(108 bits)
         return _new_frame
     
     # Create a voice terminator DMR frame
     def encode_voice_term(self, _rx_slot):
-        return self.encode_lc(_rx_slot, DMR_DATA_SYNC_MS, DT_TERMINATOR_WITH_LC)
+        return self.encode_lc(_rx_slot, DT_TERMINATOR_WITH_LC)
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
