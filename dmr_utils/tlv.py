@@ -211,10 +211,10 @@ class tlvBase:
                             _rx_slot.cc = int_id(v[11:12])
 
                             group = int_id(v[13])
-                            if (group == 1):
-                                _rx_slot.group = True
-                            else:
+                            if (group == 0):
                                 _rx_slot.group = False
+                            else:
+                                _rx_slot.group = True
 
                         _rx_slot.stream_id = hex_str_4(randint(0, 0xFFFFFFFF))   # Every stream has a unique ID
                         self._logger.info('(%s) DT_VOICE_LC_HEADER, STREAM ID: %s SUB: %s PEER: %s GROUP: %s TGID %s TS %s', \
@@ -284,9 +284,13 @@ class tlvBase:
         self.send_voice_term(_rx_slot)
         self._logger.info('(%s) Playback done', self._system)
 
-    # Begin export group call to partner                
-    def begin_group_call(self, _slot, _src_id, _dst_id, _peer_id, _cc, _seq, _stream_id):
-        metadata = _src_id[0:3] + _peer_id[0:4] + _dst_id[0:3] + struct.pack("b", _slot) + struct.pack("b", _cc) + struct.pack("b", 1)
+    # Begin export call to partner                
+    def begin_call(self, _slot, _group_call, _src_id, _dst_id, _peer_id, _cc, _seq, _stream_id):
+        group = '\x01'
+        if (_group_call == True):
+            group = '\x00'
+
+        metadata = _src_id[0:3] + _peer_id[0:4] + _dst_id[0:3] + struct.pack("b", _slot) + struct.pack("b", _cc) + group
 
         # start transmission
         self.send_tlv(TAG_BEGIN_TX, metadata)    
@@ -473,7 +477,7 @@ class tlvFNE(tlvBase):
         _rx_slot.emblc[5] = bitarray(32)                    # NULL message (F)
 
         # create slot_type
-        slot_type = chr((_cc << 4) | (ord(_dtype) & 0x0f))  # data type is Header or Term
+        slot_type = chr((_cc << 4) | (ord(_dtype) & 0x0f))
 
         # generate FEC for slot type
         slot_with_fec = BitArray(uint=golay.encode_2087(slot_type), length=20)
@@ -492,19 +496,23 @@ class tlvFNE(tlvBase):
         _alg_id = _rx_slot.alg_id
         _key_id = _rx_slot.key_id
         _mi = _rx_slot.mi
+        _cc = _rx_slot.cc
+
+        _dtype = DT_VOICE_PI_HEADER
+        _sync = DMR_DATA_SYNC_MS
 
         _fid = FID_ETSI
         if (_rx_slot.secure == True):
             _fid = FID_DMRA
 
         # create lc
-        lc = _alg_id + _fid + _key_id  + _mi + _dst_id      # AlgID + FID + KeyID + MI + Destination Address
+        lc = _alg_id + _fid + _key_id  + _mi + _dst_id + '\x00\x00' # AlgID + FID + KeyID + MI + Destination Address + CRC-CCITT16
 
         # encode lc into info
         full_lc_encode = bptc.encode_header_pi(lc)
 
         # create slot_type
-        slot_type = chr((_cc << 4) | (ord(_dtype) & 0x0f))  # data type is Header or Term
+        slot_type = chr((_cc << 4) | (ord(_dtype) & 0x0f))
 
         # generate FEC for slot type
         slot_with_fec = BitArray(uint=golay.encode_2087(slot_type), length=20)

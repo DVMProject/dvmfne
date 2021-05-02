@@ -132,7 +132,7 @@ class bridgeIPSC(IPSC):
         if _payload_type == BURST_DATA_TYPE['VOICE_HEADER']:
             _stream_id = int_id(_data[5:6])           # int8  looks like a sequence number for a packet
             if (_stream_id != _tx_slot.stream_id):
-                self.tlv_ipsc.begin_group_call(_ts, _src_id, _dst_id, _peerId, self.cc, _seq, _stream_id)
+                self.tlv_ipsc.begin_call(_ts, True, _src_id, _dst_id, _peerId, self.cc, _seq, _stream_id)
             _tx_slot.lastSeq = _seq
 
         if _payload_type == BURST_DATA_TYPE['PI_HEADER']:
