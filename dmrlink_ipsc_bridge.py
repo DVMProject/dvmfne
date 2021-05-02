@@ -36,7 +36,7 @@ import cPickle as pickle
 import csv
 import struct
 
-from binascii import b2a_hex as h
+from binascii import b2a_hex as ahex
 from bitstring import BitArray
 from time import time, sleep, clock, localtime, strftime
 from random import randint
@@ -139,7 +139,7 @@ class bridgeIPSC(IPSC):
             _stream_id = int_id(_data[5:6])           # int8  looks like a sequence number for a packet
             _alg_id = int_id(_data[38:39])
             _key_id = int_id(_data[40:41])
-            _mi = BitArray('0x' + h(_data[41:44]))
+            _mi = BitArray('0x' + ahex(_data[41:44]))
             if (_stream_id == _tx_slot.stream_id):
                 self.tlv_ipsc.pi_params(_ts, _dst_id, _alg_id, _key_id, _mi.tobytes())
 
@@ -147,7 +147,7 @@ class bridgeIPSC(IPSC):
             self.tlv_ipsc.end_call(_tx_slot)
 
         if (_payload_type == BURST_DATA_TYPE['SLOT1_VOICE']) or (_payload_type == BURST_DATA_TYPE['SLOT2_VOICE']):
-            _ambe_frames = BitArray('0x' + h(_data[33:52]))
+            _ambe_frames = BitArray('0x' + ahex(_data[33:52]))
             _ambe_frame1 = _ambe_frames[0:49]
             _ambe_frame2 = _ambe_frames[50:99]
             _ambe_frame3 = _ambe_frames[100:149]
