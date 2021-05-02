@@ -109,7 +109,7 @@ class SLOT:
         self.secure = False                                 #
         self.alg_id = 0                                     # Algorithm ID
         self.key_id = 0                                     # Key ID
-        self.mi = 0                                         # Message Indicator
+        self.mi = ''                                        # Message Indicator
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
@@ -218,19 +218,20 @@ class tlvBase:
                                 _rx_slot.group = True
 
                         _rx_slot.stream_id = hex_str_4(randint(0, 0xFFFFFFFF))   # Every stream has a unique ID
-                        self._logger.info('(%s) DT_VOICE_LC_HEADER, STREAM ID: %s SUB: %s PEER: %s GROUP: %s TGID %s TS %s', \
+                        self._logger.info('(%s) TLV BEGIN_TX, STREAM ID %s SRC_ID %s PEER %s GROUP %s TGID %s TS %s', \
                                         self._system, int_id(_rx_slot.stream_id), int_id(_rx_slot.src_id), int_id(_rx_slot.peer_id), group, int_id(_rx_slot.dst_id), _slot)
                         self.send_voice_header(_rx_slot)
                     elif (t == TAG_PI_INFO):
                         if ord(l) > 1:
+                            _slot = int_id(v[9:10])
                             _rx_slot = self.rx[_slot]
                             _rx_slot.secure = True
                             _rx_slot.dst_id = hex_str_3(int_id(v[0:3]))
                             _rx_slot.alg_id = v[3:4]
                             _rx_slot.key_id = v[4:5]
-                            _rx_slot.mi = hex_str_4(int_id(v[5:11]))
-                        self._logger.info('(%s) DT_VOICE_PI_HEADER, STREAM ID: %s SUB: %s PEER: %s TS %s', \
-                                        self._system, int_id(_rx_slot.stream_id), int_id(_rx_slot.src_id), int_id(_rx_slot.peer_id), _slot)
+                            _rx_slot.mi = v[5:9]
+                        self._logger.info('(%s) TLV PI_INFO, STREAM ID %s SRC_ID %s PEER %s TS %s ALG %s KID %s', \
+                                        self._system, int_id(_rx_slot.stream_id), int_id(_rx_slot.src_id), int_id(_rx_slot.peer_id), _slot, int_id(_rx_slot.alg_id), int_id(_rx_slot.key_id))
                         self.send_pi_header(_rx_slot)
                     elif (t == TAG_END_TX):
                         _slot = int_id(v[0])
@@ -238,7 +239,7 @@ class tlvBase:
                         if _rx_slot.frame_count > 0:
                             self.send_voice_term(_rx_slot)
                         
-                        self._logger.info('(%s) DT_TERMINATOR_WITH_LC, STREAM ID: %d FRAMES: %d', self._system, int_id(_rx_slot.stream_id), _rx_slot.frame_count)
+                        self._logger.info('(%s) TLV END_TX, STREAM ID %d FRAMES %d', self._system, int_id(_rx_slot.stream_id), _rx_slot.frame_count)
                         
                         # set it back to zero so any random AMBE frames are ignored.
                         _rx_slot.frame_count = 0
@@ -256,11 +257,11 @@ class tlvBase:
 
                     elif (t == TAG_DMR_TEST):
                         _rx_slot.dst_id = hex_str_3(int(v.split('=')[1]))
-                        self._logger.info('(%s) New txTg = %d on Slot %d', self._system, int_id(_rx_slot.dst_id), _rx_slot.slot)
+                        self._logger.info('(%s) TLV DMR_TEST, TGID %d TS %d', self._system, int_id(_rx_slot.dst_id), _rx_slot.slot)
                         thread.start_new_thread(self.sendBlankAmbe, (_rx_slot, hex_str_4(randint(0,0xFFFFFFFF)), 5 * 60 * 500))
                             
                     else:
-                        self._logger.info('(%s) unknown TLV t=%d, l=%d, v=%s (%s)', self._system, t, ord(l), ahex(v), v)
+                        self._logger.info('(%s) TLV unknown, T %d L %d, V %s', self._system, t, ord(l), ahex(v))
             else:
                 self._logger.info('(%s) EOF on UDP stream', self._system)
 
@@ -284,7 +285,6 @@ class tlvBase:
             sleep(0.06)
             _frames = _frames - 1
         self.send_voice_term(_rx_slot)
-        self._logger.info('(%s) Playback done', self._system)
 
     # Begin export call to partner                
     def begin_call(self, _slot, _group_call, _src_id, _dst_id, _peer_id, _cc, _seq, _stream_id):
@@ -292,7 +292,7 @@ class tlvBase:
         if (_group_call == False):
             group = '\x00'
 
-        metadata = _src_id[0:3] + _peer_id[0:4] + _dst_id[0:3] + struct.pack("b", _slot) + struct.pack("b", _cc) + group
+        metadata = _src_id[0:3] + _peer_id[0:4] + _dst_id[0:3] + struct.pack('B', _slot) + struct.pack('B', _cc) + group
 
         # start transmission
         self.send_tlv(TAG_BEGIN_TX, metadata)    
@@ -314,7 +314,7 @@ class tlvBase:
 
     # Send PI call parameters to partner                
     def pi_params(self, _slot, _dst_id, _alg_id, _key_id, _mi):
-        metadata = _dst_id[0:3] + _alg_id + _key_id + _mi[0:4]
+        metadata = _dst_id[0:3] + _alg_id + _key_id + _mi[0:4] + struct.pack('B', _slot)
 
         # start transmission
         self.send_tlv(TAG_PI_INFO, metadata)    
@@ -330,7 +330,7 @@ class tlvBase:
     # End export call to partner                
     def end_call(self, _tx_slot):
         # end transmission
-        self.send_tlv(TAG_END_TX, struct.pack("b", _tx_slot.slot))
+        self.send_tlv(TAG_END_TX, struct.pack('B', _tx_slot.slot))
         
         call_duration = time() - _tx_slot.start_time
         _lost_percentage = ((_tx_slot.lostFrame / float(_tx_slot.frame_count)) * 100.0) if _tx_slot.frame_count > 0 else 0.0
@@ -401,7 +401,7 @@ class tlvFNE(tlvBase):
 
     # Export voice frame to partner (actually done in sub classes for 49 or 72 bits)               
     def export_voice(self, _tx_slot, _seq, _ambe):
-        self.send_tlv(TAG_AMBE_72, struct.pack("b", _tx_slot.slot) + _ambe) # send AMBE
+        self.send_tlv(TAG_AMBE_72, struct.pack('B', _tx_slot.slot) + _ambe) # send AMBE
         if _seq != ((_tx_slot.lastSeq + 1) & 0xff):
             self._logger.info('(%s) Seq number not found.  got %d expected %d', self._system, _seq, _tx_slot.lastSeq + 1)
             _tx_slot.lostFrame += 1
@@ -642,7 +642,7 @@ class tlvIPSC(tlvBase):
 
     # Export voice frame to partner (actually done in sub classes for 49 or 72 bits)               
     def export_voice(self, _tx_slot, _seq, _ambe):
-        self.send_tlv(TAG_AMBE_49, struct.pack("b", _tx_slot.slot) + _ambe)    # send AMBE
+        self.send_tlv(TAG_AMBE_49, struct.pack('B', _tx_slot.slot) + _ambe)    # send AMBE
         if _seq != ((_tx_slot.lastSeq + 1) & 0xff):
             _tx_slot.lostFrame += 1
         _tx_slot.lastSeq = _seq
@@ -797,7 +797,6 @@ class tlvIPSC(tlvBase):
         _unk = '\x00'
 
         dst_id = struct.pack('>I', int_id(_rx_slot.dst_id))
-        mi = struct.pack('>I', int_id(_rx_slot.mi))
 
         featureSet = FID_DMRA
 
