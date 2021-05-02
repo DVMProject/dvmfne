@@ -70,7 +70,7 @@ class bridgeFNE(coreFNE):
 
         self.load_configuration(_bridge_config)
 
-        self.fne_ambe = tlvFNE(self, _name, _config, _logger, self._tlvPort)
+        self.tlv_fne = tlvFNE(self, _name, _config, _logger, self._tlvPort)
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     def dmrd_validate(self, _peer_id, _rf_src, _dst_id, _slot, _call_type, _frame_type, _dtype_vseq, _stream_id):
@@ -80,29 +80,29 @@ class bridgeFNE(coreFNE):
     # partner listening
     def dmrd_received(self, _peer_id, _rf_src, _dst_id, _seq, _slot, _call_type, _frame_type, _dtype_vseq, _stream_id, _data):
         dmrpkt = _data[20:53]
-        _tx_slot = self.fne_ambe.tx[_slot]
+        _tx_slot = self.tlv_fne.tx[_slot]
         _seq = ord(_data[4])
         _tx_slot.frame_count += 1
 
         if (_stream_id != _tx_slot.stream_id):
-            self.fne_ambe.begin_call(_slot, True, _rf_src, _dst_id, _peer_id, _tx_slot.cc, _seq, _stream_id)
+            self.tlv_fne.begin_call(_slot, True, _rf_src, _dst_id, _peer_id, _tx_slot.cc, _seq, _stream_id)
             _tx_slot.lastSeq = _seq
 
         if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_VOICE_PI_HEADER):
-            header = decode.voice_head_term(dmrpkt)
+            header = decode.decode_lc_header(dmrpkt)
             lc = header['LC']
             _alg_id = lc[0]
             _key_id = lc[2]
-            _mi = BitArray('0x' + ahex(lc[3:6]))
-            self.fne_ambe.pi_params(_slot, _dst_id, _alg_id, _key_id, _mi)
+            _mi = lc[3:7]
+            self.tlv_fne.pi_params(_slot, _dst_id, _alg_id, _key_id, _mi)
 
         if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC) and (_tx_slot.type != fne_const.DT_TERMINATOR_WITH_LC):
-            self.fne_ambe.end_call(_tx_slot)
+            self.tlv_fne.end_call(_tx_slot)
 
         if (int_id(_data[15]) & 0x20) == 0:
             _dmr_frame = BitArray('0x' + ahex(_data[20:]))
             _ambe = _dmr_frame[0:108] + _dmr_frame[156:264]
-            self.fne_ambe.export_voice(_tx_slot, _seq, _ambe.tobytes())
+            self.tlv_fne.export_voice(_tx_slot, _seq, _ambe.tobytes())
         else:
             _tx_slot.lastSeq = _seq
 

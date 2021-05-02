@@ -189,9 +189,10 @@ class tlvBase:
 
     # Twisted callback with data from socket
     def import_datagramReceived(self, _data, (_host, _port)):
+        #self._logger.debug('(%s) Network Received TLV (from %s:%s) -- %s', self._system, _host, _port, ahex(_data))
         _slot = self._slot
         _rx_slot = self.rx[_slot]
-        
+
         # Parse out the TLV
         t = _data[0]
         if (t):
@@ -210,7 +211,7 @@ class tlvBase:
                             _rx_slot.dst_id = hex_str_3(int_id(v[7:10]))
                             _rx_slot.cc = int_id(v[11:12])
 
-                            group = int_id(v[13])
+                            group = int_id(v[12])
                             if (group == 0):
                                 _rx_slot.group = False
                             else:
@@ -288,7 +289,7 @@ class tlvBase:
     # Begin export call to partner                
     def begin_call(self, _slot, _group_call, _src_id, _dst_id, _peer_id, _cc, _seq, _stream_id):
         group = '\x01'
-        if (_group_call == True):
+        if (_group_call == False):
             group = '\x00'
 
         metadata = _src_id[0:3] + _peer_id[0:4] + _dst_id[0:3] + struct.pack("b", _slot) + struct.pack("b", _cc) + group
@@ -761,19 +762,19 @@ class tlvIPSC(tlvBase):
         src_id = struct.pack('>I', int_id(_rx_slot.src_id))
         dst_id = struct.pack('>I', int_id(_rx_slot.dst_id))
 
-        headerType = LC_GROUP_VOICE
+        headerType = ord(LC_GROUP_VOICE)
         if not _rx_slot.group:
-            headerType = LC_PRIVATE_VOICE
+            headerType = ord(LC_PRIVATE_VOICE)
         if _rx_slot.secure:
             headerType &= ~(1 << 7)
 
         featureSet = FID_ETSI
-        svcOptions = '\x00'
+        svcOptions = 0x00
         if _rx_slot.secure:
             featureSet = FID_DMRA
             svcOptions &= ~(1 << 6)
 
-        header = headerType + featureSet + svcOptions + \
+        header = struct.pack('B', headerType) + featureSet + struct.pack('B', svcOptions) + \
             dst_id[1] + dst_id[2] + dst_id[3] + src_id[1] + src_id[2] + src_id[3]
         self.emb_lc = header
 
@@ -800,7 +801,7 @@ class tlvIPSC(tlvBase):
 
         featureSet = FID_DMRA
 
-        header = struct.pack('b', _rx_slot.alg_id) + featureSet + struct.pack('b', _rx_slot.key_id) + \
+        header = struct.pack('B', _rx_slot.alg_id) + featureSet + struct.pack('B', _rx_slot.key_id) + \
             mi[0] + mi[1] + mi[2] + mi[3] + dst_id[1] + dst_id[2] + dst_id[3] + _unk + _unk
 
         ipsc_burst = self.generate_ipsc_burst(_rx_slot, _burst_type)

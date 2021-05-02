@@ -34,8 +34,15 @@ def to_bits(_string):
     _bits.frombytes(_string)
     return _bits
 
+def to_bytes(_bits):
+    add_bits = 8 - (len(_bits) % 8)
+    if add_bits < 8:
+        for bit in xrange(add_bits):
+            _bits.insert(0,0)
+    _string =  _bits.tobytes()
+    return _string
 
-def voice_head_term(_string):
+def decode_lc_header(_string):
     burst = to_bits(_string)
     info = burst[0:98] + burst[166:264]
     slot_type = burst[98:108] + burst[156:166]
@@ -45,7 +52,6 @@ def voice_head_term(_string):
     dtype = to_bytes(slot_type[4:8])
     return {'LC': lc, 'CC': cc, 'DTYPE': dtype, 'SYNC': sync}
 
-
 def voice_sync(_string):
     burst = to_bits(_string)
     ambe = [0,0,0]
@@ -54,7 +60,6 @@ def voice_sync(_string):
     ambe[2] = burst[192:264]
     sync = burst[108:156]
     return {'AMBE': ambe, 'SYNC': sync}
-    
     
 def voice(_string):
     burst = to_bits(_string)
@@ -67,12 +72,3 @@ def voice(_string):
     cc = (to_bytes(emb[0:4]))
     lcss = (to_bytes(emb[5:7]))
     return {'AMBE': ambe, 'CC': cc, 'LCSS': lcss, 'EMBED': embed}
-
-
-def to_bytes(_bits):
-    add_bits = 8 - (len(_bits) % 8)
-    if add_bits < 8:
-        for bit in xrange(add_bits):
-            _bits.insert(0,0)
-    _string =  _bits.tobytes()
-    return _string

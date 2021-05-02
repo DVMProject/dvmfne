@@ -313,8 +313,8 @@ class routerFNE(coreFNE):
                 # If we can, use the LC from the voice header as to keep all
                 # options intact
                 if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
-                    decoded = decode.voice_head_term(dmrpkt)
-                    self.STATUS[_slot]['RX_LC'] = decoded['LC']
+                    lc = decode.decode_lc_header(dmrpkt)
+                    self.STATUS[_slot]['RX_LC'] = decoded['LC'][:9]
                 
                 # If we don't have a voice header then don't wait to decode it
                 # from the Embedded LC
