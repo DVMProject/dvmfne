@@ -210,9 +210,15 @@ class tlvBase:
                             _rx_slot.dst_id = hex_str_3(int_id(v[7:10]))
                             _rx_slot.cc = int_id(v[11:12])
 
+                            group = int_id(v[13])
+                            if (group == 1):
+                                _rx_slot.group = True
+                            else:
+                                _rx_slot.group = False
+
                         _rx_slot.stream_id = hex_str_4(randint(0, 0xFFFFFFFF))   # Every stream has a unique ID
-                        self._logger.info('(%s) DT_VOICE_LC_HEADER, STREAM ID: %s SUB: %s PEER: %s TGID %s TS %s', \
-                                        self._system, int_id(_rx_slot.stream_id), int_id(_rx_slot.src_id), int_id(_rx_slot.peer_id), int_id(_rx_slot.dst_id), _slot)
+                        self._logger.info('(%s) DT_VOICE_LC_HEADER, STREAM ID: %s SUB: %s PEER: %s GROUP: %s TGID %s TS %s', \
+                                        self._system, int_id(_rx_slot.stream_id), int_id(_rx_slot.src_id), int_id(_rx_slot.peer_id), group, int_id(_rx_slot.dst_id), _slot)
                         self.send_voice_header(_rx_slot)
                     elif (t == TAG_PI_INFO):
                         if ord(l) > 1:
@@ -280,7 +286,7 @@ class tlvBase:
 
     # Begin export group call to partner                
     def begin_group_call(self, _slot, _src_id, _dst_id, _peer_id, _cc, _seq, _stream_id):
-        metadata = _src_id[0:3] + _peer_id[0:4] + _dst_id[0:3] + struct.pack("b", _slot) + struct.pack("b", _cc)
+        metadata = _src_id[0:3] + _peer_id[0:4] + _dst_id[0:3] + struct.pack("b", _slot) + struct.pack("b", _cc) + struct.pack("b", 1)
 
         # start transmission
         self.send_tlv(TAG_BEGIN_TX, metadata)    
@@ -495,7 +501,7 @@ class tlvFNE(tlvBase):
         lc = _alg_id + _fid + _key_id  + _mi + _dst_id      # AlgID + FID + KeyID + MI + Destination Address
 
         # encode lc into info
-        full_lc_encode = bptc.encode_header_lc(lc)
+        full_lc_encode = bptc.encode_header_pi(lc)
 
         # create slot_type
         slot_type = chr((_cc << 4) | (ord(_dtype) & 0x0f))  # data type is Header or Term

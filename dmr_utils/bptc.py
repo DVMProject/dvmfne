@@ -119,6 +119,12 @@ def encode_header_lc(_lc):
     full_lc = encode_19696(full_lc)
     full_lc = interleave_19696(full_lc)
     return full_lc
+
+def encode_header_pi(_lc):
+    full_lc = _lc
+    full_lc = encode_19696(full_lc)
+    full_lc = interleave_19696(full_lc)
+    return full_lc
     
 def encode_terminator_lc(_lc):
     full_lc = _lc + rs129.lc_terminator_encode(_lc)

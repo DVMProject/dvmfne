@@ -98,7 +98,7 @@ def log_mult(a, b):
 
 # Reed-Solomon (12,9) encoder
 def encode(_msg):
-    assert len(_msg) == 9, 'RS129_encode error: Message not 9 bytes: %s' % print_hex(_msg)
+    assert len(_msg) == 9, 'RS129_encode error: Message not 9 bytes: %s'
     
     parity = [0x00, 0x00, 0x00]
 

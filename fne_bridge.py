@@ -91,8 +91,8 @@ class bridgeFNE(coreFNE):
         if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_VOICE_PI_HEADER):
             header = decode.voice_head_term(dmrpkt)
             lc = header['LC']
-            _alg_id = int_id(lc[0])
-            _key_id = int_id(lc[2])
+            _alg_id = lc[0]
+            _key_id = lc[2]
             _mi = BitArray('0x' + ahex(lc[3:6]))
             self.fne_ambe.pi_params(_slot, _dst_id, _alg_id, _key_id, _mi)
 
