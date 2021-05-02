@@ -139,9 +139,9 @@ class bridgeIPSC(IPSC):
             _stream_id = int_id(_data[5:6])           # int8  looks like a sequence number for a packet
             _alg_id = _data[38:39]
             _key_id = _data[40:41]
-            _mi = BitArray('0x' + ahex(_data[41:44]))
+            _mi = _data[41:45]
             if (_stream_id == _tx_slot.stream_id):
-                self.tlv_ipsc.pi_params(_ts, _dst_id, _alg_id, _key_id, _mi.tobytes())
+                self.tlv_ipsc.pi_params(_ts, _dst_id, _alg_id, _key_id, _mi)
 
         if _payload_type == BURST_DATA_TYPE['VOICE_TERMINATOR']:
             self.tlv_ipsc.end_call(_tx_slot)
