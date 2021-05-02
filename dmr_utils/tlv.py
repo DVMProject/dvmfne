@@ -222,6 +222,7 @@ class tlvBase:
                         self.send_voice_header(_rx_slot)
                     elif (t == TAG_PI_INFO):
                         if ord(l) > 1:
+                            _rx_slot = self.rx[_slot]
                             _rx_slot.secure = True
                             _rx_slot.dst_id = hex_str_3(int_id(v[0:3]))
                             _rx_slot.alg_id = v[3:4]
