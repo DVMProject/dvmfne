@@ -405,7 +405,7 @@ class tlvFNE(tlvBase):
     def export_voice(self, _tx_slot, _seq, _ambe):
         self.send_tlv(TAG_AMBE_72, struct.pack('B', _tx_slot.slot) + _ambe) # send AMBE
         if _seq != ((_tx_slot.lastSeq + 1) & 0xff):
-            self._logger.info('(%s) Seq number not found.  got %d expected %d', self._system, _seq, _tx_slot.lastSeq + 1)
+            self._logger.warn('(%s) Seq number not found. Got %d expected %d', self._system, _seq, _tx_slot.lastSeq + 1)
             _tx_slot.lostFrame += 1
         _tx_slot.lastSeq = _seq
 
@@ -624,6 +624,7 @@ class tlvIPSC(tlvBase):
     def export_voice(self, _tx_slot, _seq, _ambe):
         self.send_tlv(TAG_AMBE_49, struct.pack('B', _tx_slot.slot) + _ambe)    # send AMBE
         if _seq != ((_tx_slot.lastSeq + 1) & 0xff):
+            self._logger.warn('(%s) Seq number not found. Got %d expected %d', self._system, _seq, _tx_slot.lastSeq + 1)
             _tx_slot.lostFrame += 1
         _tx_slot.lastSeq = _seq
 
