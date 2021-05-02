@@ -343,7 +343,6 @@ class IPSC(DatagramProtocol):
         #
         self._logger.info('(%s) IPSC Instance Created: %s, %s:%s', self._system, int_id(self._local['PEER_ID']), self._local['IP'], self._local['PORT'])
 
-
     # ******************************************************
     #  SUPPORT FUNCTIONS FOR HANDLING IPSC OPERATIONS
     # ******************************************************    
@@ -444,7 +443,6 @@ class IPSC(DatagramProtocol):
                 self.de_register_peer(peer)
                 self._logger.warning('(%s) Peer Deleted (not in new peer list): %s', self._system, int_id(peer))
 
-
     # ************************************************
     #  CALLBACK FUNCTIONS FOR USER PACKET TYPES
     # ************************************************    
@@ -471,21 +469,20 @@ class IPSC(DatagramProtocol):
     def repeater_wake_up(self, _data):
         self._logger.info('(%s) Repeater Wake-Up Packet Received: %s', self._system, ahex(_data))
         
-    def group_voice(self, _src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data):
-        self._logger.info('(%s) Group Voice Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerId), int_id(_dst_sub))
+    def group_voice(self, _src_id, _dst_id, _ts, _end, _peerId, _rtp, _data):
+        self._logger.info('(%s) Group Voice Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_id), int_id(_peerId), int_id(_dst_id))
     
-    def private_voice(self, _src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data):
-        self._logger.info('(%s) Private Voice Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerId), int_id(_dst_sub))
+    def private_voice(self, _src_id, _dst_id, _ts, _end, _peerId, _rtp, _data):
+        self._logger.info('(%s) Private Voice Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_id), int_id(_peerId), int_id(_dst_id))
     
-    def group_data(self, _src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data):    
-        self._logger.info('(%s) Group Data Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerId), int_id(_dst_sub))
+    def group_data(self, _src_id, _dst_id, _ts, _end, _peerId, _rtp, _data):    
+        self._logger.info('(%s) Group Data Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_id), int_id(_peerId), int_id(_dst_id))
     
-    def private_data(self, _src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data):    
-        self._logger.info('(%s) Private Data Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_sub), int_id(_peerId), int_id(_dst_sub))
+    def private_data(self, _src_id, _dst_id, _ts, _end, _peerId, _rtp, _data):    
+        self._logger.info('(%s) Private Data Packet Received From: %s, IPSC Peer %s, Destination %s', self._system, int_id(_src_id), int_id(_peerId), int_id(_dst_id))
 
     def unknown_message(self, _packetType, _peerId, _data):
         self._logger.error('(%s) Unknown Message - Type: %s From: %s Packet: %s', self._system, ahex(_packetType), int_id(_peerId), ahex(_data))
-
 
     # ************************************************
     #  IPSC SPECIFIC MAINTENANCE FUNCTIONS
@@ -825,8 +822,8 @@ class IPSC(DatagramProtocol):
             # ORIGINATED BY SUBSCRIBER UNITS - a.k.a someone transmitted
             if _packetType in USER_PACKETS:
                 # Extract IPSC header not already extracted
-                _src_sub = _data[6:9]
-                _dst_sub = _data[9:12]
+                _src_id = _data[6:9]
+                _dst_id = _data[9:12]
                 _call_priority = _data[12:13]
                 _call_tag = _data[13:17]
                 _control = int_id(_data[17:18])
@@ -839,22 +836,22 @@ class IPSC(DatagramProtocol):
                 # User Voice and Data Call Types:
                 if _packetType == GROUP_VOICE:
                     self.reset_keep_alive(_peerId)
-                    self.group_voice(_src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data)
+                    self.group_voice(_src_id, _dst_id, _ts, _end, _peerId, _rtp, _data)
                     return
             
                 elif _packetType == PVT_VOICE:
                     self.reset_keep_alive(_peerId)
-                    self.private_voice(_src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data)
+                    self.private_voice(_src_id, _dst_id, _ts, _end, _peerId, _rtp, _data)
                     return
                     
                 elif _packetType == GROUP_DATA:
                     self.reset_keep_alive(_peerId)
-                    self.group_data(_src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data)
+                    self.group_data(_src_id, _dst_id, _ts, _end, _peerId, _rtp, _data)
                     return
                     
                 elif _packetType == PVT_DATA:
                     self.reset_keep_alive(_peerId)
-                    self.private_data(_src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data)
+                    self.private_data(_src_id, _dst_id, _ts, _end, _peerId, _rtp, _data)
                     return
                 return
 

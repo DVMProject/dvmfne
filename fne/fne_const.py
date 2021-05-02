@@ -8,7 +8,7 @@
 #
 ###############################################################################
 #   Copyright (C) 2016 Cortney T.  Buffington, N0MJS <n0mjs@me.com>
-#   Copyright (C) 2017-2019 Bryan Biedenkapp <gatekeep@gmail.com>
+#   Copyright (C) 2017-2021 Bryan Biedenkapp <gatekeep@gmail.com>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -56,8 +56,6 @@ STREAM_TO = .360
 FT_VOICE = 0x0
 FT_VOICE_SYNC = 0x1
 FT_DATA_SYNC = 0x2
-FT_SLT_VHEAD = 0x1
-FT_SLT_VTERM = 0x2
 
 # DMR Data Types
 DT_VOICE_PI_HEADER = 0x0

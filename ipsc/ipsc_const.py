@@ -95,7 +95,7 @@ USER_PACKETS = [GROUP_VOICE, PVT_VOICE, GROUP_DATA, PVT_DATA]
 
 RTP_VER = '\x80'                    # Actually; this isn't just the version but Version, Padding Flag, Extension Flag and 4-bit CC
 
-RTP_PAYLOAD_VOICE_HEADER = '\xDD'   # Based on fuzzy analysis of Wireshark dumps of IPSC -- 0xDD seems to be used for VOICE HEADER (its just VOICE with bit 8 set)
+RTP_PAYLOAD_VOICE_HEADER = '\xDD'   # Based on fuzzy analysis of Wireshark dumps of IPSC -- 0xDD seems to be used for the 1st VOICE HEADER (its just VOICE with bit 8 set)
 RTP_PAYLOAD_VOICE = '\x5D'          # Based on fuzzy analysis of Wireshark dumps of IPSC -- 0x5D seems to be used for VOICE HEADER and VOICE
 RTP_PAYLOAD_TERM = '\x5E'           # Based on fuzzy analysis of Wireshark dumps of IPSC -- 0x5E seems to be used for VOICE TERMINATOR
 

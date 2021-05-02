@@ -85,7 +85,7 @@ class bridgeIPSC(IPSC):
         self.tlv_ipsc = tlvIPSC(self, _name, _config, _logger, self._tlvPort)
 
     def get_peer_id(self, import_id):
-        return self._config['LOCAL']['PEER_ID']
+        return self._local_id
 
     # Now read the configuration file and parse out the values we need
     def defaultOption(self, config, sec, opt, defaultValue):
@@ -123,17 +123,25 @@ class bridgeIPSC(IPSC):
     # ************************************************
     #  CALLBACK FUNCTIONS FOR USER PACKET TYPES
     # ************************************************
-    def group_voice(self, _src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data):
+    def group_voice(self, _src_id, _dst_id, _ts, _end, _peerId, _rtp, _data):
         _tx_slot = self.tlv_ipsc.tx[_ts]
         _payload_type = _data[30:31]
         _seq = int_id(_data[20:22])
         _tx_slot.frame_count += 1
 
         if _payload_type == BURST_DATA_TYPE['VOICE_HEADER']:
-            _stream_id       = int_id(_data[5:6])           # int8  looks like a sequence number for a packet
+            _stream_id = int_id(_data[5:6])           # int8  looks like a sequence number for a packet
             if (_stream_id != _tx_slot.stream_id):
-                self.tlv_ipsc.begin_call(_ts, _src_sub, _dst_sub, _peerId, self.cc, _seq, _stream_id)
+                self.tlv_ipsc.begin_group_call(_ts, _src_id, _dst_id, _peerId, self.cc, _seq, _stream_id)
             _tx_slot.lastSeq = _seq
+
+        if _payload_type == BURST_DATA_TYPE['PI_HEADER']:
+            _stream_id = int_id(_data[5:6])           # int8  looks like a sequence number for a packet
+            _alg_id = int_id(_data[38:39])
+            _key_id = int_id(_data[40:41])
+            _mi = BitArray('0x' + h(_data[41:44]))
+            if (_stream_id == _tx_slot.stream_id):
+                self.tlv_ipsc.pi_params(_ts, _dst_id, _alg_id, _key_id, _mi.tobytes())
 
         if _payload_type == BURST_DATA_TYPE['VOICE_TERMINATOR']:
             self.tlv_ipsc.end_call(_tx_slot)
@@ -144,66 +152,17 @@ class bridgeIPSC(IPSC):
             _ambe_frame2 = _ambe_frames[50:99]
             _ambe_frame3 = _ambe_frames[100:149]
             self.tlv_ipsc.export_voice(_tx_slot, _seq, _ambe_frame1.tobytes() + _ambe_frame2.tobytes() + _ambe_frame3.tobytes())
+        pass
 
-    def private_voice(self, _src_sub, _dst_sub, _ts, _end, _peerId, _rtp, _data):
-        print('private voice')
+    def private_voice(self, _src_id, _dst_id, _ts, _end, _peerId, _rtp, _data):
+        _tx_slot = self.tlv_ipsc.tx[_ts]
+        _payload_type = _data[30:31]
+        _seq = int_id(_data[20:22])
+        _tx_slot.frame_count += 1
 
-    # ************************************************
-    #  Debug: print IPSC frame on console
-    # ************************************************
-    def dumpIPSCFrame(self, _frame):
-        _packetType     = int_id(_frame[0:1])               # int8  GROUP_VOICE, PVT_VOICE, GROUP_DATA, PVT_DATA, CALL_MON_STATUS, CALL_MON_RPT, CALL_MON_NACK, XCMP_XNL, RPT_WAKE_UP, DE_REG_REQ
-        _peerId         = int_id(_frame[1:5])               # int32 peer who is sending us a packet
-        _ipsc_seq       = int_id(_frame[5:6])               # int8  looks like a sequence number for a packet
-        _src_sub        = int_id(_frame[6:9])               # int32 Id of source
-        _dst_sub        = int_id(_frame[9:12])              # int32 Id of destination
-        _call_type      = int_id(_frame[12:13])             # int8 Priority Voice/Data
-        _call_ctrl_info  = int_id(_frame[13:17])            # int32
-        _call_info      = int_id(_frame[17:18])             # int8  Bits 6 and 7 defined as TS and END
+        # TODO TODO
 
-        # parse out the RTP values
-        _rtp_byte_1 = int_id(_frame[18:19])                 # Call Ctrl Src
-        _rtp_byte_2 = int_id(_frame[19:20])                 # Type
-        _rtp_seq    = int_id(_frame[20:22])                 # Call Seq No
-        _rtp_tmstmp = int_id(_frame[22:26])                 # Timestamp
-        _rtp_ssid   = int_id(_frame[26:30])                 # Sync Src Id
-
-        # Extract RTP Payload Data Fields
-        _payload_type   = _frame[30]                        # int8  VOICE_HEAD, VOICE_TERM, SLOT1_VOICE, SLOT2_VOICE
-        
-        _ts             = bool(_call_info & TS_CALL_MSK)
-        _end            = bool(_call_info & END_MSK)
-
-        if _payload_type == BURST_DATA_TYPE['VOICE_HEADER']:
-            print('HEAD:', h(_frame))
-
-        if _payload_type == BURST_DATA_TYPE['VOICE_TERMINATOR']:
-            _ipsc_rssi_threshold_and_parity = int_id(_frame[31])
-            _ipsc_length_to_follow = int_id(_frame[32:34])
-            _ipsc_rssi_status = int_id(_frame[34])
-            _ipsc_slot_type_sync = int_id(_frame[35])
-            _ipsc_data_size = int_id(_frame[36:38])
-            _ipsc_data = _frame[38:38 + (_ipsc_length_to_follow * 2) - 4]
-            _ipsc_full_lc_byte1 = int_id(_frame[38])
-            _ipsc_full_lc_fid = int_id(_frame[39])
-            _ipsc_voice_pdu_service_options = int_id(_frame[40])
-            _ipsc_voice_pdu_dst = int_id(_frame[41:44])
-            _ipsc_voice_pdu_src = int_id(_frame[44:47])
-
-            print('{} {} {} {} {} {} {} {} {} {} {}'.format(_ipsc_rssi_threshold_and_parity,_ipsc_length_to_follow,_ipsc_rssi_status,_ipsc_slot_type_sync,_ipsc_data_size,h(_ipsc_data),_ipsc_full_lc_byte1,_ipsc_full_lc_fid,_ipsc_voice_pdu_service_options,_ipsc_voice_pdu_dst,_ipsc_voice_pdu_src))
-            print('TERM:', h(_frame))
-
-        if _payload_type == BURST_DATA_TYPE['SLOT1_VOICE']:
-            _rtp_len        = _frame[31:32]
-            _ambe           = _frame[33:52]
-            print('SLOT1:', h(_frame))
-
-        if _payload_type == BURST_DATA_TYPE['SLOT2_VOICE']:
-            _rtp_len        = _frame[31:32]
-            _ambe           = _frame[33:52]
-            print('SLOT2:', h(_frame))
-
-        print("pt={:02X} pid={} seq={:02X} src={} dst={} ct={:02X} uk={} ci={} rsq={}".format(_packetType, _peerId, _ipsc_seq, _src_sub, _dst_sub, _call_type, _call_ctrl_info, _call_info, _rtp_seq))
+        pass
 
 # ---------------------------------------------------------------------------
 #   Program Entry Point

@@ -79,15 +79,24 @@ class bridgeFNE(coreFNE):
     # Callback with DMR data from peer/master.  Send this data to any
     # partner listening
     def dmrd_received(self, _peer_id, _rf_src, _dst_id, _seq, _slot, _call_type, _frame_type, _dtype_vseq, _stream_id, _data):
+        dmrpkt = _data[20:53]
         _tx_slot = self.fne_ambe.tx[_slot]
         _seq = ord(_data[4])
         _tx_slot.frame_count += 1
 
         if (_stream_id != _tx_slot.stream_id):
-            self.fne_ambe.begin_call(_slot, _rf_src, _dst_id, _peer_id, _tx_slot.cc, _seq, _stream_id)
+            self.fne_ambe.begin_group_call(_slot, _rf_src, _dst_id, _peer_id, _tx_slot.cc, _seq, _stream_id)
             _tx_slot.lastSeq = _seq
 
-        if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.FT_SLT_VTERM) and (_tx_slot.type != fne_const.FT_SLT_VTERM):
+        if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_VOICE_PI_HEADER):
+            header = decode.voice_head_term(dmrpkt)
+            lc = header['LC']
+            _alg_id = int_id(lc[0])
+            _key_id = int_id(lc[2])
+            _mi = BitArray('0x' + h(lc[3:6]))
+            self.fne_ambe.pi_params(_slot, _dst_id, _alg_id, _key_id, _mi)
+
+        if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC) and (_tx_slot.type != fne_const.DT_TERMINATOR_WITH_LC):
             self.fne_ambe.end_call(_tx_slot)
 
         if (int_id(_data[15]) & 0x20) == 0:

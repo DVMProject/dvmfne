@@ -8,7 +8,7 @@
 #
 ###############################################################################
 #   Copyright (C) 2016 Cortney T.  Buffington, N0MJS <n0mjs@me.com>
-#   Copyright (C) 2017-2019 Bryan Biedenkapp <gatekeep@gmail.com>
+#   Copyright (C) 2017-2021 Bryan Biedenkapp <gatekeep@gmail.com>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ class parrotFNE(coreFNE):
                 'TX_TGID':      '\x00\x00\x00',
                 'RX_TIME':      time(),
                 'TX_TIME':      time(),
-                'RX_TYPE':      fne_const.FT_SLT_VTERM,
+                'RX_TYPE':      fne_const.DT_TERMINATOR_WITH_LC,
                 'RX_LC':        '\x00',
                 'TX_H_LC':      '\x00',
                 'TX_T_LC':      '\x00',
@@ -88,7 +88,7 @@ class parrotFNE(coreFNE):
                 'TX_TGID':      '\x00\x00\x00',
                 'RX_TIME':      time(),
                 'TX_TIME':      time(),
-                'RX_TYPE':      fne_const.FT_SLT_VTERM,
+                'RX_TYPE':      fne_const.DT_TERMINATOR_WITH_LC,
                 'RX_LC':        '\x00',
                 'TX_H_LC':      '\x00',
                 'TX_T_LC':      '\x00',
@@ -131,7 +131,7 @@ class parrotFNE(coreFNE):
                                   int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, int_id(_stream_id))
             
             # Final actions - Is this a voice terminator?
-            if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.FT_SLT_VTERM) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.FT_SLT_VTERM):
+            if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
                 call_duration = pkt_time - self.STATUS['RX_START']
                 self._logger.info('(%s) DMRD: Traffic *CALL END       * PEER %s SRC_ID %s TGID %s TS %s DUR %s [STREAM ID %s]', self._system,
                                   int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, call_duration, int_id(_stream_id))
@@ -186,7 +186,7 @@ class parrotFNE(coreFNE):
                                   int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
         
             # Final actions - Is this a voice terminator?
-            if ((_duid == fne_const.P25_DUID_TDU) or (_duid == fne_const.P25_DUID_TDULC)) and (_dtype_vseq == fne_const.FT_SLT_VTERM) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.FT_SLT_VTERM):
+            if ((_duid == fne_const.P25_DUID_TDU) or (_duid == fne_const.P25_DUID_TDULC)) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
                 call_duration = pkt_time - self.STATUS['RX_START']
                 self._logger.info('(%s) P25D: Traffic *CALL END      * PEER %s SRC_ID %s TGID %s DUR %s [STREAM ID %s]', self._system,
                                   int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), call_duration, int_id(_stream_id))

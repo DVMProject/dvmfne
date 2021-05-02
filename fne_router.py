@@ -8,7 +8,7 @@
 #
 ###############################################################################
 #   Copyright (C) 2016 Cortney T.  Buffington, N0MJS <n0mjs@me.com>
-#   Copyright (C) 2017-2019 Bryan Biedenkapp <gatekeep@gmail.com>
+#   Copyright (C) 2017-2021 Bryan Biedenkapp <gatekeep@gmail.com>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -194,7 +194,7 @@ class routerFNE(coreFNE):
                 'TX_TGID':      '\x00\x00\x00',
                 'RX_TIME':      time(),
                 'TX_TIME':      time(),
-                'RX_TYPE':      fne_const.FT_SLT_VTERM,
+                'RX_TYPE':      fne_const.DT_TERMINATOR_WITH_LC,
                 'RX_LC':        '\x00',
                 'TX_H_LC':      '\x00',
                 'TX_T_LC':      '\x00',
@@ -218,7 +218,7 @@ class routerFNE(coreFNE):
                 'TX_TGID':      '\x00\x00\x00',
                 'RX_TIME':      time(),
                 'TX_TIME':      time(),
-                'RX_TYPE':      fne_const.FT_SLT_VTERM,
+                'RX_TYPE':      fne_const.DT_TERMINATOR_WITH_LC,
                 'RX_LC':        '\x00',
                 'TX_H_LC':      '\x00',
                 'TX_T_LC':      '\x00',
@@ -255,7 +255,7 @@ class routerFNE(coreFNE):
             return False
 
         # Always validate a terminator if the source is valid
-        if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.FT_SLT_VTERM):
+        if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC):
             return True
         
         if _call_type == 'group':
@@ -294,7 +294,7 @@ class routerFNE(coreFNE):
         if _call_type == 'group':
             # Is this a new call stream?
             if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']):
-                if (self.STATUS[_slot]['RX_TYPE'] != fne_const.FT_SLT_VTERM) and (pkt_time < (self.STATUS[_slot]['RX_TIME'] + fne_const.STREAM_TO)) and (_rf_src != self.STATUS[_slot]['RX_RFS']):
+                if (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC) and (pkt_time < (self.STATUS[_slot]['RX_TIME'] + fne_const.STREAM_TO)) and (_rf_src != self.STATUS[_slot]['RX_RFS']):
                     self._logger.warning('(%s) DMRD: Traffic *CALL COLLISION  * PEER %s SRC_ID %s TGID %s TS %s [STREAM ID %s] (Collided with existing call)', self._system,
                                          int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, int_id(_stream_id))
                     
@@ -312,7 +312,7 @@ class routerFNE(coreFNE):
 
                 # If we can, use the LC from the voice header as to keep all
                 # options intact
-                if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.FT_SLT_VHEAD:
+                if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
                     decoded = decode.voice_head_term(dmrpkt)
                     self.STATUS[_slot]['RX_LC'] = decoded['LC']
                 
@@ -334,21 +334,21 @@ class routerFNE(coreFNE):
                     #
                     # The rules for each of the 4 "ifs" below are listed here
                     # for readability.  The Frame To Send is:
-                    #   From a different group than last RX from this HBSystem,
+                    #   From a different group than last RX from this system,
                     #   but it has been less than Group Hangtime
-                    #   From a different group than last TX to this HBSystem,
+                    #   From a different group than last TX to this system,
                     #   but it has been less than Group Hangtime
-                    #   From the same group as the last RX from this HBSystem,
+                    #   From the same group as the last RX from this system,
                     #   but from a different subscriber, and it has been less
                     #   than stream timeout
-                    #   From the same group as the last TX to this HBSystem,
+                    #   From the same group as the last TX to this system,
                     #   but from a different subscriber, and it has been less
                     #   than stream timeout
                     # The "continue" at the end of each means the next
                     # iteration of the for loop that tests for matching rules
                     #
                     if ((rule['DST_GROUP'] != _target_status[rule['DST_TS']]['RX_TGID']) and ((pkt_time - _target_status[rule['DST_TS']]['RX_TIME']) < RULES[_target]['GROUP_HANGTIME'])):
-                        if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.FT_SLT_VHEAD:
+                        if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
                             self._logger.info('(%s) DMRD: Call not routed to TGID %s, target active or in group hangtime: PRID %s TS %s TGID %s', self._system,
                                               int_id(rule['DST_GROUP']), _target, rule['DST_TS'], int_id(_target_status[rule['DST_TS']]['RX_TGID']))
 
@@ -356,7 +356,7 @@ class routerFNE(coreFNE):
                                 self._report.send_routeEvent('CALL ROUTE,FAILED,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP'])))
                         continue    
                     if ((rule['DST_GROUP'] != _target_status[rule['DST_TS']]['TX_TGID']) and ((pkt_time - _target_status[rule['DST_TS']]['TX_TIME']) < RULES[_target]['GROUP_HANGTIME'])):
-                        if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.FT_SLT_VHEAD:
+                        if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
                             self._logger.info('(%s) DMRD: Call not routed to TGID %s, target in group hangtime: PRID %s TS %s TGID %s', self._system,
                                               int_id(rule['DST_GROUP']), _target, rule['DST_TS'], int_id(_target_status[rule['DST_TS']]['TX_TGID']))
                             
@@ -364,7 +364,7 @@ class routerFNE(coreFNE):
                                 self._report.send_routeEvent('CALL ROUTE,FAILED,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP'])))
                         continue
                     if (rule['DST_GROUP'] == _target_status[rule['DST_TS']]['RX_TGID']) and ((pkt_time - _target_status[rule['DST_TS']]['RX_TIME']) < fne_const.STREAM_TO):
-                        if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.FT_SLT_VHEAD:
+                        if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
                             self._logger.info('(%s) DMRD: Call not routed to TGID %s, matching call already active on target: PRID %s TS %s TGID %s', self._system,
                                               int_id(rule['DST_GROUP']), _target, rule['DST_TS'], int_id(_target_status[rule['DST_TS']]['RX_TGID']))
 
@@ -372,7 +372,7 @@ class routerFNE(coreFNE):
                                 self._report.send_routeEvent('CALL ROUTE,FAILED,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP'])))
                         continue
                     if (rule['DST_GROUP'] == _target_status[rule['DST_TS']]['TX_TGID']) and (_rf_src != _target_status[rule['DST_TS']]['TX_RFS']) and ((pkt_time - _target_status[rule['DST_TS']]['TX_TIME']) < fne_const.STREAM_TO):
-                        if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.FT_SLT_VHEAD:
+                        if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
                             self._logger.info('(%s) DMRD: Call not routed for SUB %s, call route in progress on target: PRID %s TS %s TGID %s SUB %s', self._system,
                                               int_id(_rf_src), _target, rule['DST_TS'], int_id(_target_status[rule['DST_TS']]['TX_TGID']), _target_status[rule['DST_TS']]['TX_RFS'])
 
@@ -422,10 +422,10 @@ class routerFNE(coreFNE):
                     dmrbits = bitarray(endian='big')
                     dmrbits.frombytes(dmrpkt)
                     # Create a voice header packet (FULL LC)
-                    if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.FT_SLT_VHEAD:
+                    if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
                         dmrbits = _target_status[rule['DST_TS']]['TX_H_LC'][0:98] + dmrbits[98:166] + _target_status[rule['DST_TS']]['TX_H_LC'][98:197]
                     # Create a voice terminator packet (FULL LC)
-                    elif _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.FT_SLT_VTERM:
+                    elif _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC:
                         dmrbits = _target_status[rule['DST_TS']]['TX_T_LC'][0:98] + dmrbits[98:166] + _target_status[rule['DST_TS']]['TX_T_LC'][98:197]
                     # Create a Burst B-E packet (Embedded LC)
                     elif _dtype_vseq in [1,2,3,4]:
@@ -439,7 +439,7 @@ class routerFNE(coreFNE):
                                        self._system, rule['NAME'], self._CONFIG['Systems'][_target]['Mode'], _target)
             
             # Final actions - Is this a voice terminator?
-            if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.FT_SLT_VTERM) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.FT_SLT_VTERM):
+            if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
                 call_duration = pkt_time - self.STATUS[_slot]['RX_START']
                 self._logger.info('(%s) DMRD: Traffic *CALL END        * PEER %s SRC_ID %s TGID %s TS %s DUR %s [STREAM ID: %s]', self._system,
                                   int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, call_duration, int_id(_stream_id))
@@ -509,7 +509,7 @@ class routerFNE(coreFNE):
         elif _call_type == 'unit':
             # Is this a new call stream?
             if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']):
-                if (self.STATUS[_slot]['RX_TYPE'] != fne_const.FT_SLT_VTERM) and (pkt_time < (self.STATUS[_slot]['RX_TIME'] + fne_const.STREAM_TO)) and (_rf_src != self.STATUS[_slot]['RX_RFS']):
+                if (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC) and (pkt_time < (self.STATUS[_slot]['RX_TIME'] + fne_const.STREAM_TO)) and (_rf_src != self.STATUS[_slot]['RX_RFS']):
                     self._logger.warning('(%s) DMRD: Traffic *CALL COLLISION  * PEER %s SRC_ID %s DST_ID %s TS %s [STREAM ID %s] (Collided with existing call)', self._system,
                                          int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, int_id(_stream_id))
 
@@ -526,7 +526,7 @@ class routerFNE(coreFNE):
                     self._report.send_routeEvent('PRV VOICE,START,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
 
             # Final actions - Is this a voice terminator?
-            if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.FT_SLT_VTERM) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.FT_SLT_VTERM):
+            if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
                 call_duration = pkt_time - self.STATUS[_slot]['RX_START']
                 self._logger.info('(%s) DMRD: Traffic *PRV CALL END    * PEER %s SRC_ID %s DST_ID %s TS %s DUR %s [STREAM ID: %s]', self._system,
                                   int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, call_duration, int_id(_stream_id))
@@ -618,7 +618,7 @@ class routerFNE(coreFNE):
             return True
 
         # Always validate a terminator if the source is valid
-        if ((_duid == fne_const.P25_DUID_TDU) or (_duid == fne_const.P25_DUID_TDULC)) and (_dtype_vseq == fne_const.FT_SLT_VTERM):
+        if ((_duid == fne_const.P25_DUID_TDU) or (_duid == fne_const.P25_DUID_TDULC)):
             return True
         
         if _call_type == 'group':
@@ -671,14 +671,14 @@ class routerFNE(coreFNE):
             return
 
         # Override call type if necessary
-        if ((_duid == fne_const.P25_DUID_TDU) or (_duid == fne_const.P25_DUID_TDULC)) and (_dtype_vseq == fne_const.FT_SLT_VTERM) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.FT_SLT_VTERM):
+        if ((_duid == fne_const.P25_DUID_TDU) or (_duid == fne_const.P25_DUID_TDULC)) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
             if self.STATUS[_slot]['P25_RX_CT'] != _call_type:
                 _call_type = self.STATUS[_slot]['P25_RX_CT']
 
         if _call_type == 'group':
             # Is this a new call stream?
             if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']) and ((_duid != fne_const.P25_DUID_TDU) and (_duid != fne_const.P25_DUID_TDULC)):
-                if (self.STATUS[_slot]['RX_TYPE'] != fne_const.FT_SLT_VTERM) and (pkt_time < (self.STATUS[_slot]['RX_TIME'] + fne_const.STREAM_TO)) and (_rf_src != self.STATUS[_slot]['RX_RFS']):
+                if (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC) and (pkt_time < (self.STATUS[_slot]['RX_TIME'] + fne_const.STREAM_TO)) and (_rf_src != self.STATUS[_slot]['RX_RFS']):
                     self._logger.warning('(%s) P25D: Traffic *CALL COLLISION  * PEER %s SRC_ID %s TGID %s [STREAM ID %s] (Collided with existing call)', self._system,
                                          int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
 
@@ -710,14 +710,14 @@ class routerFNE(coreFNE):
                     #
                     # The rules for each of the 4 "ifs" below are listed here
                     # for readability.  The Frame To Send is:
-                    #   From a different group than last RX from this HBSystem,
+                    #   From a different group than last RX from this system,
                     #   but it has been less than Group Hangtime
-                    #   From a different group than last TX to this HBSystem,
+                    #   From a different group than last TX to this system,
                     #   but it has been less than Group Hangtime
-                    #   From the same group as the last RX from this HBSystem,
+                    #   From the same group as the last RX from this system,
                     #   but from a different subscriber, and it has been less
                     #   than stream timeout
-                    #   From the same group as the last TX to this HBSystem,
+                    #   From the same group as the last TX to this system,
                     #   but from a different subscriber, and it has been less
                     #   than stream timeout
                     # The "continue" at the end of each means the next
@@ -773,7 +773,7 @@ class routerFNE(coreFNE):
                     self._logger.debug('(%s) P25 Packet routed by rule %s to %s SYSTEM %s', self._system, rule['NAME'], self._CONFIG['Systems'][_target]['Mode'], _target)
             
             # Final actions - Is this a voice terminator?
-            if ((_duid == fne_const.P25_DUID_TDU) or (_duid == fne_const.P25_DUID_TDULC)) and (_dtype_vseq == fne_const.FT_SLT_VTERM) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.FT_SLT_VTERM):
+            if ((_duid == fne_const.P25_DUID_TDU) or (_duid == fne_const.P25_DUID_TDULC)) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
                 call_duration = pkt_time - self.STATUS[_slot]['RX_START']
                 _dst_id = self.STATUS[_slot]['RX_TGID']
                 _rf_src = self.STATUS[_slot]['RX_RFS']
@@ -847,7 +847,7 @@ class routerFNE(coreFNE):
         elif _call_type == 'unit':
             # Is this a new call stream?
             if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']) and ((_duid != fne_const.P25_DUID_TDU) and (_duid != fne_const.P25_DUID_TDULC)):
-                if (self.STATUS[_slot]['RX_TYPE'] != fne_const.FT_SLT_VTERM) and (pkt_time < (self.STATUS[_slot]['RX_TIME'] + fne_const.STREAM_TO)) and (_rf_src != self.STATUS[_slot]['RX_RFS']):
+                if (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC) and (pkt_time < (self.STATUS[_slot]['RX_TIME'] + fne_const.STREAM_TO)) and (_rf_src != self.STATUS[_slot]['RX_RFS']):
                     self._logger.warning('(%s) P25D: Traffic *CALL COLLISION  * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s] (Collided with existing call)', self._system,
                                          int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
 
@@ -866,7 +866,7 @@ class routerFNE(coreFNE):
                     self._report.send_routeEvent('PRV VOICE,START,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
 
             # Final actions - Is this a voice terminator?
-            if ((_duid == fne_const.P25_DUID_TDU) or (_duid == fne_const.P25_DUID_TDULC)) and (_dtype_vseq == fne_const.FT_SLT_VTERM) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.FT_SLT_VTERM):
+            if ((_duid == fne_const.P25_DUID_TDU) or (_duid == fne_const.P25_DUID_TDULC)) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
                 call_duration = pkt_time - self.STATUS[_slot]['RX_START']
                 _dst_id = self.STATUS[_slot]['RX_TGID']
                 _rf_src = self.STATUS[_slot]['RX_RFS']

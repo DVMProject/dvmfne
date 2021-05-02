@@ -8,6 +8,7 @@
 #
 ###############################################################################
 #   Copyright (C) 2016  Cortney T. Buffington, N0MJS <n0mjs@me.com>
+#   Copyright (C) 2021  Bryan Biedenkapp, N2PLL <gatekeep@gmail.com>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -27,15 +28,26 @@
 from __future__ import print_function
 from bitarray import bitarray
 
-# Slot Type Data types
-DMR_SLT_VHEAD = '\x01'
-DMR_SLT_VTERM = '\x02'
+# DMR Data Types
+DT_VOICE_PI_HEADER = '\x00'
+DT_VOICE_LC_HEADER = '\x01'
+DT_TERMINATOR_WITH_LC = '\x02'
+DT_CSBK = '\x03'
+DT_DATA_HEADER = '\x06'
+DT_RATE_12_DATA = '\x07'
+DT_RATE_34_DATA = '\x08'
 
 # Sync patterns used for LC and Voice Burst A packets
 BS_VOICE_SYNC = bitarray()
 BS_DATA_SYNC  = bitarray()
 BS_VOICE_SYNC.frombytes(b'\x75\x5F\xD7\xDF\x75\xF7')
 BS_DATA_SYNC.frombytes(b'\xDF\xF5\x7D\x75\xDF\x5D')
+
+DMR_DATA_SYNC_BS = '0x755FD7DF75F7'
+DMR_VOICE_SYNC_BS = '0xDFF57D75DF5D'
+
+DMR_DATA_SYNC_MS = '0xD5D7F77FD757'
+DMR_VOICE_SYNC_MS = '0x7F7D5DD57DFD'
 
 SYNC = {
     'BS_VOICE': BS_VOICE_SYNC,

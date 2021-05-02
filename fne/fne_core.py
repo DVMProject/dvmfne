@@ -592,7 +592,7 @@ class coreFNE(DatagramProtocol):
                 _dst_id = _data[8:11]
                 _call_type = 'unit' if (int_id(_data[4]) == fne_const.P25_LC_PRIVATE) else 'group'
                 _duid = int_id(_data[22])
-                _dtype_vseq = fne_const.FT_VOICE if ((_duid != fne_const.P25_DUID_TDU) and (_duid != fne_const.P25_DUID_TDULC)) else fne_const.FT_SLT_VTERM
+                _dtype_vseq = fne_const.FT_VOICE if ((_duid != fne_const.P25_DUID_TDU) and (_duid != fne_const.P25_DUID_TDULC)) else fne_const.DT_TERMINATOR_WITH_LC
                 _stream_id = _data[16:20]
 
                 if self.p25d_validate(_peer_id, _rf_src, _dst_id, _call_type, _duid, _dtype_vseq, _stream_id) == True:
@@ -847,7 +847,7 @@ class coreFNE(DatagramProtocol):
                     _dst_id = _data[8:11]
                     _call_type = 'unit' if (_data[4] == 0x03) else 'group'
                     _duid = int_id(_data[22])
-                    _dtype_vseq = fne_const.FT_VOICE if ((_duid != fne_const.P25_DUID_TDU) and (_duid != fne_const.P25_DUID_TDULC)) else fne_const.FT_SLT_VTERM
+                    _dtype_vseq = fne_const.FT_VOICE if ((_duid != fne_const.P25_DUID_TDU) and (_duid != fne_const.P25_DUID_TDULC)) else fne_const.DT_TERMINATOR_WITH_LC
                     _stream_id = _data[16:20]
 
                     # Userland actions -- typically this is the function you
