@@ -501,7 +501,7 @@ class tlvFNE(tlvBase):
         # create lc
         lcHeader = _alg_id + _fid + _key_id  + _mi + _dst_id + '\x00\x00' # AlgID + FID + KeyID + MI + Destination Address + CRC-CCITT16
 
-        return lc.encode_lc_header(lcHeader, _cc, _dtype, MS_DATA_SYNC)
+        return lc.encode_pi_header(lcHeader, _cc, _dtype, MS_DATA_SYNC)
     
     # Create a voice DMR frame A-F frame type
     def encode_voice(self, _ambe, _rx_slot):

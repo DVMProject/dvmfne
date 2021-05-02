@@ -54,6 +54,13 @@ def encode_lc_header(_lc, _cc, _dtype, _sync):
     frame_bits = full_lc_encode[0:98] + slot_with_fec[0:10] + _sync + slot_with_fec[10:20] + full_lc_encode[98:196]
     return to_bytes(frame_bits)
 
+def encode_pi_header(_lc, _cc, _dtype, _sync):
+    full_lc_encode = bptc.encode_header_pi(_lc)
+    slot_type = chr((_cc << 4) | (ord(_dtype) & 0x0f))
+    slot_with_fec = BitArray(uint = golay.encode_2087(slot_type), length = 20)
+    frame_bits = full_lc_encode[0:98] + slot_with_fec[0:10] + _sync + slot_with_fec[10:20] + full_lc_encode[98:196]
+    return to_bytes(frame_bits)
+
 def decode_lc_header(_string):
     burst = to_bits(_string)
     info = burst[0:98] + burst[166:264]
