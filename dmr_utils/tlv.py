@@ -568,13 +568,13 @@ class tlvIPSC(tlvBase):
         self.ipsc_seq = (self.ipsc_seq + 1) & 0xff          # this is an 8 bit value which wraps around.
         self.emb_lc = ''
 
-        voiceHeader = self.generate_voice_header(_rx_slot, BURST_DATA_TYPE['VOICE_HEADER'])
-        rtpHeader = self.generate_rtp_header(_rx_slot, RTP_PAYLOAD_VOICE_HEADER, 0)
-        ipscHeader = self.generate_ipsc_voice_header(_rx_slot)
-
-        frame = ipscHeader + rtpHeader + voiceHeader
-
         for i in range(0, 3):                               # Output the 3 HEAD frames to our peers
+            voiceHeader = self.generate_voice_header(_rx_slot, BURST_DATA_TYPE['VOICE_HEADER'])
+            rtpHeader = self.generate_rtp_header(_rx_slot, RTP_PAYLOAD_VOICE_HEADER, 0)
+            ipscHeader = self.generate_ipsc_voice_header(_rx_slot)
+
+            frame = ipscHeader + rtpHeader + voiceHeader
+
             self.send_ipsc(_rx_slot.slot, frame)
             sleep(0.06)
         pass
