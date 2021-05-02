@@ -58,6 +58,7 @@ FID_DMRA = '\x10'
 
 # LC Options - Use for Group Voice
 LC_OPT = '\x00\x00\x20'
+LC_PI_OPT = '\x00\x00\x00\x00\x00\x00\x00'
 
 LC_GROUP_VOICE = '\x00'
 LC_PRIVATE_VOICE = '\x01'

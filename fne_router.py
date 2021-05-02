@@ -193,11 +193,14 @@ class routerFNE(coreFNE):
                 'TX_STREAM_ID': '\x00',
                 'RX_TGID':      '\x00\x00\x00',
                 'TX_TGID':      '\x00\x00\x00',
+                'TX_PI_TGID':   '\x00\x00\x00',
                 'RX_TIME':      time(),
                 'TX_TIME':      time(),
                 'RX_TYPE':      fne_const.DT_TERMINATOR_WITH_LC,
                 'RX_LC':        '\x00',
+                'RX_PI_LC':     '\x00',
                 'TX_H_LC':      '\x00',
+                'TX_P_LC':      '\x00',
                 'TX_T_LC':      '\x00',
                 'TX_EMB_LC': {
                     1: '\x00',
@@ -217,11 +220,14 @@ class routerFNE(coreFNE):
                 'TX_STREAM_ID': '\x00',
                 'RX_TGID':      '\x00\x00\x00',
                 'TX_TGID':      '\x00\x00\x00',
+                'TX_PI_TGID':   '\x00\x00\x00',
                 'RX_TIME':      time(),
                 'TX_TIME':      time(),
                 'RX_TYPE':      fne_const.DT_TERMINATOR_WITH_LC,
                 'RX_LC':        '\x00',
+                'RX_PI_LC':     '\x00',
                 'TX_H_LC':      '\x00',
+                'TX_P_LC':      '\x00',
                 'TX_T_LC':      '\x00',
                 'TX_EMB_LC': {
                     1: '\x00',
@@ -324,7 +330,20 @@ class routerFNE(coreFNE):
                 else:
                     self.STATUS[_slot]['RX_LC'] = const.LC_OPT + _dst_id + _rf_src
 
+                self.STATUS[_slot]['RX_PI_LC'] = const.LC_PI_OPT + '\x00\x00\x00' + '\x00\x00'
                 self._logger.debug('(%s) TS %s [STREAM ID %s] RX_LC %s', self._system, _slot, int_id(_stream_id), ahex(self.STATUS[_slot]['RX_LC']))
+
+            # If we can, use the PI LC from the PI voice header as to keep all
+            # options intact
+            if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_PI_HEADER:
+                lcHeader = lc.decode_lc_header(dmrpkt)
+                _alg_id = lcHeader['LC'][0]
+                _key_id = lcHeader['LC'][2]
+                self._logger.info('(%s) DMRD: Traffic *CALL PI PARAMS  * PEER %s DST_ID %s TS %s ALGID %s KID %s [STREAM ID %s]', self._system,
+                                        int_id(_peer_id), int_id(_dst_id), _slot, int_id(_alg_id), int_id(_key_id), int_id(_stream_id))
+                self.STATUS[_slot]['RX_PI_LC'] = lcHeader['LC'][:10]
+
+                self._logger.debug('(%s) TS %s [STREAM ID %s] RX_PI_LC %s', self._system, _slot, int_id(_stream_id), ahex(self.STATUS[_slot]['RX_PI_LC']))
 
             for rule in RULES[self._system]['GROUP_VOICE']:
                 _target = rule['DST_NET']
@@ -386,9 +405,10 @@ class routerFNE(coreFNE):
                     # there is a frame to forward
                     _target_status[rule['DST_TS']]['TX_TIME'] = pkt_time
                     
-                    if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']) or (_target_status[rule['DST_TS']]['TX_RFS'] != _rf_src) or (_target_status[rule['DST_TS']]['TX_TGID'] != rule['DST_GROUP']):       
+                    if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']) or (_target_status[rule['DST_TS']]['TX_RFS'] != _rf_src) or (_target_status[rule['DST_TS']]['TX_TGID'] != rule['DST_GROUP']):
                         # Record the DST TGID and Stream ID
                         _target_status[rule['DST_TS']]['TX_TGID'] = rule['DST_GROUP']
+                        _target_status[rule['DST_TS']]['TX_PI_TGID'] = '\x00\x00\x00'
                         _target_status[rule['DST_TS']]['TX_STREAM_ID'] = _stream_id
                         _target_status[rule['DST_TS']]['TX_RFS'] = _rf_src
 
@@ -398,7 +418,11 @@ class routerFNE(coreFNE):
                         _target_status[rule['DST_TS']]['TX_T_LC'] = bptc.encode_terminator_lc(dst_lc)
                         _target_status[rule['DST_TS']]['TX_EMB_LC'] = bptc.encode_emblc(dst_lc)
 
+                        dst_pi_lc = self.STATUS[_slot]['RX_PI_LC'][0:7] + rule['DST_GROUP'] + '\x00\x00'
+                        _target_status[rule['DST_TS']]['TX_P_LC'] = bptc.encode_header_pi(dst_pi_lc)
+
                         self._logger.debug('(%s) TS %s [STREAM ID %s] TX_H_LC %s', self._system, _slot, int_id(_stream_id), ahex(dst_lc))
+                        self._logger.debug('(%s) TS %s [STREAM ID %s] TX_P_LC %s', self._system, _slot, int_id(_stream_id), ahex(dst_pi_lc))
 
                         self._logger.debug('(%s) DMR Packet DST TGID %s does not match SRC TGID %s - Generating FULL and EMB LCs', 
                                            self._system, int_id(rule['DST_GROUP']), int_id(_dst_id))
@@ -406,6 +430,19 @@ class routerFNE(coreFNE):
                                           self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP']))
                         if config['Reports']['Report']:
                             self._report.send_routeEvent('CALL ROUTE,TO,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP'])))
+
+                    _pi_dst_id = self.STATUS[_slot]['RX_PI_LC'][7:10]
+                    if (int_id(_pi_dst_id) != 0) and (_target_status[rule['DST_TS']]['TX_PI_TGID'] != rule['DST_GROUP']):
+                        # Record the DST TGID and Stream ID
+                        _target_status[rule['DST_TS']]['TX_PI_TGID'] = rule['DST_GROUP']
+
+                        # Generate LCs (full and EMB) for the TX stream
+                        dst_pi_lc = self.STATUS[_slot]['RX_PI_LC'][0:7] + rule['DST_GROUP'] + '\x00\x00'
+                        _target_status[rule['DST_TS']]['TX_P_LC'] = bptc.encode_header_pi(dst_pi_lc)
+
+                        self._logger.debug('(%s) TS %s [STREAM ID %s] TX_P_LC %s', self._system, _slot, int_id(_stream_id), ahex(dst_pi_lc))
+                        self._logger.info('(%s) DMRD: Call PI parameters routed to SYSTEM %s TS %s TGID %s',
+                                          self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP']))
                     
                     # Handle any necessary re-writes for the destination
                     if rule['SRC_TS'] != rule['DST_TS']:
@@ -429,6 +466,9 @@ class routerFNE(coreFNE):
                     # Create a voice header packet (FULL LC)
                     if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
                         dmrbits = _target_status[rule['DST_TS']]['TX_H_LC'][0:98] + dmrbits[98:166] + _target_status[rule['DST_TS']]['TX_H_LC'][98:197]
+                    # Create a voice PI header packet (FULL LC)
+                    elif _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_PI_HEADER:
+                        dmrbits = _target_status[rule['DST_TS']]['TX_P_LC'][0:98] + dmrbits[98:166] + _target_status[rule['DST_TS']]['TX_P_LC'][98:197]
                     # Create a voice terminator packet (FULL LC)
                     elif _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC:
                         dmrbits = _target_status[rule['DST_TS']]['TX_T_LC'][0:98] + dmrbits[98:166] + _target_status[rule['DST_TS']]['TX_T_LC'][98:197]
