@@ -85,7 +85,10 @@ class bridgeFNE(coreFNE):
         _tx_slot.frame_count += 1
 
         if (_stream_id != _tx_slot.stream_id):
-            self.tlv_fne.begin_call(_slot, True, _rf_src, _dst_id, _peer_id, _tx_slot.cc, _seq, _stream_id)
+            if _call_type == 'group':
+                self.tlv_fne.begin_call(_slot, True, _rf_src, _dst_id, _peer_id, _tx_slot.cc, _seq, _stream_id)
+            elif _call_type == 'unit':
+                self.tlv_fne.begin_call(_slot, False, _rf_src, _dst_id, _peer_id, _tx_slot.cc, _seq, _stream_id)
             _tx_slot.lastSeq = _seq
 
         if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_VOICE_PI_HEADER):

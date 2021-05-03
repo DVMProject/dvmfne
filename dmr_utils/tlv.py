@@ -472,8 +472,12 @@ class tlvFNE(tlvBase):
         if (_rx_slot.secure == True):
             _fid = FID_DMRA
 
+        _flco = LC_GROUP_VOICE
+        if (_rx_slot.group == False):
+            _flco = LC_PRIVATE_VOICE
+
         # create lc
-        lcHeader = '\x00' + _fid + '\x00' + _dst_id + _src_id     # PF + Reserved + FLCO + FID + Service Options + Destination Address + Source Address
+        lcHeader = _flco + _fid + '\x00' + _dst_id + _src_id     # PF + Reserved + FLCO + FID + Service Options + Destination Address + Source Address
 
         _rx_slot.emblc = bptc.encode_emblc(lcHeader)        # save off the emb lc for voice frames B-E
         _rx_slot.emblc[5] = bitarray(32)                    # NULL message (F)

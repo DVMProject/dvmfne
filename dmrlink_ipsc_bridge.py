@@ -120,10 +120,7 @@ class bridgeIPSC(IPSC):
             traceback.print_exc()
             sys.exit('Configuration file \'' + configFileName + '\' is not a valid configuration file! Exiting...')
 
-    # ************************************************
-    #  CALLBACK FUNCTIONS FOR USER PACKET TYPES
-    # ************************************************
-    def group_voice(self, _src_id, _dst_id, _ts, _end, _peerId, _rtp, _data):
+    def voice_call(self, _src_id, _dst_id, _group, _ts, _end, _peerId, _rtp, _data):
         _tx_slot = self.tlv_ipsc.tx[_ts]
         _payload_type = _data[30:31]
         _seq = int_id(_data[20:22])
@@ -132,7 +129,7 @@ class bridgeIPSC(IPSC):
         if _payload_type == BURST_DATA_TYPE['VOICE_HEADER']:
             _stream_id = int_id(_data[5:6])           # int8  looks like a sequence number for a packet
             if (_stream_id != _tx_slot.stream_id):
-                self.tlv_ipsc.begin_call(_ts, True, _src_id, _dst_id, _peerId, self.cc, _seq, _stream_id)
+                self.tlv_ipsc.begin_call(_ts, _group, _src_id, _dst_id, _peerId, self.cc, _seq, _stream_id)
             _tx_slot.lastSeq = _seq
 
         if _payload_type == BURST_DATA_TYPE['PI_HEADER']:
@@ -152,16 +149,16 @@ class bridgeIPSC(IPSC):
             _ambe_frame2 = _ambe_frames[50:99]
             _ambe_frame3 = _ambe_frames[100:149]
             self.tlv_ipsc.export_voice(_tx_slot, _seq, _ambe_frame1.tobytes() + _ambe_frame2.tobytes() + _ambe_frame3.tobytes())
+
+    # ************************************************
+    #  CALLBACK FUNCTIONS FOR USER PACKET TYPES
+    # ************************************************
+    def group_voice(self, _src_id, _dst_id, _ts, _end, _peerId, _rtp, _data):
+        self.voice_call(_src_id, _dst_id, True, _ts, _end, _peerId, _rtp, _data)
         pass
 
     def private_voice(self, _src_id, _dst_id, _ts, _end, _peerId, _rtp, _data):
-        _tx_slot = self.tlv_ipsc.tx[_ts]
-        _payload_type = _data[30:31]
-        _seq = int_id(_data[20:22])
-        _tx_slot.frame_count += 1
-
-        # TODO TODO
-
+        self.voice_call(_src_id, _dst_id, False, _ts, _end, _peerId, _rtp, _data)
         pass
 
 # ---------------------------------------------------------------------------
