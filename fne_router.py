@@ -347,6 +347,11 @@ class routerFNE(coreFNE):
 
             for rule in RULES[self._system]['GROUP_VOICE']:
                 _target = rule['DST_NET']
+
+                # skip if the target doesn't exist
+                if not (_target in systems):
+                    continue
+
                 _target_status = systems[_target].STATUS
                 
                 if (rule['SRC_GROUP'] == _dst_id and rule['SRC_TS'] == _slot and rule['ACTIVE'] == True and rule['ROUTABLE'] == True):
