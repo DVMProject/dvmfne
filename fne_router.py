@@ -748,6 +748,11 @@ class routerFNE(coreFNE):
 
             for rule in RULES[self._system]['GROUP_VOICE']:
                 _target = rule['DST_NET']
+
+                # skip if the target doesn't exist
+                if not (_target in systems):
+                    continue
+
                 _target_status = systems[_target].STATUS
                
                 if ((_duid == fne_const.P25_DUID_TDU) or (_duid == fne_const.P25_DUID_TDULC)):
