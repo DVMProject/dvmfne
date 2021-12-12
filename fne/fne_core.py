@@ -477,11 +477,12 @@ class coreFNE(DatagramProtocol):
             self.send_peer(_peer, fne_const.TAG_MASTER_ACTIVE_TGS + data)
             self._logger.debug('(%s) Active TGIDs sent to PRID %s', self._system, self._peers[_peer]['PEER_ID'])
 
-    def master_send_tgids(self, _tgids):
+    def master_send_tgids(self, _system, _tgids):
         try:
             if self._config['Mode'] == 'master':
                 for _peer in self._peers:
-                    self.send_peer_tgids(_peer, _tgids)
+                    if _peer['SYSTEM'] == _system:
+                        self.send_peer_tgids(_peer, _tgids)
         except:
             self._logger.error('(%s) Failed to send talkgroup IDs', self._system)
 
@@ -495,11 +496,12 @@ class coreFNE(DatagramProtocol):
             self.send_peer(_peer, fne_const.TAG_MASTER_DEACTIVE_TGS + data)
             self._logger.debug('(%s) Deactivated TGIDs sent to PRID %s', self._system, self._peers[_peer]['PEER_ID'])
 
-    def master_send_disabled_tgids(self, _tgids):
+    def master_send_disabled_tgids(self, _system, _tgids):
         try:
             if self._config['Mode'] == 'master':
                 for _peer in self._peers:
-                    self.send_peer_disabled_tgids(_peer, _tgids)
+                    if _peer['SYSTEM'] == _system:
+                        self.send_peer_disabled_tgids(_peer, _tgids)
         except:
             self._logger.error('(%s) Failed to send talkgroup IDs', self._system)
     
@@ -661,6 +663,7 @@ class coreFNE(DatagramProtocol):
                 _salt_str = hex_str_4(self._peers[_peer_id]['SALT'])
                 self.send_peer(_peer_id, fne_const.TAG_REPEATER_ACK + _salt_str)
                 self._peers[_peer_id]['CONNECTION'] = 'CHALLENGE_SENT'
+                self._peers[_peer_id]['SYSTEM'] = self._system
                 self._logger.info('(%s) Sent Challenge Response to PEER %s for login %s', self._system, int_id(_peer_id), self._peers[_peer_id]['SALT'])
             else:
                 self.transport.write(fne_const.TAG_MASTER_NAK + _peer_id, (_host, _port))

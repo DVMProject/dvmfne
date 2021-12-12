@@ -81,7 +81,7 @@ def get_valid_ignore(_peer_id, _id, _dict):
 # configuration file and listed as "active".  It can be empty,
 # but it has to exist.
 def make_rules(_fne_routing_rules):
-    global RULES, rule_file, tg_ids, deactive_tg_ids, tg_ignore_ids, tg_allow_aff
+    global RULES, rule_file
     try:
         if _fne_routing_rules not in sys.modules: 
             rule_file = import_module(_fne_routing_rules)
@@ -92,15 +92,19 @@ def make_rules(_fne_routing_rules):
     except:
         logger.error('Routing rules file not found or invalid')
         return RULES
-
-    tg_ids = {}
-    deactive_tg_ids = {}
-    tg_ignore_ids = {}
-    tg_allow_aff = []
     
     # Convert integer GROUP ID numbers from the config into hex strings
     # we need to send in the actual data packets.
     for _system in rule_file.RULES:
+        if _system not in config['Systems']:
+            logger.error('Routing rules found for system %s, not configured main configuration', _system)
+            continue
+
+        config['Systems'][_system]['ACTIVE_TG_IDS'] = {}
+        config['Systems'][_system]['DEACTIVE_TG_IDS'] = {}
+        config['Systems'][_system]['TG_IGNORE_IDS'] = {}
+        config['Systems'][_system]['TG_ALLOW_AFF'] = []
+
         for _rule in rule_file.RULES[_system]['GROUP_VOICE']:
             _rule['SRC_GROUP'] = hex_str_3(_rule['SRC_GROUP'])
             _rule['DST_GROUP'] = hex_str_3(_rule['DST_GROUP'])
@@ -109,13 +113,13 @@ def make_rules(_fne_routing_rules):
 
             if rule_file.RULES[_system]['SEND_TGID'] == True:
                 if _rule['ACTIVE'] == True:
-                    tg_ids[int_id(_rule['SRC_GROUP'])] = (_rule['NAME'], _rule['SRC_TS'])
+                    config['Systems'][_system]['ACTIVE_TG_IDS'][int_id(_rule['SRC_GROUP'])] = (_rule['NAME'], _rule['SRC_TS'])
                 else:
-                    deactive_tg_ids[int_id(_rule['SRC_GROUP'])] = (_rule['NAME'], _rule['SRC_TS'])
+                    config['Systems'][_system]['DEACTIVE_TG_IDS'][int_id(_rule['SRC_GROUP'])] = (_rule['NAME'], _rule['SRC_TS'])
 
-            tg_ignore_ids[int_id(_rule['SRC_GROUP'])] = [int(x) for x in _rule['IGNORED']]
+            config['Systems'][_system]['TG_IGNORE_IDS'][int_id(_rule['SRC_GROUP'])] = [int(x) for x in _rule['IGNORED']]
             if _rule['AFFILIATED'] == True:
-                tg_allow_aff.append(int_id(_rule['SRC_GROUP']))
+                config['Systems'][_system]['TG_ALLOW_AFF'].append(int_id(_rule['SRC_GROUP']))
 
             for i, e in enumerate(_rule['ON']):
                 _rule['ON'][i] = hex_str_3(_rule['ON'][i])
@@ -135,9 +139,7 @@ def make_rules(_fne_routing_rules):
                         _rule['TIMER'] = _loaded_rule['TIMER']
                         break
 
-            logger.debug('Rule (%s) NAME: %s SRC_TGID: %s DST_TGID: %s SRC_TS: %s DST_TS: %s ACTIVE: %s ROUTABLE: %s TO_TYPE: %s AFFILIATED: %s IGNORED: %s', _system, _rule['NAME'], int_id(_rule['SRC_GROUP']), int_id(_rule['DST_GROUP']), _rule['SRC_TS'], _rule['DST_TS'], _rule['ACTIVE'], _rule['ROUTABLE'], _rule['TO_TYPE'], _rule['AFFILIATED'], _rule['IGNORED'])
-        if _system not in config['Systems']:
-            logger.error('Routing rules found for system %s, not configured main configuration', _system)
+            logger.info('Rule (%s) NAME: %s SRC_TGID: %s DST_TGID: %s SRC_TS: %s DST_TS: %s ACTIVE: %s ROUTABLE: %s TO_TYPE: %s AFFILIATED: %s IGNORED: %s', _system, _rule['NAME'], int_id(_rule['SRC_GROUP']), int_id(_rule['DST_GROUP']), _rule['SRC_TS'], _rule['DST_TS'], _rule['ACTIVE'], _rule['ROUTABLE'], _rule['TO_TYPE'], _rule['AFFILIATED'], _rule['IGNORED'])
 
     for _system in config['Systems']:
         if _system not in rule_file.RULES:
@@ -266,7 +268,7 @@ class routerFNE(coreFNE):
             return True
         
         if _call_type == 'group':
-            if (RULES[self._system]['SEND_TGID'] == True) and (get_valid(_dst_id, tg_ids) == False):
+            if (RULES[self._system]['SEND_TGID'] == True) and (get_valid(_dst_id, config['Systems'][self._system]['ACTIVE_TG_IDS']) == False):
                 if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']):
                     # Mark status variables for use later
                     self.STATUS[_slot]['RX_START'] = pkt_time
@@ -672,7 +674,7 @@ class routerFNE(coreFNE):
             return True
         
         if _call_type == 'group':
-            if (RULES[self._system]['SEND_TGID'] == True) and (get_valid(_dst_id, tg_ids) == False):
+            if (RULES[self._system]['SEND_TGID'] == True) and (get_valid(_dst_id, config['Systems'][self._system]['ACTIVE_TG_IDS']) == False):
                 if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']):
                     # Mark status variables for use later
                     self.STATUS[_slot]['RX_START'] = pkt_time
@@ -946,8 +948,8 @@ class routerFNE(coreFNE):
         if _call_type == 'unit':
             return False
 
-        if get_valid_ignore(_peer_id, _dst_id, tg_ignore_ids) == True:
-            if (int_id(_dst_id) in tg_allow_aff):
+        if get_valid_ignore(_peer_id, _dst_id, config['Systems'][self._system]['TG_IGNORE_IDS']) == True:
+            if (int_id(_dst_id) in config['Systems'][self._system]['TG_ALLOW_AFF']):
                 if (int_id(_peer_id) in GRP_AFF.keys()):
                     if (int_id(_dst_id) in GRP_AFF[int_id(_peer_id)].keys()):
                         if (len(GRP_AFF[int_id(_peer_id)][int_id(_dst_id)]) > 0):
@@ -980,13 +982,13 @@ class routerFNE(coreFNE):
         if black_rids:
             self.send_peer_brids(_peer_id, black_rids)
 
-        global tg_ids
-        if tg_ids:
-            self.send_peer_tgids(_peer_id, tg_ids)
+        _tg_ids = config['Systems'][self._system]['ACTIVE_TG_IDS']
+        if _tg_ids:
+            self.send_peer_tgids(_peer_id, _tg_ids)
 
-        global deactive_tg_ids
-        if deactive_tg_ids:
-            self.send_peer_disabled_tgids(_peer_id, tg_ids)
+        _deactive_tg_ids = config['Systems'][self._system]['DEACTIVE_TG_IDS']
+        if _deactive_tg_ids:
+            self.send_peer_disabled_tgids(_peer_id, _deactive_tg_ids)
 
     def update_grp_aff(self, _peer_id, _rf_src, _dst_id, _stream_id):
         # make sure the peer exists in the affiliations table
@@ -1045,15 +1047,15 @@ class routerFNE(coreFNE):
                 RULES = make_rules('fne_routing_rules')
 
             if RULES[self._system]['SEND_TGID'] == True:
-                global tg_ids
-                if tg_ids:
+                _tg_ids = config['Systems'][self._system]['ACTIVE_TG_IDS']
+                if _tg_ids:
                     self._logger.debug('ID MAPPER: tg_ids dictionary is available, and being sent to peers')
-                    self.master_send_tgids(tg_ids)
+                    self.master_send_tgids(self._system, _tg_ids)
 
-                global deactive_tg_ids
-                if deactive_tg_ids:
+                _deactive_tg_ids = config['Systems'][self._system]['DEACTIVE_TG_IDS']
+                if _deactive_tg_ids:
                     self._logger.debug('ID MAPPER: deactive_tg_ids dictionary is available, and being sent to peers')
-                    self.master_send_disabled_tgids(tg_ids)
+                    self.master_send_disabled_tgids(self._system, _deactive_tg_ids)
         except Exception:
             logger.error('Failed processing and sending rules for %s', self._system)
 
@@ -1109,13 +1111,15 @@ if __name__ == '__main__':
     black_rids = mk_id_dict(config['Aliases']['Path'], config['Aliases']['WhitelistRIDsFile'])
     if black_rids:
         logger.info('ID MAPPER: black_rids dictionary is available')
+
+    for system in config['Systems']:
+        config['Systems'][system]['ACTIVE_TG_IDS'] = {}
+        config['Systems'][system]['DEACTIVE_TG_IDS'] = {}
+        config['Systems'][system]['TG_IGNORE_IDS'] = {}
+        config['Systems'][system]['TG_ALLOW_AFF'] = []
     
     RULES = {}
     GRP_AFF = {}
-    tg_ids = {}
-    deactive_tg_ids = {}
-    tg_ignore_ids = {}
-    tg_allow_aff = []
 
     # build the routing rules file
     RULES = make_rules('fne_routing_rules')
@@ -1135,4 +1139,3 @@ if __name__ == '__main__':
     rule_timer.start(60)
 
     reactor.run()
-    
