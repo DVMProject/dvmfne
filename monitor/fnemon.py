@@ -114,7 +114,10 @@ EOL_SCANAHEAD    = LOG_MAX / 2
 
 # Convert a hex string to an int (peer ID, etc.)
 def int_id(_hex_string):
-    return int(ahex(_hex_string), 16)
+    try:
+        return int(ahex(_hex_string), 16)
+    except TypeError:
+        return _hex_string
 
 # ---------------------------------------------------------------------------
 #   Module Routines
