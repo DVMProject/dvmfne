@@ -28,7 +28,7 @@ from __future__ import print_function
 from bitarray import bitarray
 from binascii import b2a_hex as ahex
 
-from golay_tables import *
+from dmr_utils.golay_tables import *
 
 X22     = 0x00400000   # vector representation of X^22
 X18     = 0x00040000   # vector representation of X^18
@@ -39,9 +39,9 @@ GENPOL  = 0x00000c75   # generator polinomial, g(x)
 
 # This routine currently uses hex strings of the precalculated codes.
 # This generates them from the integer table for (20,8,7) 
-ENCSTR_2087 = [0 for x in xrange(256)]
-for value in xrange(256):
-    ENCSTR_2087[value] = hex(ENCODE_2087[value])[2:].rjust(4,'0').decode('hex')
+ENCSTR_2087 = [0 for x in range(256)]
+for value in range(256):
+    ENCSTR_2087[value] = hex(ENCODE_2087[value])[2:].rjust(4,'0')
 
 def get_synd_1987(_pattern):
     aux = X18

@@ -27,7 +27,7 @@
 from __future__ import print_function
 
 import sys, traceback
-import cPickle as pickle
+import pickle
 
 from binascii import b2a_hex as ahex
 from bitarray import bitarray
@@ -1101,7 +1101,7 @@ if __name__ == '__main__':
 
     # perform basic FNE setup
     config, logger, act_log_file = setup_fne()
-    logger.info('Digital Voice Modem Router Service D01.00')
+    logger.info('Digital Voice Modem Router Service D02.00')
     
     # make dictionaries
     white_rids = mk_id_dict(config['Aliases']['Path'], config['Aliases']['WhitelistRIDsFile'])

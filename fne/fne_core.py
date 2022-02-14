@@ -28,7 +28,7 @@ from __future__ import print_function
 
 import subprocess
 import socket
-import cPickle as pickle
+import pickle
 
 from binascii import b2a_hex as ahex
 from binascii import a2b_hex as bhex
@@ -44,9 +44,9 @@ from twisted.internet.protocol import DatagramProtocol, Factory, Protocol
 from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor, task
 
-import fne_config
-import fne_log
-import fne_const
+from fne import fne_config
+from fne import fne_log
+from fne import fne_const
 
 # Global variables used whether we are a module or __main__
 systems = {}
@@ -326,8 +326,8 @@ class PacketData:
             def __init__(self, callback_function):
                 self.func = callback_function
 
-            def datagramReceived(self, _data, (_host, _port)):
-                self.func(_data, (_host, _port))
+            def datagramReceived(self, _data, hostInfo):    # hostInfo is tuple; converted from 2.x to 3.x syntax
+                self.func(_data, hostInfo)
         
         self.udp_port = reactor.listenUDP(self._port, UDP_IMPORT(self.packet_datagramReceived))
 
@@ -335,7 +335,7 @@ class PacketData:
         self._sock.sendto(_data, (self._gateway, self._gateway_port))
 
     # Twisted callback with data from socket
-    def packet_datagramReceived(self, _data, (_host, _port)):
+    def packet_datagramReceived(self, _data, hostInfo):   # hostInfo is tuple; converted from 2.x to 3.x syntax
         self._FNE.send_peers(_data)
 
 # ---------------------------------------------------------------------------
@@ -417,7 +417,7 @@ class coreFNE(DatagramProtocol):
                                self._peers[_peer]['Address'], self._peers[_peer]['Port'], ahex(_packet))
 
     def send_master(self, _packet):
-        self.transport.write(_packet, (self._config['MasterAddress'], self._config['MasterPort']))
+        self.transport.write(_packet.encode(), (self._config['MasterAddress'], self._config['MasterPort']))
         if self._CONFIG['Log']['RawPacketTrace']:
             self._logger.debug('(%s) Network Transmitted (to %s:%s) -- %s', self._system, 
                                self._config['MasterAddress'], self._config['MasterPort'], ahex(_packet))
@@ -534,13 +534,16 @@ class coreFNE(DatagramProtocol):
             self._logger.debug('(%s) RPTPING Sent to MASTER. Pings since connected: %s', self._system, self._stats['PINGS_SENT'])
 
     # Aliased in __init__ to datagramReceived if system is a master
-    def master_datagramReceived(self, _data, (_host, _port)):
+    def master_datagramReceived(self, _data, hostInfo): # hostInfo is a tuple; converted from 2.x to 3.x syntax
+        _host, _port = hostInfo
         global _act_log_lock
         if self._CONFIG['Log']['RawPacketTrace']:
             self._logger.debug('(%s) Network Received (from %s:%s) -- %s', self._system, _host, _port, ahex(_data))
 
         # process opcode from data, usually first 4 bytes but can be a varied length
         # depending on the opcode
+        print("Data packet")
+        print(_data)
         if _data[:4] == fne_const.TAG_DMR_DATA: # fne_const.TAG_DMR_DATA -- encapsulated DMR data frame
             _peer_id = _data[11:15]
             if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == 'YES' and 
@@ -814,7 +817,8 @@ class coreFNE(DatagramProtocol):
                 self._logger.error('(%s) Unrecognized command %s PACKET %s', self._system, _data[:9], ahex(_data))
         
     # Aliased in __init__ to datagramReceived if system is a peer
-    def peer_datagramReceived(self, _data, (_host, _port)):
+    def peer_datagramReceived(self, _data, hostInfo): # hostInfo is tuple; converted from 2.x to 3.x syntax
+        _host, _port = hostInfo
         if self._CONFIG['Log']['RawPacketTrace']:
             self._logger.debug('(%s) Network Received (from %s:%s) -- %s', self._system, _host, _port, ahex(_data))
 

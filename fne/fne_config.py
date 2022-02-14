@@ -24,13 +24,13 @@
 #   along with this program; if not, write to the Free Software Foundation,
 #   Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ###############################################################################
-import ConfigParser
+import configparser
 import sys
 
 from socket import gethostbyname 
 
 def build_config(_config_file):
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
 
     if not config.read(_config_file):
         sys.exit('Configuration file \'' + _config_file + '\' is not a valid configuration file! Exiting...')        
@@ -108,7 +108,7 @@ def build_config(_config_file):
                         'MasterAddress': gethostbyname(config.get(section, 'MasterAddress')),
                         'MasterPort': config.getint(section, 'MasterPort'),
                         'Passphrase': config.get(section, 'Passphrase'),
-                        'PeerId': hex(int(config.get(section, 'PeerId')))[2:].rjust(8,'0').decode('hex'),
+                        'PeerId': hex(int(config.get(section, 'PeerId')))[2:].rjust(8,'0'),
                         'Identity': config.get(section, 'Identity').ljust(8)[:8],
                         'RxFrequency': config.get(section, 'RxFrequency').ljust(9)[:9],
                         'TxFrequency': config.get(section, 'TxFrequency').ljust(9)[:9],
@@ -141,8 +141,9 @@ def build_config(_config_file):
                     }})
                     CONFIG['Systems'][section].update({'PEERS': {}})
     
-    except ConfigParser.Error, err:
-        print "Cannot parse configuration file. %s" % err
+    except (configparser.Error):
+        err = "FIX ME"  # TODO: get the actual error
+        print ("Cannot parse configuration file. {}".format(err))
         sys.exit('Could not parse configuration file, exiting...')
         
     return CONFIG

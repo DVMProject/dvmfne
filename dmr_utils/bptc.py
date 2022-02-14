@@ -26,7 +26,7 @@
 
 from __future__ import print_function
 from bitarray import bitarray
-import hamming, crc, rs129
+from dmr_utils import hamming, crc, rs129
 
 # ---------------------------------------------------------------------------
 #   Contants
