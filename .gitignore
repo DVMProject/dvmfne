@@ -1,0 +1,11 @@
+[Bb]in/
+[Ii]nclude/
+[Ll]ib/
+[Ss]cripts/
+[Ss]hare/
+[Ll]ib64
+pyvenv.cfg
+env/
+
+__pycache__/
+*.pyc
