@@ -413,8 +413,8 @@ class coreFNE(DatagramProtocol):
         _port = self._peers[_peer]['PORT']
         self.transport.write(_packet, (_ip, _port))
         if self._CONFIG['Log']['RawPacketTrace']:
-            self._logger.debug('(%s) PRID %s Network Transmitted (to %s:%s) -- %s', self._system, self._peers[_peer]['PeerId'],
-                               self._peers[_peer]['Address'], self._peers[_peer]['Port'], ahex(_packet))
+            self._logger.debug('(%s) PEER %s Network Transmitted (to %s:%s) -- %s', self._system, self._peers[_peer]['PEER_ID'],
+                               self._peers[_peer]['IP'], self._peers[_peer]['PORT'], ahex(_packet))
 
     def send_master(self, _packet):
         self.transport.write(_packet.encode(), (self._config['MasterAddress'], self._config['MasterPort']))
@@ -425,11 +425,14 @@ class coreFNE(DatagramProtocol):
     def master_dereg(self):
         for _peer in self._peers:
             self.send_peer(_peer, fne_const.TAG_MASTER_CLOSING + _peer)
-            self._logger.info('(%s) De-Registration sent to PRID %s', self._system, self._peers[_peer]['PEER_ID'])
+            self._logger.info('(%s) De-Registration sent to PEER %s', self._system, self._peers[_peer]['PEER_ID'])
             
     def peer_dereg(self):
         self.send_master(fne_const.TAG_REPEATER_CLOSING + self._config['PeerId'])
         self._logger.info('(%s) De-Registration sent to MASTER (%s:%s)', self._system, self._config['MasterAddress'], self._config['MasterPort'])
+
+    def peer_trnslog(self, _message):
+        self.send_master(fne_const.TAG_TRANSFER_ACT_LOG + self._config['PeerId'] + _message)
     
     def send_peer_wrids(self, _peer, _rids):
         from struct import pack
@@ -439,7 +442,7 @@ class coreFNE(DatagramProtocol):
                 data = data + pack('>I', int(rid))
 
             self.send_peer(_peer, fne_const.TAG_MASTER_WL_RID + data)
-            self._logger.debug('(%s) Whitelist RIDs sent to PRID %s', self._system, self._peers[_peer]['PEER_ID'])
+            self._logger.debug('(%s) Whitelist RIDs sent to PEER %s', self._system, self._peers[_peer]['PEER_ID'])
 
     def master_send_wrids(self, _rids):
         try:
@@ -457,7 +460,7 @@ class coreFNE(DatagramProtocol):
                 data = data + pack('>I', int(rid))
 
             self.send_peer(_peer, fne_const.TAG_MASTER_BL_RID + data)
-            self._logger.debug('(%s) Blacklist RIDs sent to PRID %s', self._system, self._peers[_peer]['PEER_ID'])
+            self._logger.debug('(%s) Blacklist RIDs sent to PEER %s', self._system, self._peers[_peer]['PEER_ID'])
 
     def master_send_brids(self, _rids):
         try:
@@ -475,7 +478,7 @@ class coreFNE(DatagramProtocol):
                 data = data + pack('>I', int(tid)) + pack('>B', int(_tgids[tid][1]))
 
             self.send_peer(_peer, fne_const.TAG_MASTER_ACTIVE_TGS + data)
-            self._logger.debug('(%s) Active TGIDs sent to PRID %s', self._system, self._peers[_peer]['PEER_ID'])
+            self._logger.debug('(%s) Active TGIDs sent to PEER %s', self._system, self._peers[_peer]['PEER_ID'])
 
     def master_send_tgids(self, _system, _tgids):
         try:
@@ -494,7 +497,7 @@ class coreFNE(DatagramProtocol):
                 data = data + pack('>I', int(tid)) + pack('>B', int(_tgids[tid][1]))
 
             self.send_peer(_peer, fne_const.TAG_MASTER_DEACTIVE_TGS + data)
-            self._logger.debug('(%s) Deactivated TGIDs sent to PRID %s', self._system, self._peers[_peer]['PEER_ID'])
+            self._logger.debug('(%s) Deactivated TGIDs sent to PEER %s', self._system, self._peers[_peer]['PEER_ID'])
 
     def master_send_disabled_tgids(self, _system, _tgids):
         try:
@@ -512,7 +515,7 @@ class coreFNE(DatagramProtocol):
             # Check to see if any of the peers have been quiet (no ping)
             # longer than allowed
             if _this_peer['LAST_PING'] + self._CONFIG['Global']['PingTime'] * self._CONFIG['Global']['MaxMissed'] < time():
-                self._logger.info('(%s) PRID %s has timed out', self._system, _this_peer['PEER_ID'])
+                self._logger.info('(%s) PEER %s has timed out', self._system, _this_peer['PEER_ID'])
                 # remove any timed out peers from the configuration
                 del self._CONFIG['Systems'][self._system]['PEERS'][_peer]
     
@@ -686,7 +689,7 @@ class coreFNE(DatagramProtocol):
                     self.send_peer(_peer_id, fne_const.TAG_REPEATER_ACK + _peer_id)
                     self._logger.info('(%s) PEER %s has completed the login exchange successfully', self._system, _this_peer['PEER_ID'])
                 else:
-                    self._logger.warning('(%s) PRID %s has failed the login exchange successfully', self._system, _this_peer['PEER_ID'])
+                    self._logger.warning('(%s) PEER %s has failed the login exchange successfully', self._system, _this_peer['PEER_ID'])
                     self.transport.write(fne_const.TAG_MASTER_NAK + _peer_id, (_host, _port))
                     del self._peers[_peer_id]
             else:
@@ -828,6 +831,10 @@ class coreFNE(DatagramProtocol):
             # depending on the opcode
             if _data[:4] == fne_const.TAG_DMR_DATA: # fne_const.TAG_DMR_DATA -- encapsulated DMR data frame
                 _peer_id = _data[11:15]
+                if _peer_id != self._config['PeerId']:
+                    #self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, int_id(_peer_id), int_id(self._config['PeerId']))
+                    _peer_id = self._config['PeerId']
+
                 if _peer_id == self._config['PeerId']: # Validate the source and intended target
                     _seq = _data[4:5]
                     _rf_src = _data[5:8]
@@ -849,6 +856,10 @@ class coreFNE(DatagramProtocol):
 
             elif _data[:4] == fne_const.TAG_P25_DATA: # fne_const.TAG_P25_DATA -- encapsulated P25 data
                 _peer_id = _data[11:15]
+                if _peer_id != self._config['PeerId']:
+                    #self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, int_id(_peer_id), int_id(self._config['PeerId']))
+                    _peer_id = self._config['PeerId']
+
                 if _peer_id == self._config['PeerId']: # Validate the source and intended target
                     _rf_src = _data[5:8]
                     _dst_id = _data[8:11]
@@ -929,7 +940,7 @@ class coreFNE(DatagramProtocol):
             elif _data[:7] == fne_const.TAG_MASTER_PONG: # fne_const.TAG_MASTER_PONG -- a reply to RPTPING (send by peer)
                 if _data[7:11] == self._config['PeerId']:
                     self._stats['PINGS_ACKD'] += 1
-                    self._logger.debug('(%s) PRID %s MSTPONG received, pongs since connected %s', self._system,
+                    self._logger.debug('(%s) PEER %s MSTPONG received, pongs since connected %s', self._system,
                                        int_id(self._config['PeerId']), self._stats['PINGS_ACKD'])
 
             else:
