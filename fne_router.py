@@ -457,7 +457,6 @@ class routerFNE(coreFNE):
                     else:
                         _tmp_bits = _bits
                     
-                    # Assemble transmit HBP packet header
                     try:
                         _tgt_peer_id = self._CONFIG['Systems'][_target]['PeerId']
                     except KeyError:
@@ -488,8 +487,8 @@ class routerFNE(coreFNE):
                     # Transmit the packet to the destination system
                     systems[_target].send_system(_tmp_data)
                     self._logger.debug('(%s) DMR Packet routed by rule %s to %s SYSTEM %s',
-                                       self._system, rule['NAME'], self._CONFIG['Systems'][_target]['Mode'], _target)
-            
+                                    self._system, rule['NAME'], self._CONFIG['Systems'][_target]['Mode'], _target)
+
             # Final actions - Is this a voice terminator?
             if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
                 call_duration = pkt_time - self.STATUS[_slot]['RX_START']
@@ -811,12 +810,11 @@ class routerFNE(coreFNE):
                         _target_status[rule['DST_TS']]['TX_TGID'] = rule['DST_GROUP']
                         _target_status[rule['DST_TS']]['TX_STREAM_ID'] = _stream_id
                         _target_status[rule['DST_TS']]['TX_RFS'] = _rf_src
-                        self._logger.debug('(%s) P25D: Call routed to SYSTEM %s TGID %s', self._system, _target, int_id(rule['DST_GROUP']))
+                        self._logger.info('(%s) P25D: Call routed to SYSTEM %s TGID %s', self._system, _target, int_id(rule['DST_GROUP']))
 
                         if config['Reports']['Report']:
                             self._report.send_routeEvent('CALL ROUTE,TO,P25,{},{},{},{}'.format(self._system, _target, 1, int_id(rule['DST_GROUP'])))
-                    
-                    # Assemble transmit HBP packet header
+
                     try:
                         _tgt_peer_id = self._CONFIG['Systems'][_target]['PeerId']
                     except KeyError:
