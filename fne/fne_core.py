@@ -828,7 +828,7 @@ class coreFNE(DatagramProtocol):
             if _data[:4] == fne_const.TAG_DMR_DATA: # fne_const.TAG_DMR_DATA -- encapsulated DMR data frame
                 _peer_id = _data[11:15]
                 if _peer_id != self._config['PeerId']:
-                    self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, int_id(_peer_id), int_id(self._config['PeerId']))
+                    #self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, int_id(_peer_id), int_id(self._config['PeerId']))
                     _peer_id = self._config['PeerId']
 
                 if _peer_id == self._config['PeerId']: # Validate the source and intended target
@@ -853,7 +853,7 @@ class coreFNE(DatagramProtocol):
             elif _data[:4] == fne_const.TAG_P25_DATA: # fne_const.TAG_P25_DATA -- encapsulated P25 data
                 _peer_id = _data[11:15]
                 if _peer_id != self._config['PeerId']:
-                    self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, int_id(_peer_id), int_id(self._config['PeerId']))
+                    #self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, int_id(_peer_id), int_id(self._config['PeerId']))
                     _peer_id = self._config['PeerId']
 
                 if _peer_id == self._config['PeerId']: # Validate the source and intended target
