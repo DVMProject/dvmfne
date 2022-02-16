@@ -37,7 +37,7 @@ from time import time, sleep
 from importlib import import_module
 from binascii import b2a_hex as ahex
 from random import randint
-import sys, socket, ConfigParser, thread, traceback
+import sys, socket, configparser, traceback
 from threading import Lock
 from time import time, sleep, clock, localtime, strftime
 from pprint import pprint
@@ -158,8 +158,8 @@ class tlvBase:
         class UDP_IMPORT(DatagramProtocol):
             def __init__(self, callback_function):
                 self.func = callback_function
-            def datagramReceived(self, _data, (_host, _port)):
-                self.func(_data, (_host, _port))
+            def datagramReceived(self, _data, hostInfo):
+                self.func(_data, hostInfo)
         
         self.udp_port = reactor.listenUDP(self._tlvPort, UDP_IMPORT(self.import_datagramReceived))
         pass
@@ -188,7 +188,8 @@ class tlvBase:
         _tx_slot.lastSeq = _seq
 
     # Twisted callback with data from socket
-    def import_datagramReceived(self, _data, (_host, _port)):
+    def import_datagramReceived(self, _data, hostInfo):
+        _host, _port = hostInfo
         #self._logger.debug('(%s) Network Received TLV (from %s:%s) -- %s', self._system, _host, _port, ahex(_data))
         _slot = self._slot
         _rx_slot = self.rx[_slot]
@@ -741,7 +742,7 @@ class tlvIPSC(tlvBase):
             controlData += '\x00'
 
         burst = _burst_type + struct.pack('B', length) + struct.pack('B', control) + _ambe + controlData
-        return burst;
+        return burst
 
     def generate_voice_header(self, _rx_slot, _burst_type):
         src_id = struct.pack('>I', int_id(_rx_slot.src_id))
@@ -779,6 +780,7 @@ class tlvIPSC(tlvBase):
         return ipsc_burst + header + fec + burst_type + rssi
 
     def generate_pi_header(self, _rx_slot, _burst_type):
+        #TODO: this section
         _unk = '\x00'
 
         dst_id = struct.pack('>I', int_id(_rx_slot.dst_id))

@@ -67,7 +67,7 @@ def decode_full_lc(_data):
 
 def interleave_19696(_data):
     inter = bitarray(196, endian='big')
-    for index in xrange(196):
+    for index in range(196):
         inter[INDEX_181[index]] = _data[index]  # the real math is slower: deint[index] = _data[(index * 181) % 196]
     return inter
 
@@ -79,33 +79,33 @@ def encode_19696(_data):
     _bdata.frombytes(_data)
     
     # Insert R0-R3 bits
-    for i in xrange(4):
+    for i in range(4):
         _bdata.insert(0, 0)
     
     # Get row hamming 15,11,3 and append. +1 is to account for R3 that makes an even 196bit string
-    for index in xrange(9):
+    for index in range(9):
         spos = (index*15) + 1
         epos= spos + 11
         _rowp = hamming.enc_15113(_bdata[spos:epos])
-        for pbit in xrange(4):
+        for pbit in range(4):
             _bdata.insert(epos+pbit,_rowp[pbit])
     
     # Get column hamming 13,9,3 and append. +1 is to account for R3 that makes an even 196bit string
     # Pad out the bitarray to a full 196 bits. Can't insert into 'columns'
-    for i in xrange(60):
+    for i in range(60):
         _bdata.append(0)
     
     column = bitarray(9, endian='big')  # Temporary bitarray to hold column data
-    for col in xrange(15):
+    for col in range(15):
         spos = col + 1
-        for index in xrange(9):
+        for index in range(9):
             column[index] = _bdata[spos]
             spos += 15
         _colp = hamming.enc_1393(column)
         
         # Insert bits into matrix...
         cpar = 136 + col                # Starting location in the matrix for column bits
-        for pbit in xrange(4):
+        for pbit in range(4):
             _bdata[cpar] =  _colp[pbit]
             cpar += 15
 
@@ -160,12 +160,12 @@ def encode_emblc(_lc):
     _binlc.insert(76,_csum[4])
 
     # Insert the hamming bits at the right location in the matrix
-    for index in xrange(0,112,16):
-        for hindex,hbit in zip(xrange(index+11,index+16), hamming.enc_16114(_binlc[index:index+11])):
+    for index in range(0,112,16):
+        for hindex,hbit in zip(range(index+11,index+16), hamming.enc_16114(_binlc[index:index+11])):
             _binlc.insert(hindex,hbit)
     
     # Insert the column parity bits at the right location in the matrix
-    for index in xrange(0,16):
+    for index in range(0,16):
         _binlc.insert(index+112, _binlc[index+0] ^ _binlc[index+16] ^ _binlc[index+32] ^ _binlc[index+48] ^ _binlc[index+64] ^ _binlc[index+80] ^ _binlc[index+96])
     
     # Create Embedded LC segments in 48 bit blocks
