@@ -259,6 +259,7 @@ class tlvBase:
                     elif (t == TAG_DMR_TEST):
                         _rx_slot.dst_id = hex_str_3(int(v.split('=')[1]))
                         self._logger.info('(%s) TLV DMR_TEST, TGID %d TS %d', self._system, int_id(_rx_slot.dst_id), _rx_slot.slot)
+                        #TODO: fix this thread
                         thread.start_new_thread(self.sendBlankAmbe, (_rx_slot, hex_str_4(randint(0,0xFFFFFFFF)), 5 * 60 * 500))
                             
                     else:

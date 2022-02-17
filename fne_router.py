@@ -596,7 +596,7 @@ class routerFNE(coreFNE):
     def p25d_preprocess(self, _peer_id, _rf_src, _dst_id, _call_type, _duid, _dtype_vseq, _stream_id, _data):
         pkt_time = time()
         p25pkt = _data[24:178]
-        _lcf = int_id(_data[4])
+        _lcf = int(_data[4])
         _slot = 1               # fake the slot data, P25 doesn't have this
 
         # Log but ignore TSDU or PDU packets here
@@ -714,7 +714,7 @@ class routerFNE(coreFNE):
     def p25d_received(self, _peer_id, _rf_src, _dst_id, _call_type, _duid, _dtype_vseq, _stream_id, _data):
         pkt_time = time()
         p25pkt = _data[24:178]
-        _lcf = int_id(_data[4])
+        _lcf = int(_data[4])
         _slot = 1               # fake the slot data, P25 doesn't have this
 
         # Ignore TSDU or PDU packets here
@@ -740,7 +740,7 @@ class routerFNE(coreFNE):
                 # This is a new call stream
                 self.STATUS[_slot]['RX_START'] = pkt_time
                 self._logger.info('(%s) P25D: Traffic *CALL START      * PEER %s SRC_ID %s TGID %s [STREAM ID %s]', self._system,
-                                  int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+                                  _peer_id, _rf_src, _dst_id, _stream_id)
 
                 self.STATUS[_slot]['P25_RX_CT'] = 'group'
 
@@ -833,12 +833,12 @@ class routerFNE(coreFNE):
                 _dst_id = self.STATUS[_slot]['RX_TGID']
                 _rf_src = self.STATUS[_slot]['RX_RFS']
                 self._logger.info('(%s) P25D: Traffic *CALL END        * PEER %s SRC_ID %s TGID %s DUR %s [STREAM ID %s]', self._system,
-                                  int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), call_duration, int_id(_stream_id))
+                                  _peer_id, _rf_src, _dst_id, call_duration, _stream_id)
 
                 self.STATUS[_slot]['P25_RX_CT'] = 'group'
 
                 if config['Reports']['Report']:
-                    self._report.send_routeEvent('GROUP VOICE,END,P25,{},{},{},{},{},{},{:.2f}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id), call_duration))
+                    self._report.send_routeEvent('GROUP VOICE,END,P25,{},{},{},{},{},{},{:.2f}'.format(self._system, _stream_id, _peer_id, _rf_src, _slot, _dst_id, call_duration))
 
                 #
                 # Begin in-band signalling for call end.  This has nothign to
