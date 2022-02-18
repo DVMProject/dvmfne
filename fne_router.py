@@ -604,40 +604,40 @@ class routerFNE(coreFNE):
             if (_duid == fne_const.P25_DUID_TSDU):
                 if (_lcf == fne_const.P25_TSBK_IOSP_GRP_AFF):
                     self._logger.info('(%s) P25D: Traffic *TSBK GRP AFF    * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s]', self._system,
-                                      int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+                                      _peer_id, _rf_src, _dst_id, _stream_id)
                     self.update_grp_aff(_peer_id, _rf_src, _dst_id, _stream_id)
 
                     if config['Reports']['Report']:
-                        self._report.send_routeEvent('TSBK,GRP AFF,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
+                        self._report.send_routeEvent('TSBK,GRP AFF,P25,{},{},{},{},{},{}'.format(self._system, _stream_id, _peer_id, _rf_src, 1, _dst_id))
                 elif (_lcf == fne_const.P25_TSBK_OSP_U_DEREG_ACK):
                     self._logger.info('(%s) P25D: Traffic *TSBK U DEREG ACK* PEER %s SRC_ID %s [STREAM ID %s]', self._system,
-                                      int_id(_peer_id), int_id(_dst_id), int_id(_stream_id))
+                                      _peer_id, _dst_id, _stream_id)
 
                     self.remove_grp_aff(_peer_id, _dst_id, _stream_id)
 
                     if config['Reports']['Report']:
-                        self._report.send_routeEvent('TSBK,U DEREG ACK,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
+                        self._report.send_routeEvent('TSBK,U DEREG ACK,P25,{},{},{},{},{},{}'.format(self._system, _stream_id, int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
                 elif (_lcf == fne_const.P25_TSBK_OSP_ADJ_STS_BCAST):
                     self._logger.info('(%s) P25D: Traffic *TSBK ADJ STS BCS* PEER %s [STREAM ID %s]', self._system,
-                                      int_id(_peer_id), int_id(_stream_id))
+                                      _peer_id, _stream_id)
 
                     if config['Reports']['Report']:
                         self._report.send_routeEvent('TSBK,ADJ STS BCS,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
                 elif (_lcf == fne_const.P25_LCF_TSBK_CALL_ALERT):
                     self._logger.info('(%s) P25D: Traffic *TSBK CALL ALERT * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s]', self._system,
-                                      int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+                                      _peer_id, _rf_src, _dst_id, _stream_id)
 
                     if config['Reports']['Report']:
                         self._report.send_routeEvent('TSBK,CALL ALERT,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
                 elif (_lcf == fne_const.P25_LCF_TSBK_ACK_RSP_FNE):
                     self._logger.info('(%s) P25D: Traffic *TSBK ACK RSP    * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s]', self._system,
-                                      int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+                                      _peer_id, _rf_src, _dst_id, _stream_id)
 
                     if config['Reports']['Report']:
                         self._report.send_routeEvent('TSBK,ACK RSP,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
             elif (_duid == fne_const.P25_DUID_PDU):
                 self._logger.info('(%s) P25D: Traffic *DATA            * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s]', self._system,
-                                  int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+                                  _peer_id, _rf_src, _dst_id, _stream_id)
 
                 if config['Reports']['Report']:
                     self._report.send_routeEvent('PDU,DATA,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
