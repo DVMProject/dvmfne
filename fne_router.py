@@ -1006,8 +1006,8 @@ class routerFNE(coreFNE):
             self._logger.info('(%s) P25D: PEER %s Added TGID %s to affiliations table [STREAM ID %s]', self._system, _peer_id, _dst_id, int_id(_stream_id))
 
         # add the source RID to the affiliated TGs
-        GRP_AFF[_peer_id][_dst_id].append(int_id(_rf_src))
-        self._logger.info('(%s) P25D: PEER %s Added SRC_ID %s affiliation to TGID %s [STREAM ID %s]', self._system, _peer_id, int_id(_rf_src), _dst_id, int_id(_stream_id))
+        GRP_AFF[_peer_id][_dst_id].append(_rf_src)
+        self._logger.info('(%s) P25D: PEER %s Added SRC_ID %s affiliation to TGID %s [STREAM ID %s]', self._system, _peer_id, _rf_src, _dst_id, int_id(_stream_id))
 
     def remove_grp_aff(self, _peer_id, _rf_src, _stream_id):
         _dst_id = 0
@@ -1020,9 +1020,9 @@ class routerFNE(coreFNE):
         for tgid in GRP_AFF[_peer_id]:
             if (int_id(_rf_src) in GRP_AFF[_peer_id][tgid]):
                 try:
-                    idx = GRP_AFF[_peer_id][tgid].index(int_id(_rf_src))
+                    idx = GRP_AFF[_peer_id][tgid].index(_rf_src)
                     del GRP_AFF[_peer_id][tgid][idx]
-                    self._logger.info('(%s) P25D: PEER %s Removed SRC_ID %s affiliation from TGID %s [STREAM ID %s]', self._system, _peer_id, int_id(_rf_src), tgid, int_id(_stream_id))
+                    self._logger.info('(%s) P25D: PEER %s Removed SRC_ID %s affiliation from TGID %s [STREAM ID %s]', self._system, _peer_id, _rf_src, tgid, int_id(_stream_id))
 
                     # if there are no more affiliations delete the TG from the affiliations table
                     if len(GRP_AFF[_peer_id][tgid]) == 0:
