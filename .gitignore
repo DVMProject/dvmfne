@@ -6,6 +6,7 @@
 [Ll]ib64
 pyvenv.cfg
 env/
+venv/
 
 __pycache__/
 *.pyc
