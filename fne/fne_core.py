@@ -55,17 +55,17 @@ _act_log_lock = False
 
 # Opcodes for the network-based reporting protocol
 REPORT_OPCODES = {
-    'CONFIG_REQ': '\x00',
-    'CONFIG_RSP': '\x01',
-    'RRULES_REQ': '\x02',
-    'RRULES_RSP': '\x03',
-    'CONFIG_UPD': '\x04',
-    'RRULES_UPD': '\x05',
-    'LINK_EVENT': '\x06',
-    'CALL_EVENT': '\x07',
-    'GRP_AFF_UPD': '\x08',
-    'RCON_REQ': '\x09',
-    'WHITELIST_RID_UPD': '\x10',
+    'CONFIG_REQ': b'\x00',
+    'CONFIG_RSP': b'\x01',
+    'RRULES_REQ': b'\x02',
+    'RRULES_RSP': b'\x03',
+    'CONFIG_UPD': b'\x04',
+    'RRULES_UPD': b'\x05',
+    'LINK_EVENT': b'\x06',
+    'CALL_EVENT': b'\x07',
+    'GRP_AFF_UPD': b'\x08',
+    'RCON_REQ': b'\x09',
+    'WHITELIST_RID_UPD': b'\x10',
 }
 
 # ---------------------------------------------------------------------------
