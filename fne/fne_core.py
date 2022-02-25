@@ -788,7 +788,7 @@ class coreFNE(DatagramProtocol):
                 _peer_id = int.from_bytes(_data[7:11], "big")
                 if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == "YES" and
                     self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
-                    _msg = _data[11:-1]
+                    _msg = _data[11:-1].decode()
                     self._act_log_file.seek(0, 2)
                     self._act_log_file.write(str(_peer_id) + ' ' + _msg + '\n')
                     self._act_log_file.flush()
@@ -798,7 +798,7 @@ class coreFNE(DatagramProtocol):
                 _peer_id = int.from_bytes(_data[8:12], "big")
                 if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == "YES" and
                     self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
-                    _msg = _data[12:-1]
+                    _msg = _data[12:-1].decode()
                     diag_log_file = self._peers[_peer_id]['DIAG_LOG_FILE']
                     if diag_log_file != None:
                         diag_log_file.seek(0, 2)
