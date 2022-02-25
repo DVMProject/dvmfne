@@ -32,7 +32,7 @@ def csum5(_data):
     accum = 0
     assert len(_data) == 9, 'csum5 expected 9 bytes of data and got something else'
     
-    for i in xrange(9):
+    for i in range(9):
         accum += _data[i]
     accum = chr(accum % 31)
     csum = bitarray()

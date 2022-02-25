@@ -30,7 +30,7 @@ from __future__ import print_function
 START_MASK = [0x96, 0x96, 0x96]
 END_MASK = [0x99, 0x99, 0x99]
 NUM_BYTES = 9
-NPAR = 3;
+NPAR = 3
 POLY = [64, 56, 14, 1, 0, 0, 0, 0, 0, 0, 0, 0]
 
 EXP_TABLE = (

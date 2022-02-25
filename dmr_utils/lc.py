@@ -30,9 +30,9 @@ from __future__ import print_function
 from bitarray import bitarray
 from bitstring import BitArray
 
-from const import *
-import bptc
-import golay
+from dmr_utils.const import *
+from dmr_utils import bptc
+from dmr_utils import golay
 
 def to_bits(_string):
     _bits = bitarray(endian = 'big')
@@ -42,7 +42,7 @@ def to_bits(_string):
 def to_bytes(_bits):
     add_bits = 8 - (len(_bits) % 8)
     if add_bits < 8:
-        for bit in xrange(add_bits):
+        for bit in range(add_bits):
             _bits.insert(0,0)
     _string =  _bits.tobytes()
     return _string
