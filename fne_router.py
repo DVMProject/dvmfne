@@ -1087,7 +1087,7 @@ class routeReportFactory(reportFactory):
             self.send_clients(REPORT_OPCODES['WHITELIST_RID_UPD'] + wridSerialized)
         
     def send_routeEvent(self, _data):
-        self.send_clients(REPORT_OPCODES['CALL_EVENT'] + _data)
+        self.send_clients(REPORT_OPCODES['CALL_EVENT'] + _data.encode())
 
 # ---------------------------------------------------------------------------
 #   Program Entry Point

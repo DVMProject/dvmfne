@@ -10,4 +10,4 @@ venv/
 
 __pycache__/
 *.pyc
-cfg/fne.cfg
+fne.cfg
