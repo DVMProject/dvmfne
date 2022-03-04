@@ -424,7 +424,7 @@ class coreFNE(DatagramProtocol):
                                self._peers[_peer]['IP'], self._peers[_peer]['PORT'], ahex(_packet))
 
     def send_master(self, _packet):
-        self.transport.write(_packet.encode(), (self._config['MasterAddress'], self._config['MasterPort']))
+        self.transport.write(_packet, (self._config['MasterAddress'], self._config['MasterPort']))
         if self._CONFIG['Log']['RawPacketTrace']:
             self._logger.debug('(%s) Network Transmitted (to %s:%s) -- %s', self._system, 
                                self._config['MasterAddress'], self._config['MasterPort'], ahex(_packet))
@@ -534,12 +534,12 @@ class coreFNE(DatagramProtocol):
             self._stats['PINGS_SENT'] = 0
             self._stats['PINGS_ACKD'] = 0
             self._stats['CONNECTION'] = 'RTPL_SENT'
-            self.send_master('RPTL' + self._config['PeerId'])
+            self.send_master('RPTL' + self._config['PeerId'].encode())
             self._logger.info('(%s) Sending login request to MASTER (%s:%s)', self._system, self._config['MasterAddress'], self._config['MasterPort'])
         # If we are connected, sent a ping to the master and increment the
         # counter
         if self._stats['CONNECTION'] == 'YES':
-            self.send_master('RPTPING' + self._config['PeerId'])
+            self.send_master('RPTPING' + self._config['PeerId'].encode())
             self._stats['PINGS_SENT'] += 1
             self._logger.debug('(%s) RPTPING Sent to MASTER. Pings since connected: %s', self._system, self._stats['PINGS_SENT'])
 
