@@ -435,11 +435,11 @@ class coreFNE(DatagramProtocol):
             self._logger.info('(%s) De-Registration sent to PEER %s', self._system, self._peers[_peer]['PEER_ID'])
             
     def peer_dereg(self):
-        self.send_master(fne_const.TAG_REPEATER_CLOSING + self._config['PeerId'])
+        self.send_master(fne_const.TAG_REPEATER_CLOSING + self._config['PeerId'].encode())
         self._logger.info('(%s) De-Registration sent to MASTER (%s:%s)', self._system, self._config['MasterAddress'], self._config['MasterPort'])
 
     def peer_trnslog(self, _message):
-        self.send_master(fne_const.TAG_TRANSFER_ACT_LOG + self._config['PeerId'] + _message)
+        self.send_master(fne_const.TAG_TRANSFER_ACT_LOG + self._config['PeerId'].encode() + _message)
     
     def send_peer_wrids(self, _peer, _rids):
         from struct import pack
