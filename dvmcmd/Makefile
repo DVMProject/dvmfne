@@ -17,9 +17,9 @@ OBJECTS = \
 
 all:	dvmcmd
 dvmcmd: $(OBJECTS) 
-		$(CXX) $(OBJECTS) $(CFLAGS) $(LIBS) -o $(BIN)
+		$($(ARCH)CXX) $(OBJECTS) $(CFLAGS) $(LIBS) -o $(BIN)
 %.o: %.cpp
-		$(CXX) $(CFLAGS) -c -o $@ $<
+		$($(ARCH)CXX) $(CFLAGS) -c -o $@ $<
 clean:
 		$(RM) $(BIN) $(OBJECTS) *.o *.d *.bak *~
 
