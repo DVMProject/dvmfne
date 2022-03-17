@@ -423,7 +423,7 @@ def build_whitelist_rid_table(_whitelist_rid):
 # Build the connections table
 def build_ctable(_config):
     _stats_table = {'MASTERS': {}, 'MASTER_CNT': 0, 'PEERS': {}, 'PEER_CNT': 0}
-    for _hbp, _hbp_data in _config.iteritems(): 
+    for _hbp, _hbp_data in _config.items(): 
         if _hbp_data['Enabled'] == True:
             if _hbp_data['Mode'] == 'master':
                 _stats_table['MASTERS'][_hbp] = {}
