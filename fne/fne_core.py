@@ -1030,6 +1030,7 @@ class report(NetstringReceiver):
                              self.transport.getPeer(), _peer_id, _command, _dmr_slot, _command_arg, _mot_mfid)
 
                 _root_cmd = [self._factory._config['Global']['RconTool'], '-a', str(_peer_ip), '-p', str(_rcon_port), '-P', str(_rcon_password)]
+                print("Running dvmcmd: {}".format(_root_cmd))
 
                 # handle P25 commands with mot mfid
                 if _mot_mfid == 'true':
