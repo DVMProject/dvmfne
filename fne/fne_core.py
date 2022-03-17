@@ -233,7 +233,7 @@ def get_peer_diag_log_handler(_config, _logger, _peer_id):
 
     if (_peer_id in open_logfiles):
         diag_log_file = open_logfiles[_peer_id]
-        print("Type of found logfile: {}".format(type(diag_log_file)))
+        #print("Type of found logfile: {}".format(type(diag_log_file)))
         
     else:
         diag_log_filepath = get_peer_diag_log_filename(_config, _peer_id)
@@ -739,31 +739,52 @@ class coreFNE(DatagramProtocol):
                 self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                 _this_peer = self._peers[_peer_id]
                 jsonBytes = _data[8:]
-                peerCfg = json.loads(jsonBytes.decode())
-                peerInfo = peerCfg['info']
-                peerChannel = peerCfg['channel']
-                peerRcon = peerCfg['rcon']
+                #if we have the old format - exit gracefully
+                try:
+                    peerCfg = json.loads(jsonBytes.decode())
+                    peerInfo = peerCfg['info']
+                    peerChannel = peerCfg['channel']
+                    peerRcon = peerCfg['rcon']
 
-                _this_peer['CONNECTION'] = 'YES'
-                _this_peer['PINGS_RECEIVED'] = 0
-                _this_peer['LAST_PING'] = time()
+                    _this_peer['CONNECTION'] = 'YES'
+                    _this_peer['PINGS_RECEIVED'] = 0
+                    _this_peer['LAST_PING'] = time()
 
-                _this_peer['IDENTITY'] = peerCfg['identity']
-                _this_peer['RX_FREQ'] = peerCfg['rxFrequency']
-                _this_peer['TX_FREQ'] = peerCfg['txFrequency']
+                    _this_peer['IDENTITY'] = peerCfg['identity']
+                    _this_peer['RX_FREQ'] = peerCfg['rxFrequency']
+                    _this_peer['TX_FREQ'] = peerCfg['txFrequency']
 
-                _this_peer['LATITUDE'] = peerInfo['latitude']
-                _this_peer['LONGITUDE'] = peerInfo['latitude']
-                _this_peer['HEIGHT'] = peerInfo['latitude']
-                _this_peer['LOCATION'] = peerInfo['latitude']
-                _this_peer['TX_OFFSET'] = peerChannel['txOffsetMhz']
-                _this_peer['CH_BW'] = peerChannel['chBandwidthKhz']
-                _this_peer['CHANNEL_ID'] = peerChannel['channelId']
-                _this_peer['CHANNEL_NO'] = peerChannel['channelNo']
-                _this_peer['TX_POWER'] = peerChannel['txPower']
-                _this_peer['RCON_PASSWORD'] = peerRcon['password']
-                _this_peer['RCON_PORT'] = peerRcon['port']
+                    _this_peer['LATITUDE'] = peerInfo['latitude']
+                    _this_peer['LONGITUDE'] = peerInfo['latitude']
+                    _this_peer['HEIGHT'] = peerInfo['latitude']
+                    _this_peer['LOCATION'] = peerInfo['latitude']
+                    _this_peer['TX_OFFSET'] = peerChannel['txOffsetMhz']
+                    _this_peer['CH_BW'] = peerChannel['chBandwidthKhz']
+                    _this_peer['CHANNEL_ID'] = peerChannel['channelId']
+                    _this_peer['CHANNEL_NO'] = peerChannel['channelNo']
+                    _this_peer['TX_POWER'] = peerChannel['txPower']
+                    _this_peer['RCON_PASSWORD'] = peerRcon['password']
+                    _this_peer['RCON_PORT'] = peerRcon['port']
+                except:
+                    _this_peer['CONNECTION'] = 'YES'
+                    _this_peer['PINGS_RECEIVED'] = 0
+                    _this_peer['LAST_PING'] = time()
 
+                    _this_peer['IDENTITY'] = "I NEED TO UPDATE MY DVMHOST"
+                    _this_peer['RX_FREQ'] = 0
+                    _this_peer['TX_FREQ'] = 0
+
+                    _this_peer['LATITUDE'] = 0
+                    _this_peer['LONGITUDE'] = 0
+                    _this_peer['HEIGHT'] = 0
+                    _this_peer['LOCATION'] = "I NEED TO UPDATE MY DVMHOST"
+                    _this_peer['TX_OFFSET'] = 0
+                    _this_peer['CH_BW'] = 0
+                    _this_peer['CHANNEL_ID'] = 0
+                    _this_peer['CHANNEL_NO'] = 0
+                    _this_peer['TX_POWER'] = 0
+                    _this_peer['RCON_PASSWORD'] = "ABCD1234"
+                    _this_peer['RCON_PORT'] = 0
                 # setup peer diagnostics log
                 if self._CONFIG['Log']['AllowDiagTrans'] == True:
                     diag_log_file = get_peer_diag_log_filename(self._CONFIG, _peer_id)
