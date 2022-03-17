@@ -56,9 +56,16 @@ from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerF
 
 from jinja2 import Environment, PackageLoader
 
-from dmr_utils.utils import hex_str_3
+#from dmr_utils.utils import hex_str_3
 
-from config import *
+# exit more friendly-y if we don't have a config
+try:
+    import config
+except Exception as e:
+    print("Error importing the configuration file:")
+    print(e)
+    print("Bye")
+    quit()
 
 # Opcodes for the network-based reporting protocol
 REPORT_OPCODES = {
@@ -375,8 +382,8 @@ def process_diag_log(_file):
 # Build configuration and rules tables from config/rules dicts
 # this currently is a timed call
 def gen_activity():
-    global ACTIVITY_LOG, WEBSOCK_OPCODES
-    _entries = process_act_log(ACTIVITY_LOG)
+    global WEBSOCK_OPCODES
+    _entries = process_act_log(config.ACTIVITY_LOG)
     dashboard_server.broadcast(WEBSOCK_OPCODES['ACTIVITY'] + json.dumps(_entries))
 
 # ---------------------------------------------------------------------------
@@ -630,6 +637,7 @@ class report(NetstringReceiver):
         pass
         
     def stringReceived(self, data):
+        logging.debug("Received message: {}".format(data))
         process_message(data)
 
 # ---------------------------------------------------------------------------
@@ -769,7 +777,7 @@ if __name__ == '__main__':
     # Change the current directory to the location of the application
     os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
 
-    logging.basicConfig(level = logging.INFO, handlers = [logging.FileHandler(PATH + 'logfile.log'), logging.StreamHandler()])
+    logging.basicConfig(level = logging.INFO, handlers = [logging.FileHandler(config.PATH + 'logfile.log'), logging.StreamHandler()])
 
     logging.debug('Logging system started, anything from here on gets logged')
     logging.info('FNEmonitor - SYSTEM STARTING...')
@@ -778,11 +786,11 @@ if __name__ == '__main__':
     
     # Start update loop
     update_stats = task.LoopingCall(websock_update)
-    update_stats.start(FREQUENCY)
+    update_stats.start(config.FREQUENCY)
 
     # Connect to fne_core
     report_client = reportClientFactory()
-    reactor.connectTCP(FNEMON_IP, FNEMON_PORT, report_client)
+    reactor.connectTCP(config.FNEMON_IP, config.FNEMON_PORT, report_client)
     
     # Create websocket server to push content to clients
     dashboard_server = dashboardFactory('ws://*:9000')
@@ -791,18 +799,22 @@ if __name__ == '__main__':
 
     # Start activity update loop
     update_act = task.LoopingCall(gen_activity)
-    update_act.start(ACT_FREQUENCY)
+    update_act.start(config.ACT_FREQUENCY)
 
     siteResource = File('./webroot')
 
-    passwd_db = InMemoryUsernamePasswordDatabaseDontUse()
-    passwd_db.addUser(HTACCESS_USER, HTACCESS_PASS)
+    #TODO: password access doesn't work now
+    #i should figure out why, but this was a hack at best
 
+    passwd_db = InMemoryUsernamePasswordDatabaseDontUse()
+    passwd_db.addUser(config.HTACCESS_USER, config.HTACCESS_PASS)
     portal = Portal(publicHTMLRealm(), [passwd_db])
+
+    #portal = Portal(publicHTMLRealm())
     resource = HTTPAuthSessionWrapper(portal, [BasicCredentialFactory('auth')])
 
     # Create static web server to push initial index.html
     website = Site(resource)
-    reactor.listenTCP(WEB_SERVER_PORT, website)
+    reactor.listenTCP(config.WEB_SERVER_PORT, website)
 
     reactor.run()

@@ -9,3 +9,5 @@ env/
 
 __pycache__/
 *.pyc
+
+monitor/config.py
