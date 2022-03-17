@@ -33,7 +33,7 @@ import json
 
 from pprint import pprint
 from time import time, strftime, localtime
-from cPickle import loads
+from pickle import loads
 from binascii import b2a_hex as ahex
 from binascii import a2b_hex as bhex
 from os.path import getmtime
@@ -472,7 +472,7 @@ def build_ctable(_config):
 # ---------------------------------------------------------------------------
 
 def rules_sort(e):
-    return e['SRC_GROUP'];
+    return e['SRC_GROUP']
 
 def build_rules_table(_rules):
     _stats_table = {}

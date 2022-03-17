@@ -60,7 +60,7 @@ def get_valid(_id, _dict):
 
 def get_valid_ignore(_peer_id, _id, _dict):
     if type(_peer_id) == str:
-        _peer_id = int_id(_peer_id)
+        _peer_id = _peer_id
     if type(_id) == str:
         _id = int_id(_id)
 
@@ -257,10 +257,10 @@ class routerFNE(coreFNE):
                 self.STATUS[_slot]['RX_TGID'] = _dst_id
                 self.STATUS[_slot]['RX_STREAM_ID'] = _stream_id
                 self._logger.warning('(%s) DMRD: Traffic *REJECT ACL      * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s] (Blacklisted RID)', self._system,
-                                     int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+                                     _peer_id, int_id(_rf_src), _dst_id, int_id(_stream_id))
                 
                 if config['Reports']['Report']:
-                    self._report.send_routeEvent('REJECT ACL,BLACKLISTED RID,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
+                    self._report.send_routeEvent('REJECT ACL,BLACKLISTED RID,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id))
             return False
 
         # Always validate a terminator if the source is valid
@@ -278,10 +278,10 @@ class routerFNE(coreFNE):
                     self.STATUS[_slot]['RX_TGID'] = _dst_id
                     self.STATUS[_slot]['RX_STREAM_ID'] = _stream_id
                     self._logger.warning('(%s) DMRD: Traffic *REJECT ACL      * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s] (Illegal TGID)', self._system,
-                                         int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+                                         _peer_id, int_id(_rf_src), _dst_id, int_id(_stream_id))
             
                     if config['Reports']['Report']:
-                        self._report.send_routeEvent('REJECT ACL,ILLEGAL TGID,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
+                        self._report.send_routeEvent('REJECT ACL,ILLEGAL TGID,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id))
                 return False
 
         return True
@@ -294,10 +294,10 @@ class routerFNE(coreFNE):
         if ((_frame_type == fne_const.FT_DATA_SYNC) and ((_dtype_vseq == fne_const.DT_DATA_HEADER) or (_dtype_vseq == fne_const.DT_RATE_12_DATA) or
                                                          (_dtype_vseq == fne_const.DT_RATE_34_DATA) or (_dtype_vseq == fne_const.DT_RATE_1_DATA))):
             self._logger.info('(%s) DMRD: Traffic *DATA            * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s]', self._system,
-                              int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+                              _peer_id, int_id(_rf_src), _dst_id, int_id(_stream_id))
             
             if config['Reports']['Report']:
-                self._report.send_routeEvent('PDU,DATA,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
+                self._report.send_routeEvent('PDU,DATA,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id))
             return
 
         if _call_type == 'group':
@@ -305,19 +305,19 @@ class routerFNE(coreFNE):
             if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']):
                 if (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC) and (pkt_time < (self.STATUS[_slot]['RX_TIME'] + fne_const.STREAM_TO)) and (_rf_src != self.STATUS[_slot]['RX_RFS']):
                     self._logger.warning('(%s) DMRD: Traffic *CALL COLLISION  * PEER %s SRC_ID %s TGID %s TS %s [STREAM ID %s] (Collided with existing call)', self._system,
-                                         int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, int_id(_stream_id))
+                                         _peer_id, int_id(_rf_src), _dst_id, _slot, int_id(_stream_id))
                     
                     if config['Reports']['Report']:
-                        self._report.send_routeEvent('GROUP VOICE,CALL COLLISION,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
+                        self._report.send_routeEvent('GROUP VOICE,CALL COLLISION,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id))
                     return
                 
                 # This is a new call stream
                 self.STATUS[_slot]['RX_START'] = pkt_time
                 self._logger.info('(%s) DMRD: Traffic *CALL START      * PEER %s SRC_ID %s TGID %s TS %s [STREAM ID %s]', self._system,
-                                  int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, int_id(_stream_id),)
+                                  _peer_id, int_id(_rf_src), _dst_id, _slot, int_id(_stream_id),)
 
                 if config['Reports']['Report']:
-                    self._report.send_routeEvent('GROUP VOICE,START,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
+                    self._report.send_routeEvent('GROUP VOICE,START,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id))
 
                 # If we can, use the LC from the voice header as to keep all
                 # options intact
@@ -342,7 +342,7 @@ class routerFNE(coreFNE):
                 _alg_id = lcHeader['LC'][0]
                 _key_id = lcHeader['LC'][2]
                 self._logger.info('(%s) DMRD: Traffic *CALL PI PARAMS  * PEER %s DST_ID %s TS %s ALGID %s KID %s [STREAM ID %s]', self._system,
-                                        int_id(_peer_id), int_id(_dst_id), _slot, int_id(_alg_id), int_id(_key_id), int_id(_stream_id))
+                                        _peer_id, _dst_id, _slot, int_id(_alg_id), int_id(_key_id), int_id(_stream_id))
                 self.STATUS[_slot]['RX_PI_LC'] = lcHeader['LC'][:10]
 
                 self._logger.debug('(%s) TS %s [STREAM ID %s] RX_PI_LC %s', self._system, _slot, int_id(_stream_id), ahex(self.STATUS[_slot]['RX_PI_LC']))
@@ -432,7 +432,7 @@ class routerFNE(coreFNE):
                         self._logger.debug('(%s) TS %s [STREAM ID %s] TX_P_LC %s', self._system, _slot, int_id(_stream_id), ahex(dst_pi_lc))
 
                         self._logger.debug('(%s) DMR Packet DST TGID %s does not match SRC TGID %s - Generating FULL and EMB LCs', 
-                                           self._system, int_id(rule['DST_GROUP']), int_id(_dst_id))
+                                           self._system, int_id(rule['DST_GROUP']), _dst_id)
                         self._logger.info('(%s) DMRD: Call routed to SYSTEM %s TS %s TGID %s',
                                           self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP']))
                         if config['Reports']['Report']:
@@ -493,10 +493,10 @@ class routerFNE(coreFNE):
             if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
                 call_duration = pkt_time - self.STATUS[_slot]['RX_START']
                 self._logger.info('(%s) DMRD: Traffic *CALL END        * PEER %s SRC_ID %s TGID %s TS %s DUR %s [STREAM ID: %s]', self._system,
-                                  int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, call_duration, int_id(_stream_id))
+                                  _peer_id, int_id(_rf_src), _dst_id, _slot, call_duration, int_id(_stream_id))
 
                 if config['Reports']['Report']:
-                    self._report.send_routeEvent('GROUP VOICE,END,DMR,{},{},{},{},{},{},{:.2f}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id), call_duration))
+                    self._report.send_routeEvent('GROUP VOICE,END,DMR,{},{},{},{},{},{},{:.2f}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id, call_duration))
                 
                 #
                 # Begin in-band signalling for call end.  This has nothign to
@@ -562,28 +562,28 @@ class routerFNE(coreFNE):
             if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']):
                 if (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC) and (pkt_time < (self.STATUS[_slot]['RX_TIME'] + fne_const.STREAM_TO)) and (_rf_src != self.STATUS[_slot]['RX_RFS']):
                     self._logger.warning('(%s) DMRD: Traffic *CALL COLLISION  * PEER %s SRC_ID %s DST_ID %s TS %s [STREAM ID %s] (Collided with existing call)', self._system,
-                                         int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, int_id(_stream_id))
+                                         _peer_id, int_id(_rf_src), _dst_id, _slot, int_id(_stream_id))
 
                     if config['Reports']['Report']:
-                        self._report.send_routeEvent('PRV VOICE,CALL COLLISION,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
+                        self._report.send_routeEvent('PRV VOICE,CALL COLLISION,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id))
                     return
                 
                 # This is a new call stream
                 self.STATUS[_slot]['RX_START'] = pkt_time
                 self._logger.info('(%s) DMRD: Traffic *PRV CALL START  * PEER %s SRC_ID %s DST_ID %s TS %s [STREAM ID %s]', self._system,
-                                  int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, int_id(_stream_id))
+                                  _peer_id, int_id(_rf_src), _dst_id, _slot, int_id(_stream_id))
 
                 if config['Reports']['Report']:
-                    self._report.send_routeEvent('PRV VOICE,START,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
+                    self._report.send_routeEvent('PRV VOICE,START,DMR,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id))
 
             # Final actions - Is this a voice terminator?
             if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
                 call_duration = pkt_time - self.STATUS[_slot]['RX_START']
                 self._logger.info('(%s) DMRD: Traffic *PRV CALL END    * PEER %s SRC_ID %s DST_ID %s TS %s DUR %s [STREAM ID: %s]', self._system,
-                                  int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, call_duration, int_id(_stream_id))
+                                  _peer_id, int_id(_rf_src), _dst_id, _slot, call_duration, int_id(_stream_id))
 
                 if config['Reports']['Report']:
-                    self._report.send_routeEvent('PRV VOICE,END,DMR,{},{},{},{},{},{},{:.2f}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id), call_duration))
+                    self._report.send_routeEvent('PRV VOICE,END,DMR,{},{},{},{},{},{},{:.2f}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id, call_duration))
 
             # Mark status variables for use later
             self.STATUS[_slot]['RX_PEER_ID'] = _peer_id
@@ -616,31 +616,31 @@ class routerFNE(coreFNE):
                     self.remove_grp_aff(_peer_id, _dst_id, _stream_id)
 
                     if config['Reports']['Report']:
-                        self._report.send_routeEvent('TSBK,U DEREG ACK,P25,{},{},{},{},{},{}'.format(self._system, _stream_id, int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
+                        self._report.send_routeEvent('TSBK,U DEREG ACK,P25,{},{},{},{},{},{}'.format(self._system, _stream_id, _peer_id, int_id(_rf_src), 1, _dst_id))
                 elif (_lcf == fne_const.P25_TSBK_OSP_ADJ_STS_BCAST):
                     self._logger.info('(%s) P25D: Traffic *TSBK ADJ STS BCS* PEER %s [STREAM ID %s]', self._system,
                                       _peer_id, _stream_id)
 
                     if config['Reports']['Report']:
-                        self._report.send_routeEvent('TSBK,ADJ STS BCS,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
+                        self._report.send_routeEvent('TSBK,ADJ STS BCS,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), 1, _dst_id))
                 elif (_lcf == fne_const.P25_LCF_TSBK_CALL_ALERT):
                     self._logger.info('(%s) P25D: Traffic *TSBK CALL ALERT * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s]', self._system,
                                       _peer_id, _rf_src, _dst_id, _stream_id)
 
                     if config['Reports']['Report']:
-                        self._report.send_routeEvent('TSBK,CALL ALERT,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
+                        self._report.send_routeEvent('TSBK,CALL ALERT,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), 1, _dst_id))
                 elif (_lcf == fne_const.P25_LCF_TSBK_ACK_RSP_FNE):
                     self._logger.info('(%s) P25D: Traffic *TSBK ACK RSP    * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s]', self._system,
                                       _peer_id, _rf_src, _dst_id, _stream_id)
 
                     if config['Reports']['Report']:
-                        self._report.send_routeEvent('TSBK,ACK RSP,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
+                        self._report.send_routeEvent('TSBK,ACK RSP,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), 1, _dst_id))
             elif (_duid == fne_const.P25_DUID_PDU):
                 self._logger.info('(%s) P25D: Traffic *DATA            * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s]', self._system,
                                   _peer_id, _rf_src, _dst_id, _stream_id)
 
                 if config['Reports']['Report']:
-                    self._report.send_routeEvent('PDU,DATA,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
+                    self._report.send_routeEvent('PDU,DATA,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), 1, _dst_id))
 
         return
 
@@ -658,10 +658,10 @@ class routerFNE(coreFNE):
                 self.STATUS[_slot]['RX_TGID'] = _dst_id
                 self.STATUS[_slot]['RX_STREAM_ID'] = _stream_id
                 self._logger.warning('(%s) P25D: Traffic *REJECT ACL      * PEER %s SRC_ID %s DST_ID %s DUID %s [STREAM ID %s] (Blacklisted RID)', self._system,
-                                     int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _duid, int_id(_stream_id))
+                                     _peer_id, int_id(_rf_src), _dst_id, _duid, int_id(_stream_id))
 
                 if config['Reports']['Report']:
-                    self._report.send_routeEvent('REJECT ACL,BLACKLISTED RID,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
+                    self._report.send_routeEvent('REJECT ACL,BLACKLISTED RID,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), 1, _dst_id))
             return False
 
         # Always validate a TSDU or PDU if the source is valid
@@ -684,10 +684,10 @@ class routerFNE(coreFNE):
                     self.STATUS[_slot]['RX_STREAM_ID'] = _stream_id
                     self.STATUS[_slot]['P25_RX_CT'] = 'group'
                     self._logger.warning('(%s) P25D: Traffic *REJECT ACL      * PEER %s SRC_ID %s DST_ID %s DUID %s [STREAM ID %s] (Illegal TGID)', self._system,
-                                         int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _duid, int_id(_stream_id))
+                                         _peer_id, int_id(_rf_src), _dst_id, _duid, int_id(_stream_id))
 
                     if config['Reports']['Report']:
-                        self._report.send_routeEvent('REJECT ACL,ILLEGAL TGID,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
+                        self._report.send_routeEvent('REJECT ACL,ILLEGAL TGID,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), 1, _dst_id))
                 return False
 
         elif _call_type == 'unit':
@@ -703,10 +703,10 @@ class routerFNE(coreFNE):
                     self.STATUS[_slot]['RX_STREAM_ID'] = _stream_id
                     self.STATUS[_slot]['P25_RX_CT'] = 'unit'
                     self._logger.warning('(%s) P25D: Traffic *REJECT ACL      * PEER %s SRC_ID %s DST_ID %s DUID %s [STREAM ID %s] (Illegal RID)', self._system,
-                                         int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _duid, int_id(_stream_id))
+                                         _peer_id, int_id(_rf_src), _dst_id, _duid, int_id(_stream_id))
 
                     if config['Reports']['Report']:
-                        self._report.send_routeEvent('REJECT ACL,ILLEGAL RID,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), 1, int_id(_dst_id)))
+                        self._report.send_routeEvent('REJECT ACL,ILLEGAL RID,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), 1, _dst_id))
                 return False
         
         return True
@@ -731,10 +731,10 @@ class routerFNE(coreFNE):
             if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']) and ((_duid != fne_const.P25_DUID_TDU) and (_duid != fne_const.P25_DUID_TDULC)):
                 if (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC) and (pkt_time < (self.STATUS[_slot]['RX_TIME'] + fne_const.STREAM_TO)) and (_rf_src != self.STATUS[_slot]['RX_RFS']):
                     self._logger.warning('(%s) P25D: Traffic *CALL COLLISION  * PEER %s SRC_ID %s TGID %s [STREAM ID %s] (Collided with existing call)', self._system,
-                                         int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+                                         _peer_id, int_id(_rf_src), _dst_id, int_id(_stream_id))
 
                     if config['Reports']['Report']:
-                        self._report.send_routeEvent('GROUP VOICE,CALL COLLISION,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
+                        self._report.send_routeEvent('GROUP VOICE,CALL COLLISION,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id))
                     return
                 
                 # This is a new call stream
@@ -745,7 +745,7 @@ class routerFNE(coreFNE):
                 self.STATUS[_slot]['P25_RX_CT'] = 'group'
 
                 if config['Reports']['Report']:
-                    self._report.send_routeEvent('GROUP VOICE,START,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
+                    self._report.send_routeEvent('GROUP VOICE,START,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id))
 
             for rule in RULES[self._system]['GROUP_VOICE']:
                 _target = rule['DST_NET']
@@ -904,21 +904,21 @@ class routerFNE(coreFNE):
             if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']) and ((_duid != fne_const.P25_DUID_TDU) and (_duid != fne_const.P25_DUID_TDULC)):
                 if (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC) and (pkt_time < (self.STATUS[_slot]['RX_TIME'] + fne_const.STREAM_TO)) and (_rf_src != self.STATUS[_slot]['RX_RFS']):
                     self._logger.warning('(%s) P25D: Traffic *CALL COLLISION  * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s] (Collided with existing call)', self._system,
-                                         int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+                                         _peer_id, int_id(_rf_src), _dst_id, int_id(_stream_id))
 
                     if config['Reports']['Report']:
-                        self._report.send_routeEvent('PRV VOICE,CALL COLLISION,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
+                        self._report.send_routeEvent('PRV VOICE,CALL COLLISION,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id))
                     return
                 
                 # This is a new call stream
                 self.STATUS[_slot]['RX_START'] = pkt_time
                 self._logger.info('(%s) P25D: Traffic *PRV CALL START  * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s]', self._system,
-                                  int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+                                  _peer_id, int_id(_rf_src), _dst_id, int_id(_stream_id))
 
                 self.STATUS[_slot]['P25_RX_CT'] = 'unit'
 
                 if config['Reports']['Report']:
-                    self._report.send_routeEvent('PRV VOICE,START,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
+                    self._report.send_routeEvent('PRV VOICE,START,P25,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id))
 
             # Final actions - Is this a voice terminator?
             if ((_duid == fne_const.P25_DUID_TDU) or (_duid == fne_const.P25_DUID_TDULC)) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
@@ -926,12 +926,12 @@ class routerFNE(coreFNE):
                 _dst_id = self.STATUS[_slot]['RX_TGID']
                 _rf_src = self.STATUS[_slot]['RX_RFS']
                 self._logger.info('(%s) P25D: Traffic *PRV CALL END    * PEER %s SRC_ID %s DST_ID %s DUR %s [STREAM ID %s]', self._system,
-                                  int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), call_duration, int_id(_stream_id))
+                                  _peer_id, int_id(_rf_src), _dst_id, call_duration, int_id(_stream_id))
 
                 self.STATUS[_slot]['P25_RX_CT'] = 'group'
 
                 if config['Reports']['Report']:
-                    self._report.send_routeEvent('PRV VOICE,END,P25,{},{},{},{},{},{},{:.2f}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id), call_duration))
+                    self._report.send_routeEvent('PRV VOICE,END,P25,{},{},{},{},{},{},{:.2f}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id, call_duration))
 
             # Mark status variables for use later
             self.STATUS[_slot]['RX_PEER_ID'] = _peer_id
@@ -947,10 +947,10 @@ class routerFNE(coreFNE):
             return False
 
         if get_valid_ignore(_peer_id, _dst_id, config['Systems'][self._system]['TG_IGNORE_IDS']) == True:
-            if (int_id(_dst_id) in config['Systems'][self._system]['TG_ALLOW_AFF']):
-                if (int_id(_peer_id) in GRP_AFF.keys()):
-                    if (int_id(_dst_id) in GRP_AFF[int_id(_peer_id)].keys()):
-                        if (len(GRP_AFF[int_id(_peer_id)][int_id(_dst_id)]) > 0):
+            if (_dst_id in config['Systems'][self._system]['TG_ALLOW_AFF']):
+                if (_peer_id in GRP_AFF.keys()):
+                    if (_dst_id in GRP_AFF[_peer_id].keys()):
+                        if (len(GRP_AFF[_peer_id][_dst_id]) > 0):
                             return False
 
             if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']):
@@ -963,10 +963,10 @@ class routerFNE(coreFNE):
                     self.STATUS[_slot]['RX_STREAM_ID'] = _stream_id
 
                 self._logger.warning('(%s) Traffic *REJECT ACL      * PEER %s SRC_ID %s DST_ID %s [STREAM ID %s] (Ignored Peer)', self._system,
-                                     int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+                                     _peer_id, int_id(_rf_src), _dst_id, int_id(_stream_id))
 
                 if config['Reports']['Report']:
-                    self._report.send_routeEvent('REJECT ACL,IGNORED PEER,ACL,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), int_id(_peer_id), int_id(_rf_src), _slot, int_id(_dst_id)))
+                    self._report.send_routeEvent('REJECT ACL,IGNORED PEER,ACL,{},{},{},{},{},{}'.format(self._system, int_id(_stream_id), _peer_id, int_id(_rf_src), _slot, _dst_id))
 
             return True
         return False
@@ -990,50 +990,50 @@ class routerFNE(coreFNE):
 
     def update_grp_aff(self, _peer_id, _rf_src, _dst_id, _stream_id):
         # make sure the peer exists in the affiliations table
-        if (not int_id(_peer_id) in GRP_AFF.keys()):
-            GRP_AFF[int_id(_peer_id)] = {}
+        if (not _peer_id in GRP_AFF.keys()):
+            GRP_AFF[_peer_id] = {}
 
         # remove the source RID from any other affiliated TGs
         try:
-            idx = GRP_AFF[int_id(_peer_id)][int_id(_dst_id)].index(int_id(_rf_src))
+            idx = GRP_AFF[_peer_id][_dst_id].index(int_id(_rf_src))
             self.remove_grp_aff(_peer_id, _rf_src, _stream_id)
         except:
             pass
 
         # make sure the peer exists in the affiliations table
-        if (not int_id(_dst_id) in GRP_AFF[int_id(_peer_id)].keys()):
-            GRP_AFF[int_id(_peer_id)][int_id(_dst_id)] = []
-            self._logger.info('(%s) P25D: PEER %s Added TGID %s to affiliations table [STREAM ID %s]', self._system, int_id(_peer_id), int_id(_dst_id), int_id(_stream_id))
+        if (not _dst_id in GRP_AFF[_peer_id].keys()):
+            GRP_AFF[_peer_id][_dst_id] = []
+            self._logger.info('(%s) P25D: PEER %s Added TGID %s to affiliations table [STREAM ID %s]', self._system, _peer_id, _dst_id, _stream_id)
 
         # add the source RID to the affiliated TGs
-        GRP_AFF[int_id(_peer_id)][int_id(_dst_id)].append(int_id(_rf_src))
-        self._logger.info('(%s) P25D: PEER %s Added SRC_ID %s affiliation to TGID %s [STREAM ID %s]', self._system, int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+        GRP_AFF[_peer_id][_dst_id].append(_rf_src)
+        self._logger.info('(%s) P25D: PEER %s Added SRC_ID %s affiliation to TGID %s [STREAM ID %s]', self._system, _peer_id, _rf_src, _dst_id, _stream_id)
 
     def remove_grp_aff(self, _peer_id, _rf_src, _stream_id):
         _dst_id = 0
 
         # make sure the peer exists in the affiliations table
-        if (not int_id(_peer_id) in GRP_AFF.keys()):
-            GRP_AFF[int_id(_peer_id)] = {}
+        if (not _peer_id in GRP_AFF.keys()):
+            GRP_AFF[_peer_id] = {}
 
         # iterate through affiliations and perform affiliation clean up
-        for tgid in GRP_AFF[int_id(_peer_id)]:
-            if (int_id(_rf_src) in GRP_AFF[int_id(_peer_id)][tgid]):
+        for tgid in GRP_AFF[_peer_id]:
+            if (_rf_src in GRP_AFF[_peer_id][tgid]):
                 try:
-                    idx = GRP_AFF[int_id(_peer_id)][tgid].index(int_id(_rf_src))
-                    del GRP_AFF[int_id(_peer_id)][tgid][idx]
-                    self._logger.info('(%s) P25D: PEER %s Removed SRC_ID %s affiliation from TGID %s [STREAM ID %s]', self._system, int_id(_peer_id), int_id(_rf_src), tgid, int_id(_stream_id))
+                    idx = GRP_AFF[_peer_id][tgid].index(_rf_src)
+                    del GRP_AFF[_peer_id][tgid][idx]
+                    self._logger.info('(%s) P25D: PEER %s Removed SRC_ID %s affiliation from TGID %s [STREAM ID %s]', self._system, _peer_id, _rf_src, tgid, _stream_id)
 
                     # if there are no more affiliations delete the TG from the affiliations table
-                    if len(GRP_AFF[int_id(_peer_id)][tgid]) == 0:
+                    if len(GRP_AFF[_peer_id][tgid]) == 0:
                         _dst_id = tgid
                     break
                 except:
                     pass
         
         if _dst_id != 0:
-            del GRP_AFF[int_id(_peer_id)][_dst_id]
-            self._logger.info('(%s) P25D: PEER %s Removed TGID %s from affiliations table [STREAM ID %s]', self._system, int_id(_peer_id), _dst_id, int_id(_stream_id))
+            del GRP_AFF[_peer_id][_dst_id]
+            self._logger.info('(%s) P25D: PEER %s Removed TGID %s from affiliations table [STREAM ID %s]', self._system, _peer_id, _dst_id, _stream_id)
 
     def rid_tid_update_loop(self):
         from fne.fne_core import mk_id_dict

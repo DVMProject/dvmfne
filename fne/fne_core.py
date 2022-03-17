@@ -47,6 +47,7 @@ from twisted.internet import reactor, task
 from fne import fne_config
 from fne import fne_log
 from fne import fne_const
+import json
 
 # Global variables used whether we are a module or __main__
 systems = {}
@@ -218,7 +219,7 @@ def setup_peer_diag_log(_config, _logger, _peer_id):
     if _config['Log']['AllowDiagTrans'] == False:
         return None
 
-    diag_log_filepath = _config['Log']['DiagLogPath'] + str(int_id(_peer_id)) + ".log"
+    diag_log_filepath = _config['Log']['DiagLogPath'] + str(_peer_id) + ".log"
     diag_log_file = open(diag_log_filepath, "a+")
     return (diag_log_file)
 
@@ -626,7 +627,7 @@ class coreFNE(DatagramProtocol):
                                 if self.peer_ignored(_peer, _rf_src, _dst_id, _call_type, 1, _dtype_vseq, _stream_id, False) == False:
                                     self.send_peer(_peer, _data)
                                     self._logger.debug('(%s) P25D: Packet SRC_PEER %s DST_ID %s DST_PEER %s [STREAM ID %s]', self._system,
-                                                       _peer_id, int_id(_dst_id), int_id(_peer), int_id(_stream_id))
+                                                       _peer_id, _dst_id, _peer, _stream_id)
                                 else:
                                     continue
 
@@ -705,58 +706,38 @@ class coreFNE(DatagramProtocol):
                     del self._peers[_peer_id]
             else:
                 self.transport.write(fne_const.TAG_MASTER_NAK + _peer_bytes, (_host, _port))
-                self._logger.warning('(%s) RPTK from unauth PEER %s', self._system, int_id(_peer_id))
+                self._logger.warning('(%s) RPTK from unauth PEER %s', self._system, _peer_id)
 
         elif _data[:4] == fne_const.TAG_REPEATER_CONFIG: # fne_const.TAG_REPEATER_CONFIG -- Repeater is sending it's configuration
             _peer_id = int.from_bytes(_data[4:8], "big")
             if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == 'WAITING_CONFIG' and
                 self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                 _this_peer = self._peers[_peer_id]
+                jsonBytes = _data[8:]
+                peerCfg = json.loads(jsonBytes.decode())
+                peerInfo = peerCfg['info']
+                peerChannel = peerCfg['channel']
+                peerRcon = peerCfg['rcon']
+
                 _this_peer['CONNECTION'] = 'YES'
                 _this_peer['PINGS_RECEIVED'] = 0
                 _this_peer['LAST_PING'] = time()
 
-                # standard config data
-                _this_peer['IDENTITY'] = _data[8:16]            # 8 bytes/characters
-                _this_peer['RX_FREQ'] = _data[16:25]            # 9 bytes/characters
-                _this_peer['TX_FREQ'] = _data[25:34]            # 9 bytes/characters
+                _this_peer['IDENTITY'] = peerCfg['identity']
+                _this_peer['RX_FREQ'] = peerCfg['rxFrequency']
+                _this_peer['TX_FREQ'] = peerCfg['txFrequency']
 
-                # enhanced config data
-                try:
-                    # 10 bytes/characters reserved
-                    _this_peer['LATITUDE'] = float(_data[44:52])    # 8 bytes/characters
-                    _this_peer['LONGITUDE'] = float(_data[53:63])   # 10 bytes/characters
-                    _this_peer['HEIGHT'] = int(_data[63:66])        # 3 bytes/characters
-                    _this_peer['LOCATION'] = _data[66:86]           # 20 bytes/characters
-                    # 10 bytes/characters reserved
-                    _this_peer['TX_OFFSET'] = float(_data[96:101])  # 5 bytes/characters
-                    _this_peer['CH_BW'] = float(_data[101:106])     # 5 bytes/characters
-                    _this_peer['CHANNEL_ID'] = int(_data[106:109])  # 3 bytes/characters
-                    _this_peer['CHANNEL_NO'] = int(_data[109:113])  # 4 bytes/characters
-                    _this_peer['TX_POWER'] = int(_data[113:115])    # 2 bytes/characters
-                    _this_peer['SOFTWARE_ID'] = _data[115:131]      # 16 bytes/characters
-                    # 10 bytes/characters reserved
-                    _this_peer['RCON_PASSWORD'] = _data[141:161]    # 20 bytes/characters
-                    _this_peer['RCON_PORT'] = int(_data[161:166])   # 5 bytes/characters
-                except:
-                    _this_peer['LATITUDE'] = 0.00
-                    _this_peer['LONGITUDE'] = 0.00
-                    _this_peer['HEIGHT'] = 0
-                    _this_peer['LOCATION'] = 'Anywhere, USA'
-                    _this_peer['TX_OFFSET'] =  0.00
-                    _this_peer['CH_BW'] = 0.00
-                    _this_peer['CHANNEL_ID'] = 0
-                    _this_peer['CHANNEL_NO'] = 0
-                    _this_peer['TX_POWER'] = 0
-                    _this_peer['SOFTWARE_ID'] = 'UNK_SIMPLE_CONFIG_ONLY'
-                    _this_peer['RCON_PASSWORD'] = ''
-                    _this_peer['RCON_PORT'] = 0
-
-                # strip strings
-                _this_peer['IDENTITY'] = _this_peer['IDENTITY'].rstrip()
-                _this_peer['LOCATION'] = _this_peer['LOCATION'].rstrip()
-                _this_peer['SOFTWARE_ID'] = _this_peer['SOFTWARE_ID'].rstrip()
-                _this_peer['RCON_PASSWORD'] = _this_peer['RCON_PASSWORD'].rstrip()
+                _this_peer['LATITUDE'] = peerInfo['latitude']
+                _this_peer['LONGITUDE'] = peerInfo['latitude']
+                _this_peer['HEIGHT'] = peerInfo['latitude']
+                _this_peer['LOCATION'] = peerInfo['latitude']
+                _this_peer['TX_OFFSET'] = peerChannel['txOffsetMhz']
+                _this_peer['CH_BW'] = peerChannel['chBandwidthKhz']
+                _this_peer['CHANNEL_ID'] = peerChannel['channelId']
+                _this_peer['CHANNEL_NO'] = peerChannel['channelNo']
+                _this_peer['TX_POWER'] = peerChannel['txPower']
+                _this_peer['RCON_PASSWORD'] = peerRcon['password']
+                _this_peer['RCON_PORT'] = peerRcon['port']
 
                 # setup peer diagnostics log
                 if self._CONFIG['Log']['AllowDiagTrans'] == True:
@@ -772,13 +753,13 @@ class coreFNE(DatagramProtocol):
                 self.peer_connected(_peer_id, _this_peer)
             else:
                 self.transport.write(fne_const.TAG_MASTER_NAK + _peer_id.to_bytes(4, "big"), (_host, _port))
-                self._logger.warning('(%s) Configuration from unauth PEER %s', self._system, int_id(_peer_id))
+                self._logger.warning('(%s) Configuration from unauth PEER %s', self._system, _peer_id)
 
         elif _data[:5] == fne_const.TAG_REPEATER_CLOSING: # fne_const.TAG_REPEATER_CLOSING -- Disconnect command
             _peer_id = int.from_bytes(_data[5:9], "big")
             if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == 'YES' and
                 self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
-                self._logger.info('(%s) PEER %s is closing down', self._system, int_id(_peer_id))
+                self._logger.info('(%s) PEER %s is closing down', self._system, _peer_id)
                 self.transport.write(fne_const.TAG_MASTER_NAK + _peer_id.to_bytes(4, "big"), (_host, _port))
 
                 # setup peer diagnostics log
@@ -809,7 +790,7 @@ class coreFNE(DatagramProtocol):
                     self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                     _msg = _data[11:-1]
                     self._act_log_file.seek(0, 2)
-                    self._act_log_file.write(str(int_id(_peer_id)) + ' ' + _msg + '\n')
+                    self._act_log_file.write(str(_peer_id) + ' ' + _msg + '\n')
                     self._act_log_file.flush()
 
         elif _data[:8] == fne_const.TAG_TRANSFER_DIAG_LOG: # fne_const.TAG_TRANSFER_DIAG_LOG -- peer is transferring diagnostics log data to us
@@ -821,7 +802,7 @@ class coreFNE(DatagramProtocol):
                     diag_log_file = self._peers[_peer_id]['DIAG_LOG_FILE']
                     if diag_log_file != None:
                         diag_log_file.seek(0, 2)
-                        diag_log_file.write(str(int_id(_peer_id)) + ' ' + _msg + '\n')
+                        diag_log_file.write(str(_peer_id) + ' ' + _msg + '\n')
                         diag_log_file.flush()
 
         else:
@@ -843,7 +824,7 @@ class coreFNE(DatagramProtocol):
             if _data[:4] == fne_const.TAG_DMR_DATA: # fne_const.TAG_DMR_DATA -- encapsulated DMR data frame
                 _peer_id = _data[11:15]
                 if _peer_id != self._config['PeerId']:
-                    #self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, int_id(_peer_id), int_id(self._config['PeerId']))
+                    #self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, _peer_id, int_id(self._config['PeerId']))
                     _peer_id = self._config['PeerId']
 
                 if _peer_id == self._config['PeerId']: # Validate the source and intended target
@@ -868,7 +849,7 @@ class coreFNE(DatagramProtocol):
             elif _data[:4] == fne_const.TAG_P25_DATA: # fne_const.TAG_P25_DATA -- encapsulated P25 data
                 _peer_id = _data[11:15]
                 if _peer_id != self._config['PeerId']:
-                    #self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, int_id(_peer_id), int_id(self._config['PeerId']))
+                    #self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, _peer_id, int_id(self._config['PeerId']))
                     _peer_id = self._config['PeerId']
 
                 if _peer_id == self._config['PeerId']: # Validate the source and intended target
@@ -1012,7 +993,7 @@ class report(NetstringReceiver):
                         break
 
             if not _peer:
-                self._factory._logger.error('RCON request contained invalid PEER ID; RCON_REQ from %s, PEER ID %s', self.transport.getPeer(), int_id(_peer_id))
+                self._factory._logger.error('RCON request contained invalid PEER ID; RCON_REQ from %s, PEER ID %s', self.transport.getPeer(), _peer_id)
                 return
 
             _peer_ip = _peer['IP']
@@ -1021,7 +1002,7 @@ class report(NetstringReceiver):
 
             if self._factory._config['Global']['RconTool'] != '':
                 self._factory._logger.info('RCON_REQ from %s: PEER ID %s COMMAND %s DMR SLOT %s ARGUMENT %s MOT MFID %s', 
-                             self.transport.getPeer(), int_id(_peer_id), _command, _dmr_slot, _command_arg, _mot_mfid)
+                             self.transport.getPeer(), _peer_id, _command, _dmr_slot, _command_arg, _mot_mfid)
 
                 _root_cmd = [self._factory._config['Global']['RconTool'], '-a', str(_peer_ip), '-p', str(_rcon_port), '-P', str(_rcon_password)]
 
