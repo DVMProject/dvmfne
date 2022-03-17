@@ -610,7 +610,7 @@ def process_message(_message):
         elif p[0] == 'PDU':
                 log_message = '[{}] ({}) {} {}: System: {}; Peer: {}; Subscriber: {}; TS: {}'.format(_now, p[2], p[0], p[1], p[3], p[5], p[6], p[7])
         else:
-            log_message = '[{}] UNKNOWN LOG MESSAGE'.format(_now)
+            log_message = '[{}] UNKNOWN LOG MESSAGE: {}'.format(_now, p[0])
             
         dashboard_server.broadcast(WEBSOCK_OPCODES['LOG'] + log_message.encode())
         LOGBUF.append(log_message)
