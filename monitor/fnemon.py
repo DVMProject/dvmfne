@@ -134,249 +134,255 @@ def process_act_log(_file):
     global LOG_MAX, EOL_SCANAHEAD
     _entries = []
     _line_cnt = 0
-    with open(_file, 'r') as log:
-        fwd_log = list(log)
-        rev_log = reversed(fwd_log)
-        for line in rev_log:
-            if (re.search('(RF voice|RF encrypted voice|RF late entry|RF data|RF voice rejection)', line) != None and
-                re.search('(group grant|unit-to-unit grant)', line) != None and
-                re.search('(unit registration|group affiliation|unit deregistration|location registration request)', line) != None and
-                re.search('(status update|message update|call alert|ack response)', line) != None and
-                re.search('(cancel service|radio check|radio inhibit|radio uninhibit)', line) == None):
-                continue
-            if (re.search('(end of)', line) != None):
-                continue
+    try:
+        with open(_file, 'r') as log:
+            fwd_log = list(log)
+            rev_log = reversed(fwd_log)
+            for line in rev_log:
+                if (re.search('(RF voice|RF encrypted voice|RF late entry|RF data|RF voice rejection)', line) != None and
+                    re.search('(group grant|unit-to-unit grant)', line) != None and
+                    re.search('(unit registration|group affiliation|unit deregistration|location registration request)', line) != None and
+                    re.search('(status update|message update|call alert|ack response)', line) != None and
+                    re.search('(cancel service|radio check|radio inhibit|radio uninhibit)', line) == None):
+                    continue
+                if (re.search('(end of)', line) != None):
+                    continue
 
-            peerId = line.split(' ')[0]
-            logLineRaw = line.split(' ')[1:-1]
-            rawData = logLineRaw[1:-1]
+                peerId = line.split(' ')[0]
+                logLineRaw = line.split(' ')[1:-1]
+                rawData = logLineRaw[1:-1]
 
-            dateUTC = rawData[0] + ' ' + rawData[1]
-            mode = rawMode = rawData[2]
-            src = rawData[3]
-            type = ''
-            typeClass = 'normal'
-            alertClass = ''
+                dateUTC = rawData[0] + ' ' + rawData[1]
+                mode = rawMode = rawData[2]
+                src = rawData[3]
+                type = ''
+                typeClass = 'normal'
+                alertClass = ''
 
-            if (src == 'Net'):
-                continue
+                if (src == 'Net'):
+                    continue
 
-            if (re.search('(voice rejection)', line) != None):
-                alertClass = 'warning'
-                type = 'Voice Transmission (Rejected)'
-            if (re.search('(voice transmission|voice header|late entry)', line) != None):
-                if (re.search('(encrypted)', line) != None):
-                    typeClass = 'success'
-                    type = 'Voice Transmission (Encrypt)'
-                else:
-                    type = 'Voice Transmission'
-            if (re.search('(data transmission|data header)', line) != None):
-                type = 'Data Transmission'
-            if (re.search('(group grant request)', line) != None):
-                typeClass = 'success'
-                type = 'Group Grant Request'
-                if (re.search('(denied)', line) != None):
+                if (re.search('(voice rejection)', line) != None):
                     alertClass = 'warning'
-                    type = type + ' (Denied)'
-                if (re.search('(queued)', line) != None):
-                    alertClass = 'info'
-                    type = type + ' (Queued)'
-            if (re.search('(unit-to-unit grant request)', line) != None):
-                typeClass = 'success'
-                type = 'Unit-to-Unit Grant Request'
-                if (re.search('(denied)', line) != None):
-                    alertClass = 'warning'
-                    type = type + ' (Denied)'
-                if (re.search('(queued)', line) != None):
-                    alertClass = 'info'
-                    type = type + ' (Queued)'
-            if (re.search('(group affiliation request)', line) != None):
-                typeClass = 'warning'
-                type = 'Group Affiliation'
-                if (re.search('(denied)', line) != None):
-                    alertClass = 'warning'
-                    type = type + ' (Denied)'
-            if (re.search('(group affiliation query command)', line) != None):
-                typeClass = 'info'
-                type = 'Group Affiliation Query'
-            if (re.search('(group affiliation query response)', line) != None):
-                typeClass = 'success'
-                type = 'Group Affiliation Query'
-            if (re.search('(unit registration request)', line) != None):
-                typeClass = 'warning'
-                type = 'Unit Registration'
-                if (re.search('(denied)', line) != None):
-                    alertClass = 'warning'
-                    type = type + ' (Denied)'
-            if (re.search('(unit registration command)', line) != None):
-                typeClass = 'info'
-                type = 'Unit Registration Command'
-            if (re.search('(unit deregistration request)', line) != None):
-                typeClass = 'warning'
-                type = 'Unit De-Registration'
-                if (re.search('(denied)', line) != None):
-                    alertClass = 'warning'
-                    type = type + ' (Not Registered)'
-            if (re.search('(location registration request)', line) != None):
-                typeClass = 'warning'
-                type = 'Location Registration'
-                if (re.search('(denied)', line) != None):
-                    alertClass = 'warning'
-                    type = type + ' (Denied)'
-            if (re.search('(status update)', line) != None):
-                typeClass = 'info'
-                type = 'Status Update'
-            if (re.search('(message update)', line) != None):
-                typeClass = 'info'
-                type = 'Message Update'
-            if (re.search('(call alert)', line) != None):
-                typeClass = 'info'
-                type = 'Call Alert'
-            if (re.search('(ack response)', line) != None):
-                typeClass = 'success'
-                type = 'ACK Response'
-#            if (re.search('(cancel service)', line) != None):
-#                typeClass = 'danger'
-#                type = 'Cancel Service'
-            if (re.search('(radio check request)', line) != None):
-                typeClass = 'info'
-                type = 'Radio Check'
-            if (re.search('(radio check response)', line) != None):
-                typeClass = 'success'
-                type = 'Radio Check ACK'
-            if (re.search('(radio inhibit request)', line) != None):
-                typeClass = 'danger'
-                type = 'Radio Inhibit'
-            if (re.search('(radio inhibit response)', line) != None):
-                typeClass = 'danger'
-                type = 'Radio Inhibit ACK'
-            if (re.search('(radio uninhibit request)', line) != None):
-                typeClass = 'danger'
-                type = 'Radio Uninhibit'
-            if (re.search('(radio uninhibit response)', line) != None):
-                typeClass = 'success'
-                type = 'Radio Uninhibit ACK'
-
-            if (type == ''):
-                continue
-
-            if (mode == 'DMR'):
-                mode = rawData[2] + ' TS' + rawData[5].replace(',', '')
-            if ('data header' in line):
-                src = 'SMS'
-
-            _from = _to = ''
-            smsDur = ''
-            actData = line.split('from ')
-            if (len(actData) <= 1):
-                continue
-
-            actData = actData[1].split('to ')
-            _from = actData[0].replace(' ', '')
-            _from = _from.replace('\n', '')
-
-            # HACK: remove denied on the _from line
-            if (re.search('(denied)', _from) != None):
-                _from = _from.replace('denied', '')
-
-            if (len(actData) > 1):
-                _to = actData[1].replace('  ', ' ')
-                _to = _to.replace('\n', '')
-                if (' ' in _to):
-                    toData = _to.split(' ')
-                    if (len(toData) >= 2):
-                        _to = toData[0] + ' ' + toData[1]
-                    if (len(toData) == 4):
-                        smsDur = toData[2] + ' ' + toData[3]
-
-            if (re.search('(data transmission)', line) != None):
-                _to = 'N/A'
-
-            if (re.search('(unit registration|group affiliation|unit deregistration|location registration)', line) != None or
-                re.search('(status update|message update|cancel service)', line) != None):
-                if (_to == ''):
-                    _to = '16777213'    # WUID for SYSTEM
-
-            if (_from == ''):
-                continue
-            if (_to == ''):
-                continue
-
-            _line_cnt += 1
-            if (_line_cnt >= LOG_MAX):
-                break
-
-            if (_from == '16777213'):
-                _from = 'SYSTEM'
-            if (_to == '16777213'):
-                _to = 'SYSTEM'
-            
-            if (mode == 'P25'):
-                if (_from == '16777212'):
-                    _from = 'FNE'
-                if (_to == '16777212'):
-                    _to = 'FNE'
-
-            dur = 'Timing unavailable'
-            ber = 'No BER data'
-
-            durAndBer = '<td colspan="2" class="table-col-disabled">No data or timing unavailable</td>'
-            endOfCount = 0
-            if (re.search('(voice transmission|voice header|late entry)', line) != None):
-                lineIdx = fwd_log.index(line)
-                for etLine in fwd_log[lineIdx:]:
-                    if (endOfCount >= EOL_SCANAHEAD):
-                        break
-
-                    if (re.search('(RF end of|ended RF data transmission|transmission lost)', etLine) == None):
-                        endOfCount += 1
-                        continue
+                    type = 'Voice Transmission (Rejected)'
+                if (re.search('(voice transmission|voice header|late entry)', line) != None):
+                    if (re.search('(encrypted)', line) != None):
+                        typeClass = 'success'
+                        type = 'Voice Transmission (Encrypt)'
                     else:
-                        etPeerId = etLine.split(' ')[0]
-                        if (etPeerId != peerId):
+                        type = 'Voice Transmission'
+                if (re.search('(data transmission|data header)', line) != None):
+                    type = 'Data Transmission'
+                if (re.search('(group grant request)', line) != None):
+                    typeClass = 'success'
+                    type = 'Group Grant Request'
+                    if (re.search('(denied)', line) != None):
+                        alertClass = 'warning'
+                        type = type + ' (Denied)'
+                    if (re.search('(queued)', line) != None):
+                        alertClass = 'info'
+                        type = type + ' (Queued)'
+                if (re.search('(unit-to-unit grant request)', line) != None):
+                    typeClass = 'success'
+                    type = 'Unit-to-Unit Grant Request'
+                    if (re.search('(denied)', line) != None):
+                        alertClass = 'warning'
+                        type = type + ' (Denied)'
+                    if (re.search('(queued)', line) != None):
+                        alertClass = 'info'
+                        type = type + ' (Queued)'
+                if (re.search('(group affiliation request)', line) != None):
+                    typeClass = 'warning'
+                    type = 'Group Affiliation'
+                    if (re.search('(denied)', line) != None):
+                        alertClass = 'warning'
+                        type = type + ' (Denied)'
+                if (re.search('(group affiliation query command)', line) != None):
+                    typeClass = 'info'
+                    type = 'Group Affiliation Query'
+                if (re.search('(group affiliation query response)', line) != None):
+                    typeClass = 'success'
+                    type = 'Group Affiliation Query'
+                if (re.search('(unit registration request)', line) != None):
+                    typeClass = 'warning'
+                    type = 'Unit Registration'
+                    if (re.search('(denied)', line) != None):
+                        alertClass = 'warning'
+                        type = type + ' (Denied)'
+                if (re.search('(unit registration command)', line) != None):
+                    typeClass = 'info'
+                    type = 'Unit Registration Command'
+                if (re.search('(unit deregistration request)', line) != None):
+                    typeClass = 'warning'
+                    type = 'Unit De-Registration'
+                    if (re.search('(denied)', line) != None):
+                        alertClass = 'warning'
+                        type = type + ' (Not Registered)'
+                if (re.search('(location registration request)', line) != None):
+                    typeClass = 'warning'
+                    type = 'Location Registration'
+                    if (re.search('(denied)', line) != None):
+                        alertClass = 'warning'
+                        type = type + ' (Denied)'
+                if (re.search('(status update)', line) != None):
+                    typeClass = 'info'
+                    type = 'Status Update'
+                if (re.search('(message update)', line) != None):
+                    typeClass = 'info'
+                    type = 'Message Update'
+                if (re.search('(call alert)', line) != None):
+                    typeClass = 'info'
+                    type = 'Call Alert'
+                if (re.search('(ack response)', line) != None):
+                    typeClass = 'success'
+                    type = 'ACK Response'
+    #            if (re.search('(cancel service)', line) != None):
+    #                typeClass = 'danger'
+    #                type = 'Cancel Service'
+                if (re.search('(radio check request)', line) != None):
+                    typeClass = 'info'
+                    type = 'Radio Check'
+                if (re.search('(radio check response)', line) != None):
+                    typeClass = 'success'
+                    type = 'Radio Check ACK'
+                if (re.search('(radio inhibit request)', line) != None):
+                    typeClass = 'danger'
+                    type = 'Radio Inhibit'
+                if (re.search('(radio inhibit response)', line) != None):
+                    typeClass = 'danger'
+                    type = 'Radio Inhibit ACK'
+                if (re.search('(radio uninhibit request)', line) != None):
+                    typeClass = 'danger'
+                    type = 'Radio Uninhibit'
+                if (re.search('(radio uninhibit response)', line) != None):
+                    typeClass = 'success'
+                    type = 'Radio Uninhibit ACK'
+
+                if (type == ''):
+                    continue
+
+                if (mode == 'DMR'):
+                    mode = rawData[2] + ' TS' + rawData[5].replace(',', '')
+                if ('data header' in line):
+                    src = 'SMS'
+
+                _from = _to = ''
+                smsDur = ''
+                actData = line.split('from ')
+                if (len(actData) <= 1):
+                    continue
+
+                actData = actData[1].split('to ')
+                _from = actData[0].replace(' ', '')
+                _from = _from.replace('\n', '')
+
+                # HACK: remove denied on the _from line
+                if (re.search('(denied)', _from) != None):
+                    _from = _from.replace('denied', '')
+
+                if (len(actData) > 1):
+                    _to = actData[1].replace('  ', ' ')
+                    _to = _to.replace('\n', '')
+                    if (' ' in _to):
+                        toData = _to.split(' ')
+                        if (len(toData) >= 2):
+                            _to = toData[0] + ' ' + toData[1]
+                        if (len(toData) == 4):
+                            smsDur = toData[2] + ' ' + toData[3]
+
+                if (re.search('(data transmission)', line) != None):
+                    _to = 'N/A'
+
+                if (re.search('(unit registration|group affiliation|unit deregistration|location registration)', line) != None or
+                    re.search('(status update|message update|cancel service)', line) != None):
+                    if (_to == ''):
+                        _to = '16777213'    # WUID for SYSTEM
+
+                if (_from == ''):
+                    continue
+                if (_to == ''):
+                    continue
+
+                _line_cnt += 1
+                if (_line_cnt >= LOG_MAX):
+                    break
+
+                if (_from == '16777213'):
+                    _from = 'SYSTEM'
+                if (_to == '16777213'):
+                    _to = 'SYSTEM'
+                
+                if (mode == 'P25'):
+                    if (_from == '16777212'):
+                        _from = 'FNE'
+                    if (_to == '16777212'):
+                        _to = 'FNE'
+
+                dur = 'Timing unavailable'
+                ber = 'No BER data'
+
+                durAndBer = '<td colspan="2" class="table-col-disabled">No data or timing unavailable</td>'
+                endOfCount = 0
+                if (re.search('(voice transmission|voice header|late entry)', line) != None):
+                    lineIdx = fwd_log.index(line)
+                    for etLine in fwd_log[lineIdx:]:
+                        if (endOfCount >= EOL_SCANAHEAD):
+                            break
+
+                        if (re.search('(RF end of|ended RF data transmission|transmission lost)', etLine) == None):
                             endOfCount += 1
                             continue
-
-                        rawStats = etLine.split(', ')
-                        if (len(rawStats) >= 2):
-                            dur = rawStats[1].rstrip().replace(' seconds', 's')
                         else:
-                            dur = '0s'
+                            etPeerId = etLine.split(' ')[0]
+                            if (etPeerId != peerId):
+                                endOfCount += 1
+                                continue
 
-                        if (len(rawStats) >= 3):
-                            ber = rawStats[2].rstrip().replace('BER: ', '').replace('%', '')
-                        else:
-                            ber = '0.0'
+                            rawStats = etLine.split(', ')
+                            if (len(rawStats) >= 2):
+                                dur = rawStats[1].rstrip().replace(' seconds', 's')
+                            else:
+                                dur = '0s'
 
-                        break
+                            if (len(rawStats) >= 3):
+                                ber = rawStats[2].rstrip().replace('BER: ', '').replace('%', '')
+                            else:
+                                ber = '0.0'
 
-            entry = {}
-            entry['date'] = dateUTC
-            entry['peerId'] = peerId
-            entry['mode'] = mode
-            entry['type_class'] = typeClass
-            entry['alert_class'] = alertClass
-            entry['type'] = type
-            entry['from'] = _from
-            entry['to'] = _to
-            entry['duration'] = dur
-            entry['ber'] = ber
-            _entries.append(entry)
+                            break
+
+                entry = {}
+                entry['date'] = dateUTC
+                entry['peerId'] = peerId
+                entry['mode'] = mode
+                entry['type_class'] = typeClass
+                entry['alert_class'] = alertClass
+                entry['type'] = type
+                entry['from'] = _from
+                entry['to'] = _to
+                entry['duration'] = dur
+                entry['ber'] = ber
+                _entries.append(entry)
+    except Exception as e:
+        logging.error("Error opening activity log: {}".format(e))
     return (_entries)
 
 def process_diag_log(_file):
     global LOG_MAX
     _lines = []
     _line_cnt = 0
-    with open(_file, 'r') as log:
-        fwd_log = list(log)
-        rev_log = reversed(fwd_log)
-        for line in rev_log:
-            _line_cnt += 1
-            if (_line_cnt >= LOG_MAX):
-                break
+    try:
+        with open(_file, 'r') as log:
+            fwd_log = list(log)
+            rev_log = reversed(fwd_log)
+            for line in rev_log:
+                _line_cnt += 1
+                if (_line_cnt >= LOG_MAX):
+                    break
 
-            _lines.append(line)
+                _lines.append(line)
+    except Exception as e:
+        logging.error("Error opening activity log: {}".format(e))
     return (_lines)
             
 # Build configuration and rules tables from config/rules dicts
