@@ -106,20 +106,20 @@ def make_rules(_fne_routing_rules):
         config['Systems'][_system]['TG_ALLOW_AFF'] = []
 
         for _rule in rule_file.RULES[_system]['GROUP_VOICE']:
-            _rule['SRC_GROUP'] = hex_str_3(_rule['SRC_GROUP'])
-            _rule['DST_GROUP'] = hex_str_3(_rule['DST_GROUP'])
+            #_rule['SRC_GROUP'] = hex_str_3(_rule['SRC_GROUP'])
+            #_rule['DST_GROUP'] = hex_str_3(_rule['DST_GROUP'])
             _rule['SRC_TS'] = _rule['SRC_TS']
             _rule['DST_TS'] = _rule['DST_TS']
 
             if rule_file.RULES[_system]['SEND_TGID'] == True:
                 if _rule['ACTIVE'] == True:
-                    config['Systems'][_system]['ACTIVE_TG_IDS'][int_id(_rule['SRC_GROUP'])] = (_rule['NAME'], _rule['SRC_TS'])
+                    config['Systems'][_system]['ACTIVE_TG_IDS'][_rule['SRC_GROUP']] = (_rule['NAME'], _rule['SRC_TS'])
                 else:
-                    config['Systems'][_system]['DEACTIVE_TG_IDS'][int_id(_rule['SRC_GROUP'])] = (_rule['NAME'], _rule['SRC_TS'])
+                    config['Systems'][_system]['DEACTIVE_TG_IDS'][_rule['SRC_GROUP']] = (_rule['NAME'], _rule['SRC_TS'])
 
-            config['Systems'][_system]['TG_IGNORE_IDS'][int_id(_rule['SRC_GROUP'])] = [int(x) for x in _rule['IGNORED']]
+            config['Systems'][_system]['TG_IGNORE_IDS'][_rule['SRC_GROUP']] = [int(x) for x in _rule['IGNORED']]
             if _rule['AFFILIATED'] == True:
-                config['Systems'][_system]['TG_ALLOW_AFF'].append(int_id(_rule['SRC_GROUP']))
+                config['Systems'][_system]['TG_ALLOW_AFF'].append(_rule['SRC_GROUP'])
 
             for i, e in enumerate(_rule['ON']):
                 _rule['ON'][i] = hex_str_3(_rule['ON'][i])
