@@ -559,12 +559,12 @@ class coreFNE(DatagramProtocol):
             self._stats['PINGS_SENT'] = 0
             self._stats['PINGS_ACKD'] = 0
             self._stats['CONNECTION'] = 'RPTL_SENT'
-            self.send_master('RPTL' + int_to_bytes(self._config['PeerId']))
+            self.send_master(fne_const.TAG_REPEATER_LOGIN + int_to_bytes(self._config['PeerId']))
             self._logger.info('(%s) Sending login request to MASTER (%s:%s)', self._system, self._config['MasterAddress'], self._config['MasterPort'])
         # If we are connected, sent a ping to the master and increment the
         # counter
         if self._stats['CONNECTION'] == 'YES':
-            self.send_master('RPTPING' + int_to_bytes(self._config['PeerId']))
+            self.send_master(fne_const.TAG_REPEATER_PING + int_to_bytes(self._config['PeerId']))
             self._stats['PINGS_SENT'] += 1
             self._logger.debug('(%s) RPTPING Sent to MASTER. Pings since connected: %s', self._system, self._stats['PINGS_SENT'])
 
