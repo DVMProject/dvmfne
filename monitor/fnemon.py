@@ -579,7 +579,7 @@ def process_message(_message):
     elif opcode == REPORT_OPCODES['CALL_EVENT']:
         logging.info('CALL_EVENT: {}'.format(repr(_message[1:])))
         #p = _message[1:].split(",")
-        p = _message.decode().split(",")
+        p = _message[1:].decode().split(",")
         if p[0] == 'GROUP VOICE':
             if p[1] == 'END':
                 log_message = '[{}] ({}) {} {}: System: {}; Peer: {}; Subscriber: {}; TS: {}; TGID: {}; Duration: {}s'.format(_now, p[2], p[0], p[1], p[3], p[5], p[6], p[7], p[8], p[9])
