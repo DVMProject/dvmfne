@@ -344,6 +344,7 @@ class routerFNE(coreFNE):
                 _key_id = lcHeader['LC'][2]
                 self._logger.info('(%s) DMRD: Traffic *CALL PI PARAMS  * PEER %s DST_ID %s TS %s ALGID %s KID %s [STREAM ID %s]', self._system,
                                         _peer_id, _dst_id, _slot, _alg_id, _key_id, _stream_id)
+
                 self.STATUS[_slot]['RX_PI_LC'] = lcHeader['LC'][:10]
 
                 self._logger.debug('(%s) TS %s [STREAM ID %s] RX_PI_LC %s', self._system, _slot, _stream_id, ahex(self.STATUS[_slot]['RX_PI_LC']))

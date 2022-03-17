@@ -449,7 +449,7 @@ class coreFNE(DatagramProtocol):
                                self._peers[_peer]['IP'], self._peers[_peer]['PORT'], ahex(_packet))
 
     def send_master(self, _packet):
-        self.transport.write(_packet.encode(), (self._config['MasterAddress'], self._config['MasterPort']))
+        self.transport.write(_packet, (self._config['MasterAddress'], self._config['MasterPort']))
         if self._CONFIG['Log']['RawPacketTrace']:
             self._logger.debug('(%s) Network Transmitted (to %s:%s) -- %s', self._system, 
                                self._config['MasterAddress'], self._config['MasterPort'], ahex(_packet))
@@ -460,11 +460,11 @@ class coreFNE(DatagramProtocol):
             self._logger.info('(%s) De-Registration sent to PEER %s', self._system, self._peers[_peer]['PEER_ID'])
             
     def peer_dereg(self):
-        self.send_master(fne_const.TAG_REPEATER_CLOSING + self._config['PeerId'])
+        self.send_master(fne_const.TAG_REPEATER_CLOSING + self._config['PeerId'].encode())
         self._logger.info('(%s) De-Registration sent to MASTER (%s:%s)', self._system, self._config['MasterAddress'], self._config['MasterPort'])
 
     def peer_trnslog(self, _message):
-        self.send_master(fne_const.TAG_TRANSFER_ACT_LOG + self._config['PeerId'] + _message)
+        self.send_master(fne_const.TAG_TRANSFER_ACT_LOG + self._config['PeerId'].encode() + _message)
     
     def send_peer_wrids(self, _peer, _rids):
         from struct import pack
@@ -559,12 +559,12 @@ class coreFNE(DatagramProtocol):
             self._stats['PINGS_SENT'] = 0
             self._stats['PINGS_ACKD'] = 0
             self._stats['CONNECTION'] = 'RTPL_SENT'
-            self.send_master('RPTL' + self._config['PeerId'])
+            self.send_master('RPTL' + self._config['PeerId'].encode())
             self._logger.info('(%s) Sending login request to MASTER (%s:%s)', self._system, self._config['MasterAddress'], self._config['MasterPort'])
         # If we are connected, sent a ping to the master and increment the
         # counter
         if self._stats['CONNECTION'] == 'YES':
-            self.send_master('RPTPING' + self._config['PeerId'])
+            self.send_master('RPTPING' + self._config['PeerId'].encode())
             self._stats['PINGS_SENT'] += 1
             self._logger.debug('(%s) RPTPING Sent to MASTER. Pings since connected: %s', self._system, self._stats['PINGS_SENT'])
 
@@ -616,7 +616,7 @@ class coreFNE(DatagramProtocol):
                                 if self.peer_ignored(_peer, _rf_src, _dst_id, _call_type, _slot, _dtype_vseq, _stream_id, False) == False:
                                     self.send_peer(_peer, _data)
                                     self._logger.debug('(%s) DMRD: Packet TS %s SRC_PEER %s DST_ID %s DST_PEER %s [STREAM ID %s]', self._system, 
-                                                       _slot, _peer_id, int_id(_dst_id), int_id(_peer), int_id(_stream_id))
+                                                       _slot, _peer_id, _dst_id, _peer, _stream_id)
                                 else:
                                     continue
 
@@ -824,6 +824,7 @@ class coreFNE(DatagramProtocol):
                     self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                     _msg = _data[12:-1].decode()
                     diag_log_file = get_peer_diag_log_handler(self._CONFIG, self._logger, _peer_id)
+
                     if diag_log_file != None:
                         diag_log_file.seek(0, 2)
                         diag_log_file.write(str(_peer_id) + ' ' + _msg + '\n')
