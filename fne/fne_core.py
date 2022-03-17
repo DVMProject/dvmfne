@@ -766,7 +766,7 @@ class coreFNE(DatagramProtocol):
 
                 # setup peer diagnostics log
                 if self._CONFIG['Log']['AllowDiagTrans'] == True:
-                    diag_log_file = get_peer_diag_log_filename(self._CONFIG, self._logger, _peer_id)
+                    diag_log_file = get_peer_diag_log_filename(self._CONFIG, _peer_id)
                     _this_peer['DIAG_LOG_FILE'] = diag_log_file
 
                 self.send_peer(_peer_id, fne_const.TAG_REPEATER_ACK + _peer_id.to_bytes(4, "big"))
