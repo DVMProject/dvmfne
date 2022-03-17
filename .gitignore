@@ -14,3 +14,4 @@ __pycache__/
 monitor/config.py
 *.log
 fne.cfg
+fne_routing_rules.py
