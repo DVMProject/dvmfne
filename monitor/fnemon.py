@@ -699,7 +699,7 @@ class dashboard(WebSocketServerProtocol):
                 self.sendMessage(WEBSOCK_OPCODES['LOG'] + _message)
 
     def onMessage(self, payload, isBinary):
-        global WEBSOCK_OPCODES, REPORT_OPCODES, LOG_PATH, report_client
+        global WEBSOCK_OPCODES, REPORT_OPCODES, report_client
         if isBinary:
             logging.info('Binary message received: %s bytes', len(payload))
         else:
@@ -721,7 +721,7 @@ class dashboard(WebSocketServerProtocol):
                 _arguments = _payload.split(',')
                 _peer_id = _arguments[0][1:]
                 diag_log = process_diag_log(config.LOG_PATH + _peer_id + '.log')
-                self.sendMessage(WEBSOCK_OPCODES['DIAG_LOG'] + json.dumps(diag_log))
+                self.sendMessage(WEBSOCK_OPCODES['DIAG_LOG'] + json.dumps(diag_log).encode())
             else:
                 logging.info('Text message received: %s', _payload)
 
