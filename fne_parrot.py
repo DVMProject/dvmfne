@@ -37,7 +37,7 @@ from twisted.internet.protocol import Factory, Protocol
 from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor, task
 
-from fne.fne_core import hex_str_3, int_id, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
+from fne.fne_core import coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
 from fne import fne_config, fne_log, fne_const
 
 # ---------------------------------------------------------------------------
@@ -107,14 +107,14 @@ class parrotFNE(coreFNE):
     def dmrd_received(self, _peer_id, _rf_src, _dst_id, _seq, _slot, _call_type, _frame_type, _dtype_vseq, _stream_id, _data):
         pkt_time = time()
         dmrpkt = _data[20:53]
-        _bits = int_id(_data[15])
+        _bits = _data[15]
         
         if _call_type == 'group':
             if (self.LAST_MODE != 'DMR'):
                 self._logger.info('(%s) DMRD: Previous call was not DMR, mixed call modes! Dropping call data.', self._system)
                 self.CALL_DATA = []
 
-            if (int_id(_rf_src) == 0):
+            if (_rf_src == 0):
                 self._logger.warning('(%s) DMRD: Received call from SRC_ID %s? Dropping call data.', self._system, _rf_src)
                 self.CALL_DATA = []
                 self.LAST_MODE = 'P25'
@@ -169,7 +169,7 @@ class parrotFNE(coreFNE):
                 self._logger.info('(%s) P25D: Previous call was not P25, mixed call modes! Dropping call data.', self._system)
                 self.CALL_DATA = []
 
-            if (int_id(_rf_src) == 0):
+            if (_rf_src == 0):
                 self._logger.warning('(%s) P25D: Received call from SRC_ID %s? Dropping call data.', self._system, _rf_src)
                 self.CALL_DATA = []
                 self.LAST_MODE = 'P25'
