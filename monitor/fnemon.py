@@ -697,7 +697,7 @@ class dashboard(WebSocketServerProtocol):
         gen_activity()
         for _message in LOGBUF:
             if _message:
-                self.sendMessage(WEBSOCK_OPCODES['LOG'] + _message)
+                self.sendMessage(WEBSOCK_OPCODES['LOG'] + _message.encode())
 
     def onMessage(self, payload, isBinary):
         global WEBSOCK_OPCODES, REPORT_OPCODES, report_client
