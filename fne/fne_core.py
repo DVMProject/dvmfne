@@ -627,7 +627,7 @@ class coreFNE(DatagramProtocol):
                                 if self.peer_ignored(_peer, _rf_src, _dst_id, _call_type, 1, _dtype_vseq, _stream_id, False) == False:
                                     self.send_peer(_peer, _data)
                                     self._logger.debug('(%s) P25D: Packet SRC_PEER %s DST_ID %s DST_PEER %s [STREAM ID %s]', self._system,
-                                                       _peer_id, int_id(_dst_id), int_id(_peer), int_id(_stream_id))
+                                                       _peer_id, _dst_id, _peer, _stream_id)
                                 else:
                                     continue
 
