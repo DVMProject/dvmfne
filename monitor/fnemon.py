@@ -84,15 +84,15 @@ REPORT_OPCODES = {
 }
 
 WEBSOCK_OPCODES = {
-    'QUIT': 'q',
-    'CONFIG': 'c',
-    'RULES': 'r',
-    'AFFILIATION': 'g',
-    'ACTIVITY': 'a',
-    'LOG': 'l',
-    'DIAG_LOG': 'd',
-    'MESSAGE': 'm',
-    'WHITELIST_RID': 'w',
+    'QUIT': b'q',
+    'CONFIG': b'c',
+    'RULES': b'r',
+    'AFFILIATION': b'g',
+    'ACTIVITY': b'a',
+    'LOG': b'l',
+    'DIAG_LOG': b'd',
+    'MESSAGE': b'm',
+    'WHITELIST_RID': b'w',
 }
 
 # Global Variables
