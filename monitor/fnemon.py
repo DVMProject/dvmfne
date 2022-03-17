@@ -467,7 +467,7 @@ def build_ctable(_config):
                 _stats_table['MASTER_CNT'] += 1
             elif _hbp_data['Mode'] == 'peer':
                 _stats_table['PEERS'][_hbp] = {}
-                _stats_table['PEERS'][_hbp]['PEER_ID'] = int_id(_hbp_data['PeerId'])
+                _stats_table['PEERS'][_hbp]['PEER_ID'] = _hbp_data['PeerId']
                 _stats_table['PEERS'][_hbp]['IDENTITY'] = _hbp_data['Identity']
                 _stats_table['PEERS'][_hbp]['RX_FREQ'] = _hbp_data['RxFrequency']
                 _stats_table['PEERS'][_hbp]['TX_FREQ'] = _hbp_data['TxFrequency']

@@ -315,7 +315,7 @@ class routerFNE(coreFNE):
                 # This is a new call stream
                 self.STATUS[_slot]['RX_START'] = pkt_time
                 self._logger.info('(%s) DMRD: Traffic *CALL START      * PEER %s SRC_ID %s TGID %s TS %s [STREAM ID %s]', self._system,
-                                  _peer_id, _rf_src, _dst_id, _slot, _stream_id,)
+                                  _peer_id, _rf_src, _dst_id, _slot, _stream_id)
 
                 if config['Reports']['Report']:
                     self._report.send_routeEvent('GROUP VOICE,START,DMR,{},{},{},{},{},{}'.format(self._system, _stream_id, _peer_id, _rf_src, _slot, _dst_id))

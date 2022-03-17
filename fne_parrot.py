@@ -115,7 +115,7 @@ class parrotFNE(coreFNE):
                 self.CALL_DATA = []
 
             if (int_id(_rf_src) == 0):
-                self._logger.warning('(%s) DMRD: Received call from SRC_ID %s? Dropping call data.', self._system, int_id(_rf_src))
+                self._logger.warning('(%s) DMRD: Received call from SRC_ID %s? Dropping call data.', self._system, _rf_src)
                 self.CALL_DATA = []
                 self.LAST_MODE = 'P25'
                 return
@@ -126,16 +126,16 @@ class parrotFNE(coreFNE):
             if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']):
                 self.STATUS['RX_START'] = pkt_time
                 self._logger.info('(%s) DMRD: Traffic *CALL START     * PEER %s SRC_ID %s TGID %s TS %s [STREAM ID %s]', self._system,
-                                  int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, int_id(_stream_id))
+                                  _peer_id, _rf_src, _dst_id, _slot, _stream_id)
             
             # Final actions - Is this a voice terminator?
             if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
                 call_duration = pkt_time - self.STATUS['RX_START']
                 self._logger.info('(%s) DMRD: Traffic *CALL END       * PEER %s SRC_ID %s TGID %s TS %s DUR %s [STREAM ID %s]', self._system,
-                                  int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), _slot, call_duration, int_id(_stream_id))
+                                  _peer_id, _rf_src, _dst_id, _slot, call_duration, _stream_id)
                 self.CALL_DATA.append(_data)
                 sleep(2)
-                self._logger.info('(%s) DMRD: Playing back transmission from SRC_ID %s', self._system, int_id(_rf_src))
+                self._logger.info('(%s) DMRD: Playing back transmission from SRC_ID %s', self._system, _rf_src)
                 for _peer in self.CALL_DATA:
                     self.send_peers(_peer)
                     sleep(0.06)
@@ -143,7 +143,7 @@ class parrotFNE(coreFNE):
             
             else:
                 if not self.CALL_DATA:
-                    self._logger.info('(%s) DMRD: Receiving transmission to be played back from SRC_ID %s', self._system, int_id(_rf_src))
+                    self._logger.info('(%s) DMRD: Receiving transmission to be played back from SRC_ID %s', self._system, _rf_src)
                 self.CALL_DATA.append(_data)
             
             # Mark status variables for use later
@@ -170,7 +170,7 @@ class parrotFNE(coreFNE):
                 self.CALL_DATA = []
 
             if (int_id(_rf_src) == 0):
-                self._logger.warning('(%s) P25D: Received call from SRC_ID %s? Dropping call data.', self._system, int_id(_rf_src))
+                self._logger.warning('(%s) P25D: Received call from SRC_ID %s? Dropping call data.', self._system, _rf_src)
                 self.CALL_DATA = []
                 self.LAST_MODE = 'P25'
                 return
@@ -181,16 +181,16 @@ class parrotFNE(coreFNE):
             if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']) and ((_duid != fne_const.P25_DUID_TDU) and (_duid != fne_const.P25_DUID_TDULC)):
                 self.STATUS['RX_START'] = pkt_time
                 self._logger.info('(%s) P25D: Traffic *CALL START    * PEER %s SRC_ID %s TGID %s [STREAM ID %s]', self._system,
-                                  int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), int_id(_stream_id))
+                                  _peer_id, _rf_src, _dst_id, _stream_id)
         
             # Final actions - Is this a voice terminator?
             if ((_duid == fne_const.P25_DUID_TDU) or (_duid == fne_const.P25_DUID_TDULC)) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
                 call_duration = pkt_time - self.STATUS['RX_START']
                 self._logger.info('(%s) P25D: Traffic *CALL END      * PEER %s SRC_ID %s TGID %s DUR %s [STREAM ID %s]', self._system,
-                                  int_id(_peer_id), int_id(_rf_src), int_id(_dst_id), call_duration, int_id(_stream_id))
+                                  _peer_id, _rf_src, _dst_id, call_duration, _stream_id)
                 self.CALL_DATA.append(_data)
                 sleep(2)
-                self._logger.info('(%s) P25D: Playing back transmission from SRC_ID %s', self._system, int_id(_rf_src))
+                self._logger.info('(%s) P25D: Playing back transmission from SRC_ID %s', self._system, _rf_src)
                 for _peer in self.CALL_DATA:
                     self.send_peers(_peer)
                     sleep(0.06)
@@ -198,7 +198,7 @@ class parrotFNE(coreFNE):
             
             else:
                 if not self.CALL_DATA:
-                    self._logger.info('(%s) P25D: Receiving transmission to be played back from SRC_ID %s', self._system, int_id(_rf_src))
+                    self._logger.info('(%s) P25D: Receiving transmission to be played back from SRC_ID %s', self._system, _rf_src)
                 self.CALL_DATA.append(_data)
             
             # Mark status variables for use later
