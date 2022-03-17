@@ -393,7 +393,7 @@ def gen_activity():
 def build_grp_aff_table(_grp_aff):
     _table = {}
     
-    for _peer_id, _aff_data in _grp_aff.iteritems():
+    for _peer_id, _aff_data in _grp_aff.items():
         _tgid_entries = _grp_aff[_peer_id]
         for _tgid in _tgid_entries:
             _rid_entries = _tgid_entries[_tgid]
@@ -411,7 +411,7 @@ def build_grp_aff_table(_grp_aff):
 def build_whitelist_rid_table(_whitelist_rid):
     _table = []
     
-    for _rid, _data in _whitelist_rid.iteritems():
+    for _rid, _data in _whitelist_rid.items():
         _table.append(_rid)
   
     return _table
@@ -486,7 +486,7 @@ def build_rules_table(_rules):
     _now = time()
     _cnow = strftime('%Y-%m-%d %H:%M:%S', localtime(_now))
     
-    for _rule, _rule_data in _rules.iteritems():
+    for _rule, _rule_data in _rules.items():
         _stats_table[_rule] = []
 
         _rules[_rule]['GROUP_VOICE'].sort(key=rules_sort)
