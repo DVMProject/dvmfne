@@ -705,8 +705,8 @@ class dashboard(WebSocketServerProtocol):
         if isBinary:
             logging.info('Binary message received: %s bytes', len(payload))
         else:
-            _payload = payload.decode('ascii')
             _opcode = _payload[:1]
+            _payload = payload.decode('ascii')
             if (_opcode == WEBSOCK_OPCODES['MESSAGE']):
                 _arguments = _payload.split(',')
                 _peer_id = _arguments[0][1:]
