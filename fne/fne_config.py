@@ -108,7 +108,7 @@ def build_config(_config_file):
                         'MasterAddress': gethostbyname(config.get(section, 'MasterAddress')),
                         'MasterPort': config.getint(section, 'MasterPort'),
                         'Passphrase': config.get(section, 'Passphrase'),
-                        'PeerId': hex(int(config.get(section, 'PeerId')))[2:].rjust(8,'0'),
+                        'PeerId': int(config.get(section, 'PeerId')),
                         'Identity': config.get(section, 'Identity').ljust(8)[:8],
                         'RxFrequency': config.get(section, 'RxFrequency').ljust(9)[:9],
                         'TxFrequency': config.get(section, 'TxFrequency').ljust(9)[:9],

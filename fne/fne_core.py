@@ -314,16 +314,16 @@ class AMBE:
         self._exp_port = self._CONFIG['AMBE']['Port']
 
     def parse_ambe(self, _client, _data):
-        _seq = int_id(_data[4:5])
-        _srcID = int_id(_data[5:8])
-        _dstID = int_id(_data[8:11])
-        _rptID = int_id(_data[11:15])
-        _bits = int_id(_data[15:16])       # SCDV NNNN (Slot|Call type|Data|Voice|Seq or Data type)
+        _seq = bytes_to_int(_data[4:5])
+        _srcID = bytes_to_int(_data[5:8])
+        _dstID = bytes_to_int(_data[8:11])
+        _rptID = bytes_to_int(_data[11:15])
+        _bits = bytes_to_int(_data[15:16])       # SCDV NNNN (Slot|Call type|Data|Voice|Seq or Data type)
         _slot = 2 if _bits & 0x80 else 1
         _callType = 1 if (_bits & 0x40) else 0
         _frameType = (_bits & 0x30) >> 4
         _voiceSeq = (_bits & 0x0f)
-        _streamID = int_id(_data[16:20])
+        _streamID = bytes_to_int(_data[16:20])
         self._logger.debug('(%s) SEQ %d SRC_ID %d DST_ID %d PEER %d BITS %0X TS %d CALLTYPE %d FRAMETYPE %d VOICESEQ %d [STREAM ID %0X]', 
                            _client, _seq, _srcID, _dstID, _rptID, _bits, _slot, _callType, _frameType, _voiceSeq, _streamID)
 
@@ -460,11 +460,11 @@ class coreFNE(DatagramProtocol):
             self._logger.info('(%s) De-Registration sent to PEER %s', self._system, self._peers[_peer]['PEER_ID'])
             
     def peer_dereg(self):
-        self.send_master(fne_const.TAG_REPEATER_CLOSING + self._config['PeerId'].encode())
+        self.send_master(fne_const.TAG_REPEATER_CLOSING + int_to_bytes(self._config['PeerId']))
         self._logger.info('(%s) De-Registration sent to MASTER (%s:%s)', self._system, self._config['MasterAddress'], self._config['MasterPort'])
 
     def peer_trnslog(self, _message):
-        self.send_master(fne_const.TAG_TRANSFER_ACT_LOG + self._config['PeerId'].encode() + _message)
+        self.send_master(fne_const.TAG_TRANSFER_ACT_LOG + int_to_bytes(self._config['PeerId']) + _message)
     
     def send_peer_wrids(self, _peer, _rids):
         from struct import pack
@@ -555,16 +555,16 @@ class coreFNE(DatagramProtocol):
     def peer_maintenance_loop(self):
         # If we're not connected, zero out the stats and send a login request
         # RPTL
-        if self._stats['CONNECTION'] == 'NO' or self._stats['CONNECTION'] == 'RTPL_SENT':
+        if self._stats['CONNECTION'] == 'NO' or self._stats['CONNECTION'] == 'RPTL_SENT':
             self._stats['PINGS_SENT'] = 0
             self._stats['PINGS_ACKD'] = 0
-            self._stats['CONNECTION'] = 'RTPL_SENT'
-            self.send_master('RPTL' + self._config['PeerId'].encode())
+            self._stats['CONNECTION'] = 'RPTL_SENT'
+            self.send_master('RPTL' + int_to_bytes(self._config['PeerId']))
             self._logger.info('(%s) Sending login request to MASTER (%s:%s)', self._system, self._config['MasterAddress'], self._config['MasterPort'])
         # If we are connected, sent a ping to the master and increment the
         # counter
         if self._stats['CONNECTION'] == 'YES':
-            self.send_master('RPTPING' + self._config['PeerId'].encode())
+            self.send_master('RPTPING' + int_to_bytes(self._config['PeerId']))
             self._stats['PINGS_SENT'] += 1
             self._logger.debug('(%s) RPTPING Sent to MASTER. Pings since connected: %s', self._system, self._stats['PINGS_SENT'])
 
@@ -592,7 +592,7 @@ class coreFNE(DatagramProtocol):
                 _frame_type = (_bits & 0x30) >> 4
                 _dtype_vseq = (_bits & 0xF) # data, 1=voice header, 2=voice terminator; voice, 0=burst A ...  5=burst F
                 _stream_id = _data[16:20]
-                #self._logger.debug('(%s) DMRD - SEQ %s SRC_ID %s DST_ID %s', self._system, int_id(_seq), int_id(_rf_src), int_id(_dst_id))
+                #self._logger.debug('(%s) DMRD - SEQ %s SRC_ID %s DST_ID %s', self._system, _seq, _rf_src, _dst_id)
 
                 if self.dmrd_validate(_peer_id, _rf_src, _dst_id, _slot, _call_type, _frame_type, _dtype_vseq, _stream_id) == True:
                     if self.peer_ignored(_peer_id, _rf_src, _dst_id, _call_type, _slot, _dtype_vseq, _stream_id, True) == True:
@@ -868,21 +868,21 @@ class coreFNE(DatagramProtocol):
             # process opcode from data, usually first 4 bytes but can be a varied length
             # depending on the opcode
             if _data[:4] == fne_const.TAG_DMR_DATA: # fne_const.TAG_DMR_DATA -- encapsulated DMR data frame
-                _peer_id = _data[11:15]
+                _peer_id = bytes_to_int(_data[11:15])
                 if _peer_id != self._config['PeerId']:
-                    #self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, _peer_id, int_id(self._config['PeerId']))
+                    #self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, _peer_id, self._config['PeerId'])
                     _peer_id = self._config['PeerId']
 
                 if _peer_id == self._config['PeerId']: # Validate the source and intended target
                     _seq = _data[4:5]
-                    _rf_src = _data[5:8]
-                    _dst_id = _data[8:11]
-                    _bits = int_id(_data[15])
+                    _rf_src = bytes_to_int(_data[5:8])
+                    _dst_id = bytes_to_int(_data[8:11])
+                    _bits = _data[15]
                     _slot = 2 if (_bits & 0x80) else 1
                     _call_type = 'unit' if (_bits & 0x40) else 'group'
                     _frame_type = (_bits & 0x30) >> 4
                     _dtype_vseq = (_bits & 0xF) # data, 1=voice header, 2=voice terminator; voice, 0=burst A ...  5=burst F
-                    _stream_id = _data[16:20]
+                    _stream_id = bytes_to_int(_data[16:20])
 
                     # If AMBE audio exporting is configured...
                     if self._config['ExportAMBE']:
@@ -893,18 +893,18 @@ class coreFNE(DatagramProtocol):
                     self.dmrd_received(_peer_id, _rf_src, _dst_id, _seq, _slot, _call_type, _frame_type, _dtype_vseq, _stream_id, _data)
 
             elif _data[:4] == fne_const.TAG_P25_DATA: # fne_const.TAG_P25_DATA -- encapsulated P25 data
-                _peer_id = _data[11:15]
+                _peer_id = bytes_to_int(_data[11:15])
                 if _peer_id != self._config['PeerId']:
-                    #self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, _peer_id, int_id(self._config['PeerId']))
+                    #self._logger.warning('(%s) PEER %s; routed traffic, rewriting PEER %s', self._system, _peer_id, self._config['PeerId'])
                     _peer_id = self._config['PeerId']
 
                 if _peer_id == self._config['PeerId']: # Validate the source and intended target
-                    _rf_src = _data[5:8]
-                    _dst_id = _data[8:11]
+                    _rf_src = bytes_to_int(_data[5:8])
+                    _dst_id = bytes_to_int(_data[8:11])
                     _call_type = 'unit' if (_data[4] == 0x03) else 'group'
-                    _duid = int_id(_data[22])
+                    _duid = _data[22]
                     _dtype_vseq = fne_const.FT_VOICE if ((_duid != fne_const.P25_DUID_TDU) and (_duid != fne_const.P25_DUID_TDULC)) else fne_const.DT_TERMINATOR_WITH_LC
-                    _stream_id = _data[16:20]
+                    _stream_id = bytes_to_int(_data[16:20])
 
                     # Userland actions -- typically this is the function you
                     # subclass for an application
@@ -913,30 +913,30 @@ class coreFNE(DatagramProtocol):
             elif _data[:5] == fne_const.TAG_MASTER_CLOSING: # MSTCL -- notify us the master is closing down
                 if _data[5:9] == self._config['PeerId']:
                     self._stats['CONNECTION'] = 'NO'
-                    self._logger.info('(%s) PEER %s MSTCL recieved', self._system, int_id(self._config['PeerId']))
+                    self._logger.info('(%s) PEER %s MSTCL recieved', self._system, self._config['PeerId'])
 
             elif _data[:6] == fne_const.TAG_MASTER_NAK: # fne_const.TAG_MASTER_NAK -- a NACK from the master
                 _peer_id = _data[6:10]
                 if _peer_id == self._config['PeerId']: # Validate the source and intended target
-                    self._logger.warning('(%s) PEER %s MSTNAK received', self._system, int_id(self._config['PeerId']))
+                    self._logger.warning('(%s) PEER %s MSTNAK received', self._system, self._config['PeerId'])
                     self._stats['CONNECTION'] = 'NO' # Disconnect ourselves and re-register
 
             elif _data[:6] == fne_const.TAG_REPEATER_ACK: # fne_const.TAG_REPEATER_ACK -- an ACK from the master
                 # Depending on the state, an RPTACK means different things, in
                 # each clause, we check
                 # and/or set the state
-                if self._stats['CONNECTION'] == 'RTPL_SENT': # If we've sent a login request...
-                    _login_int32 = _data[6:10]
-                    self._logger.info('(%s) PEER %s login ACK received with ID %s', self._system, int_id(self._config['PeerId']), int_id(_login_int32))
+                if self._stats['CONNECTION'] == 'RPTL_SENT': # If we've sent a login request...
+                    _login_int32 = bytes_to_int(_data[6:10])
+                    self._logger.info('(%s) PEER %s login ACK received with ID %s', self._system, self._config['PeerId'], _login_int32)
 
                     _pass_hash = sha256(_login_int32 + self._config['Passphrase']).hexdigest()
                     _pass_hash = bhex(_pass_hash)
-                    self.send_master(fne_const.TAG_REPEATER_AUTH + self._config['PeerId'] + _pass_hash)
+                    self.send_master(fne_const.TAG_REPEATER_AUTH + int_to_bytes(self._config['PeerId']) + _pass_hash)
                     self._stats['CONNECTION'] = 'AUTHENTICATED'
 
                 elif self._stats['CONNECTION'] == 'AUTHENTICATED': # If we've sent the login challenge...
-                    if _data[6:10] == self._config['PeerId']:
-                        self._logger.info('(%s) PEER %s authentication accepted', self._system, int_id(self._config['PeerId']))
+                    if bytes_to_int(_data[6:10]) == self._config['PeerId']:
+                        self._logger.info('(%s) PEER %s authentication accepted', self._system, self._config['PeerId'])
                         _config_packet = self._config['PeerId'] + \
                                          self._config['Identity'] + \
                                          self._config['RxFrequency'] + \
@@ -959,30 +959,30 @@ class coreFNE(DatagramProtocol):
 
                         self.send_master(fne_const.TAG_REPEATER_CONFIG + _config_packet)
                         self._stats['CONNECTION'] = 'CONFIG-SENT'
-                        self._logger.info('(%s) PEER %s Configuration sent to master', self._system, int_id(self._config['PeerId']))
+                        self._logger.info('(%s) PEER %s Configuration sent to master', self._system, self._config['PeerId'])
                     else:
                         self._stats['CONNECTION'] = 'NO'
                         self._logger.error('(%s) PEER %s Configuration master ACK Contained peer wrong ID - Connection Reset', self._system,
-                                           int_id(self._config['PeerId']))
+                                           self._config['PeerId'])
 
                 elif self._stats['CONNECTION'] == 'CONFIG-SENT': # If we've sent out configuration to the master
                     if _data[6:10] == self._config['PeerId']:
-                        self._logger.info('(%s) PEER %s Master accepted configuration', self._system, int_id(self._config['PeerId']))
+                        self._logger.info('(%s) PEER %s Master accepted configuration', self._system, self._config['PeerId'])
                         self._stats['CONNECTION'] = 'YES'
-                        self._logger.info('(%s) PEER %s Connection to MASTER Completed', self._system, int_id(self._config['PeerId']))
+                        self._logger.info('(%s) PEER %s Connection to MASTER Completed', self._system, self._config['PeerId'])
                     else:
                         self._stats['CONNECTION'] = 'NO'
                         self._logger.error('(%s) PEER %s Master ACK Contained wrong peer ID - Connection Reset', self._system,
-                                           int_id(self._config['PeerId']))
+                                           self._config['PeerId'])
 
             elif _data[:7] == fne_const.TAG_MASTER_PONG: # fne_const.TAG_MASTER_PONG -- a reply to RPTPING (send by peer)
                 if _data[7:11] == self._config['PeerId']:
                     self._stats['PINGS_ACKD'] += 1
                     self._logger.debug('(%s) PEER %s MSTPONG received, pongs since connected %s', self._system,
-                                       int_id(self._config['PeerId']), self._stats['PINGS_ACKD'])
+                                       self._config['PeerId'], self._stats['PINGS_ACKD'])
 
             else:
-                self._logger.error('(%s) Unrecognized command PEER %s PACKET %s', self._system, int_id(self._config['PeerId']), ahex(_data))
+                self._logger.error('(%s) Unrecognized command PEER %s PACKET %s', self._system, self._config['PeerId'], ahex(_data))
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
@@ -1078,7 +1078,7 @@ class report(NetstringReceiver):
                     _cmd.append('0')
                     subprocess.call(_cmd)
         else:
-            self._factory._logger.error('Report unrecognized opcode %s PACKET %s', int_id(opcode), ahex(_message))
+            self._factory._logger.error('Report unrecognized opcode %s PACKET %s', opcode, ahex(_message))
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
