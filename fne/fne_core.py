@@ -986,6 +986,7 @@ class report(NetstringReceiver):
     def process_message(self, _message):
         global systems
         opcode = _message[:1]
+        _message = _message.decode()
         if opcode == REPORT_OPCODES['CONFIG_REQ']:
             self._factory._logger.info('Reporting client sent \'CONFIG_REQ\': %s', self.transport.getPeer())
             self.send_config()
