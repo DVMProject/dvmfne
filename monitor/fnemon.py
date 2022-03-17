@@ -757,7 +757,7 @@ class dashboardFactory(WebSocketServerFactory):
     def broadcast(self, msg):
         logging.debug('broadcasting message to: %s', self.clients)
         for c in self.clients:
-            c.sendMessage(msg.encode('utf8'))
+            c.sendMessage(msg)
             logging.debug('message sent to %s', c.peer)
 
 # ---------------------------------------------------------------------------
