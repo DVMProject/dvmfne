@@ -498,21 +498,21 @@ def build_rules_table(_rules):
 
         _rules[_rule]['GROUP_VOICE'].sort(key=rules_sort)
         for rule_entry in _rules[_rule]['GROUP_VOICE']:
-            rule_entry['SRC_GROUP'] = str(int_id(rule_entry['SRC_GROUP']))
+            rule_entry['SRC_GROUP'] = str(rule_entry['SRC_GROUP'])
             rule_entry['SRC_TS'] = str(rule_entry['SRC_TS'])
-            rule_entry['DST_GROUP'] = str(int_id(rule_entry['DST_GROUP']))
+            rule_entry['DST_GROUP'] = str(rule_entry['DST_GROUP'])
             rule_entry['DST_TS'] = str(rule_entry['DST_TS'])
 
             rule_entry['ACTIVE'] = str(rule_entry['ACTIVE'])
             rule_entry['ROUTABLE'] = str(rule_entry['ROUTABLE'])
 
             for i in range(len(rule_entry['ON'])):
-                rule_entry['ON'][i] = str(int_id(rule_entry['ON'][i]))
+                rule_entry['ON'][i] = str(rule_entry['ON'][i])
 
             rule_entry['TRIG_ON'] = ', '.join(rule_entry['ON'])
 
             for i in range(len(rule_entry['OFF'])):
-                rule_entry['OFF'][i] = str(int_id(rule_entry['OFF'][i]))
+                rule_entry['OFF'][i] = str(rule_entry['OFF'][i])
 
             rule_entry['TRIG_OFF'] = ', '.join(rule_entry['OFF'])
 
@@ -621,7 +621,7 @@ def process_message(_message):
         WRIDTABLE = build_whitelist_rid_table(WLIST_RID)
 
     else:
-        logging.error('Report unrecognized opcode %s PACKET %s', int_id(opcode), ahex(_message))
+        logging.error('Report unrecognized opcode %s PACKET %s', opcode, ahex(_message))
         
 def load_dictionary(_message):
     data = _message[1:]
