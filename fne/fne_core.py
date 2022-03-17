@@ -1032,6 +1032,8 @@ class report(NetstringReceiver):
                 _root_cmd = [self._factory._config['Global']['RconTool'], '-a', str(_peer_ip), '-p', str(_rcon_port), '-P', str(_rcon_password)]
                 print("Running dvmcmd: {}".format(_root_cmd))
 
+                #TODO: error out if rcon is disabled on the peer
+
                 # handle P25 commands with mot mfid
                 if _mot_mfid == 'true':
                     _cmd = list(_root_cmd)
