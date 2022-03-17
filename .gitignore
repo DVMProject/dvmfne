@@ -10,4 +10,7 @@ venv/
 
 __pycache__/
 *.pyc
+
+monitor/config.py
+*.log
 fne.cfg

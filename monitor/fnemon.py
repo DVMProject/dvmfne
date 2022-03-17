@@ -9,6 +9,7 @@
 ###############################################################################
 #   Copyright (C) 2016 Cortney T.  Buffington, N0MJS <n0mjs@me.com>
 #   Copyright (C) 2017-2019 Bryan Biedenkapp <gatekeep@gmail.com>
+#   Copyright (C) 2022 Natalie Moore <natalie@natnat.xyz>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -56,35 +57,42 @@ from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerF
 
 from jinja2 import Environment, PackageLoader
 
-from dmr_utils.utils import hex_str_3
+#from dmr_utils.utils import hex_str_3
 
-from config import *
+# exit more friendly-y if we don't have a config
+try:
+    import config
+except Exception as e:
+    print("Error importing the configuration file:")
+    print(e)
+    print("Bye")
+    quit()
 
 # Opcodes for the network-based reporting protocol
 REPORT_OPCODES = {
-    'CONFIG_REQ': '\x00',
-    'CONFIG_RSP': '\x01',
-    'RRULES_REQ': '\x02',
-    'RRULES_RSP': '\x03',
-    'CONFIG_UPD': '\x04',
-    'RRULES_UPD': '\x05',
-    'LINK_EVENT': '\x06',
-    'CALL_EVENT': '\x07',
-    'GRP_AFF_UPD': '\x08',
-    'RCON_REQ': '\x09',
-    'WHITELIST_RID_UPD': '\x10',
+    'CONFIG_REQ': b'\x00',
+    'CONFIG_RSP': b'\x01',
+    'RRULES_REQ': b'\x02',
+    'RRULES_RSP': b'\x03',
+    'CONFIG_UPD': b'\x04',
+    'RRULES_UPD': b'\x05',
+    'LINK_EVENT': b'\x06',
+    'CALL_EVENT': b'\x07',
+    'GRP_AFF_UPD': b'\x08',
+    'RCON_REQ': b'\x09',
+    'WHITELIST_RID_UPD': b'\x10',
 }
 
 WEBSOCK_OPCODES = {
-    'QUIT': 'q',
-    'CONFIG': 'c',
-    'RULES': 'r',
-    'AFFILIATION': 'g',
-    'ACTIVITY': 'a',
-    'LOG': 'l',
-    'DIAG_LOG': 'd',
-    'MESSAGE': 'm',
-    'WHITELIST_RID': 'w',
+    'QUIT': b'q',
+    'CONFIG': b'c',
+    'RULES': b'r',
+    'AFFILIATION': b'g',
+    'ACTIVITY': b'a',
+    'LOG': b'l',
+    'DIAG_LOG': b'd',
+    'MESSAGE': b'm',
+    'WHITELIST_RID': b'w',
 }
 
 # Global Variables
@@ -127,257 +135,263 @@ def process_act_log(_file):
     global LOG_MAX, EOL_SCANAHEAD
     _entries = []
     _line_cnt = 0
-    with open(_file, 'r') as log:
-        fwd_log = list(log)
-        rev_log = reversed(fwd_log)
-        for line in rev_log:
-            if (re.search('(RF voice|RF encrypted voice|RF late entry|RF data|RF voice rejection)', line) != None and
-                re.search('(group grant|unit-to-unit grant)', line) != None and
-                re.search('(unit registration|group affiliation|unit deregistration|location registration request)', line) != None and
-                re.search('(status update|message update|call alert|ack response)', line) != None and
-                re.search('(cancel service|radio check|radio inhibit|radio uninhibit)', line) == None):
-                continue
-            if (re.search('(end of)', line) != None):
-                continue
+    try:
+        with open(_file, 'r') as log:
+            fwd_log = list(log)
+            rev_log = reversed(fwd_log)
+            for line in rev_log:
+                if (re.search('(RF voice|RF encrypted voice|RF late entry|RF data|RF voice rejection)', line) != None and
+                    re.search('(group grant|unit-to-unit grant)', line) != None and
+                    re.search('(unit registration|group affiliation|unit deregistration|location registration request)', line) != None and
+                    re.search('(status update|message update|call alert|ack response)', line) != None and
+                    re.search('(cancel service|radio check|radio inhibit|radio uninhibit)', line) == None):
+                    continue
+                if (re.search('(end of)', line) != None):
+                    continue
 
-            peerId = line.split(' ')[0]
-            logLineRaw = line.split(' ')[1:-1]
-            rawData = logLineRaw[1:-1]
+                peerId = line.split(' ')[0]
+                logLineRaw = line.split(' ')[1:-1]
+                rawData = logLineRaw[1:-1]
 
-            dateUTC = rawData[0] + ' ' + rawData[1]
-            mode = rawMode = rawData[2]
-            src = rawData[3]
-            type = ''
-            typeClass = 'normal'
-            alertClass = ''
+                dateUTC = rawData[0] + ' ' + rawData[1]
+                mode = rawMode = rawData[2]
+                src = rawData[3]
+                type = ''
+                typeClass = 'normal'
+                alertClass = ''
 
-            if (src == 'Net'):
-                continue
+                if (src == 'Net'):
+                    continue
 
-            if (re.search('(voice rejection)', line) != None):
-                alertClass = 'warning'
-                type = 'Voice Transmission (Rejected)'
-            if (re.search('(voice transmission|voice header|late entry)', line) != None):
-                if (re.search('(encrypted)', line) != None):
-                    typeClass = 'success'
-                    type = 'Voice Transmission (Encrypt)'
-                else:
-                    type = 'Voice Transmission'
-            if (re.search('(data transmission|data header)', line) != None):
-                type = 'Data Transmission'
-            if (re.search('(group grant request)', line) != None):
-                typeClass = 'success'
-                type = 'Group Grant Request'
-                if (re.search('(denied)', line) != None):
+                if (re.search('(voice rejection)', line) != None):
                     alertClass = 'warning'
-                    type = type + ' (Denied)'
-                if (re.search('(queued)', line) != None):
-                    alertClass = 'info'
-                    type = type + ' (Queued)'
-            if (re.search('(unit-to-unit grant request)', line) != None):
-                typeClass = 'success'
-                type = 'Unit-to-Unit Grant Request'
-                if (re.search('(denied)', line) != None):
-                    alertClass = 'warning'
-                    type = type + ' (Denied)'
-                if (re.search('(queued)', line) != None):
-                    alertClass = 'info'
-                    type = type + ' (Queued)'
-            if (re.search('(group affiliation request)', line) != None):
-                typeClass = 'warning'
-                type = 'Group Affiliation'
-                if (re.search('(denied)', line) != None):
-                    alertClass = 'warning'
-                    type = type + ' (Denied)'
-            if (re.search('(group affiliation query command)', line) != None):
-                typeClass = 'info'
-                type = 'Group Affiliation Query'
-            if (re.search('(group affiliation query response)', line) != None):
-                typeClass = 'success'
-                type = 'Group Affiliation Query'
-            if (re.search('(unit registration request)', line) != None):
-                typeClass = 'warning'
-                type = 'Unit Registration'
-                if (re.search('(denied)', line) != None):
-                    alertClass = 'warning'
-                    type = type + ' (Denied)'
-            if (re.search('(unit registration command)', line) != None):
-                typeClass = 'info'
-                type = 'Unit Registration Command'
-            if (re.search('(unit deregistration request)', line) != None):
-                typeClass = 'warning'
-                type = 'Unit De-Registration'
-                if (re.search('(denied)', line) != None):
-                    alertClass = 'warning'
-                    type = type + ' (Not Registered)'
-            if (re.search('(location registration request)', line) != None):
-                typeClass = 'warning'
-                type = 'Location Registration'
-                if (re.search('(denied)', line) != None):
-                    alertClass = 'warning'
-                    type = type + ' (Denied)'
-            if (re.search('(status update)', line) != None):
-                typeClass = 'info'
-                type = 'Status Update'
-            if (re.search('(message update)', line) != None):
-                typeClass = 'info'
-                type = 'Message Update'
-            if (re.search('(call alert)', line) != None):
-                typeClass = 'info'
-                type = 'Call Alert'
-            if (re.search('(ack response)', line) != None):
-                typeClass = 'success'
-                type = 'ACK Response'
-#            if (re.search('(cancel service)', line) != None):
-#                typeClass = 'danger'
-#                type = 'Cancel Service'
-            if (re.search('(radio check request)', line) != None):
-                typeClass = 'info'
-                type = 'Radio Check'
-            if (re.search('(radio check response)', line) != None):
-                typeClass = 'success'
-                type = 'Radio Check ACK'
-            if (re.search('(radio inhibit request)', line) != None):
-                typeClass = 'danger'
-                type = 'Radio Inhibit'
-            if (re.search('(radio inhibit response)', line) != None):
-                typeClass = 'danger'
-                type = 'Radio Inhibit ACK'
-            if (re.search('(radio uninhibit request)', line) != None):
-                typeClass = 'danger'
-                type = 'Radio Uninhibit'
-            if (re.search('(radio uninhibit response)', line) != None):
-                typeClass = 'success'
-                type = 'Radio Uninhibit ACK'
-
-            if (type == ''):
-                continue
-
-            if (mode == 'DMR'):
-                mode = rawData[2] + ' TS' + rawData[5].replace(',', '')
-            if ('data header' in line):
-                src = 'SMS'
-
-            _from = _to = ''
-            smsDur = ''
-            actData = line.split('from ')
-            if (len(actData) <= 1):
-                continue
-
-            actData = actData[1].split('to ')
-            _from = actData[0].replace(' ', '')
-            _from = _from.replace('\n', '')
-
-            # HACK: remove denied on the _from line
-            if (re.search('(denied)', _from) != None):
-                _from = _from.replace('denied', '')
-
-            if (len(actData) > 1):
-                _to = actData[1].replace('  ', ' ')
-                _to = _to.replace('\n', '')
-                if (' ' in _to):
-                    toData = _to.split(' ')
-                    if (len(toData) >= 2):
-                        _to = toData[0] + ' ' + toData[1]
-                    if (len(toData) == 4):
-                        smsDur = toData[2] + ' ' + toData[3]
-
-            if (re.search('(data transmission)', line) != None):
-                _to = 'N/A'
-
-            if (re.search('(unit registration|group affiliation|unit deregistration|location registration)', line) != None or
-                re.search('(status update|message update|cancel service)', line) != None):
-                if (_to == ''):
-                    _to = '16777213'    # WUID for SYSTEM
-
-            if (_from == ''):
-                continue
-            if (_to == ''):
-                continue
-
-            _line_cnt += 1
-            if (_line_cnt >= LOG_MAX):
-                break
-
-            if (_from == '16777213'):
-                _from = 'SYSTEM'
-            if (_to == '16777213'):
-                _to = 'SYSTEM'
-            
-            if (mode == 'P25'):
-                if (_from == '16777212'):
-                    _from = 'FNE'
-                if (_to == '16777212'):
-                    _to = 'FNE'
-
-            dur = 'Timing unavailable'
-            ber = 'No BER data'
-
-            durAndBer = '<td colspan="2" class="table-col-disabled">No data or timing unavailable</td>'
-            endOfCount = 0
-            if (re.search('(voice transmission|voice header|late entry)', line) != None):
-                lineIdx = fwd_log.index(line)
-                for etLine in fwd_log[lineIdx:]:
-                    if (endOfCount >= EOL_SCANAHEAD):
-                        break
-
-                    if (re.search('(RF end of|ended RF data transmission|transmission lost)', etLine) == None):
-                        endOfCount += 1
-                        continue
+                    type = 'Voice Transmission (Rejected)'
+                if (re.search('(voice transmission|voice header|late entry)', line) != None):
+                    if (re.search('(encrypted)', line) != None):
+                        typeClass = 'success'
+                        type = 'Voice Transmission (Encrypt)'
                     else:
-                        etPeerId = etLine.split(' ')[0]
-                        if (etPeerId != peerId):
+                        type = 'Voice Transmission'
+                if (re.search('(data transmission|data header)', line) != None):
+                    type = 'Data Transmission'
+                if (re.search('(group grant request)', line) != None):
+                    typeClass = 'success'
+                    type = 'Group Grant Request'
+                    if (re.search('(denied)', line) != None):
+                        alertClass = 'warning'
+                        type = type + ' (Denied)'
+                    if (re.search('(queued)', line) != None):
+                        alertClass = 'info'
+                        type = type + ' (Queued)'
+                if (re.search('(unit-to-unit grant request)', line) != None):
+                    typeClass = 'success'
+                    type = 'Unit-to-Unit Grant Request'
+                    if (re.search('(denied)', line) != None):
+                        alertClass = 'warning'
+                        type = type + ' (Denied)'
+                    if (re.search('(queued)', line) != None):
+                        alertClass = 'info'
+                        type = type + ' (Queued)'
+                if (re.search('(group affiliation request)', line) != None):
+                    typeClass = 'warning'
+                    type = 'Group Affiliation'
+                    if (re.search('(denied)', line) != None):
+                        alertClass = 'warning'
+                        type = type + ' (Denied)'
+                if (re.search('(group affiliation query command)', line) != None):
+                    typeClass = 'info'
+                    type = 'Group Affiliation Query'
+                if (re.search('(group affiliation query response)', line) != None):
+                    typeClass = 'success'
+                    type = 'Group Affiliation Query'
+                if (re.search('(unit registration request)', line) != None):
+                    typeClass = 'warning'
+                    type = 'Unit Registration'
+                    if (re.search('(denied)', line) != None):
+                        alertClass = 'warning'
+                        type = type + ' (Denied)'
+                if (re.search('(unit registration command)', line) != None):
+                    typeClass = 'info'
+                    type = 'Unit Registration Command'
+                if (re.search('(unit deregistration request)', line) != None):
+                    typeClass = 'warning'
+                    type = 'Unit De-Registration'
+                    if (re.search('(denied)', line) != None):
+                        alertClass = 'warning'
+                        type = type + ' (Not Registered)'
+                if (re.search('(location registration request)', line) != None):
+                    typeClass = 'warning'
+                    type = 'Location Registration'
+                    if (re.search('(denied)', line) != None):
+                        alertClass = 'warning'
+                        type = type + ' (Denied)'
+                if (re.search('(status update)', line) != None):
+                    typeClass = 'info'
+                    type = 'Status Update'
+                if (re.search('(message update)', line) != None):
+                    typeClass = 'info'
+                    type = 'Message Update'
+                if (re.search('(call alert)', line) != None):
+                    typeClass = 'info'
+                    type = 'Call Alert'
+                if (re.search('(ack response)', line) != None):
+                    typeClass = 'success'
+                    type = 'ACK Response'
+    #            if (re.search('(cancel service)', line) != None):
+    #                typeClass = 'danger'
+    #                type = 'Cancel Service'
+                if (re.search('(radio check request)', line) != None):
+                    typeClass = 'info'
+                    type = 'Radio Check'
+                if (re.search('(radio check response)', line) != None):
+                    typeClass = 'success'
+                    type = 'Radio Check ACK'
+                if (re.search('(radio inhibit request)', line) != None):
+                    typeClass = 'danger'
+                    type = 'Radio Inhibit'
+                if (re.search('(radio inhibit response)', line) != None):
+                    typeClass = 'danger'
+                    type = 'Radio Inhibit ACK'
+                if (re.search('(radio uninhibit request)', line) != None):
+                    typeClass = 'danger'
+                    type = 'Radio Uninhibit'
+                if (re.search('(radio uninhibit response)', line) != None):
+                    typeClass = 'success'
+                    type = 'Radio Uninhibit ACK'
+
+                if (type == ''):
+                    continue
+
+                if (mode == 'DMR'):
+                    mode = rawData[2] + ' TS' + rawData[5].replace(',', '')
+                if ('data header' in line):
+                    src = 'SMS'
+
+                _from = _to = ''
+                smsDur = ''
+                actData = line.split('from ')
+                if (len(actData) <= 1):
+                    continue
+
+                actData = actData[1].split('to ')
+                _from = actData[0].replace(' ', '')
+                _from = _from.replace('\n', '')
+
+                # HACK: remove denied on the _from line
+                if (re.search('(denied)', _from) != None):
+                    _from = _from.replace('denied', '')
+
+                if (len(actData) > 1):
+                    _to = actData[1].replace('  ', ' ')
+                    _to = _to.replace('\n', '')
+                    if (' ' in _to):
+                        toData = _to.split(' ')
+                        if (len(toData) >= 2):
+                            _to = toData[0] + ' ' + toData[1]
+                        if (len(toData) == 4):
+                            smsDur = toData[2] + ' ' + toData[3]
+
+                if (re.search('(data transmission)', line) != None):
+                    _to = 'N/A'
+
+                if (re.search('(unit registration|group affiliation|unit deregistration|location registration)', line) != None or
+                    re.search('(status update|message update|cancel service)', line) != None):
+                    if (_to == ''):
+                        _to = '16777213'    # WUID for SYSTEM
+
+                if (_from == ''):
+                    continue
+                if (_to == ''):
+                    continue
+
+                _line_cnt += 1
+                if (_line_cnt >= LOG_MAX):
+                    break
+
+                if (_from == '16777213'):
+                    _from = 'SYSTEM'
+                if (_to == '16777213'):
+                    _to = 'SYSTEM'
+                
+                if (mode == 'P25'):
+                    if (_from == '16777212'):
+                        _from = 'FNE'
+                    if (_to == '16777212'):
+                        _to = 'FNE'
+
+                dur = 'Timing unavailable'
+                ber = 'No BER data'
+
+                durAndBer = '<td colspan="2" class="table-col-disabled">No data or timing unavailable</td>'
+                endOfCount = 0
+                if (re.search('(voice transmission|voice header|late entry)', line) != None):
+                    lineIdx = fwd_log.index(line)
+                    for etLine in fwd_log[lineIdx:]:
+                        if (endOfCount >= EOL_SCANAHEAD):
+                            break
+
+                        if (re.search('(RF end of|ended RF data transmission|transmission lost)', etLine) == None):
                             endOfCount += 1
                             continue
-
-                        rawStats = etLine.split(', ')
-                        if (len(rawStats) >= 2):
-                            dur = rawStats[1].rstrip().replace(' seconds', 's')
                         else:
-                            dur = '0s'
+                            etPeerId = etLine.split(' ')[0]
+                            if (etPeerId != peerId):
+                                endOfCount += 1
+                                continue
 
-                        if (len(rawStats) >= 3):
-                            ber = rawStats[2].rstrip().replace('BER: ', '').replace('%', '')
-                        else:
-                            ber = '0.0'
+                            rawStats = etLine.split(', ')
+                            if (len(rawStats) >= 2):
+                                dur = rawStats[1].rstrip().replace(' seconds', 's')
+                            else:
+                                dur = '0s'
 
-                        break
+                            if (len(rawStats) >= 3):
+                                ber = rawStats[2].rstrip().replace('BER: ', '').replace('%', '')
+                            else:
+                                ber = '0.0'
 
-            entry = {}
-            entry['date'] = dateUTC
-            entry['peerId'] = peerId
-            entry['mode'] = mode
-            entry['type_class'] = typeClass
-            entry['alert_class'] = alertClass
-            entry['type'] = type
-            entry['from'] = _from
-            entry['to'] = _to
-            entry['duration'] = dur
-            entry['ber'] = ber
-            _entries.append(entry)
+                            break
+
+                entry = {}
+                entry['date'] = dateUTC
+                entry['peerId'] = peerId
+                entry['mode'] = mode
+                entry['type_class'] = typeClass
+                entry['alert_class'] = alertClass
+                entry['type'] = type
+                entry['from'] = _from
+                entry['to'] = _to
+                entry['duration'] = dur
+                entry['ber'] = ber
+                _entries.append(entry)
+    except Exception as e:
+        logging.error("Error opening activity log: {}".format(e))
     return (_entries)
 
 def process_diag_log(_file):
     global LOG_MAX
     _lines = []
     _line_cnt = 0
-    with open(_file, 'r') as log:
-        fwd_log = list(log)
-        rev_log = reversed(fwd_log)
-        for line in rev_log:
-            _line_cnt += 1
-            if (_line_cnt >= LOG_MAX):
-                break
+    try:
+        with open(_file, 'r') as log:
+            fwd_log = list(log)
+            rev_log = reversed(fwd_log)
+            for line in rev_log:
+                _line_cnt += 1
+                if (_line_cnt >= LOG_MAX):
+                    break
 
-            _lines.append(line)
+                _lines.append(line)
+    except Exception as e:
+        logging.error("Error opening activity log: {}".format(e))
     return (_lines)
             
 # Build configuration and rules tables from config/rules dicts
 # this currently is a timed call
 def gen_activity():
-    global ACTIVITY_LOG, WEBSOCK_OPCODES
-    _entries = process_act_log(ACTIVITY_LOG)
-    dashboard_server.broadcast(WEBSOCK_OPCODES['ACTIVITY'] + json.dumps(_entries))
+    global WEBSOCK_OPCODES
+    _entries = process_act_log(config.ACTIVITY_LOG)
+    dashboard_server.broadcast(WEBSOCK_OPCODES['ACTIVITY'] + json.dumps(_entries).encode())
 
 # ---------------------------------------------------------------------------
 #   Group Affiliations Table Routines
@@ -386,7 +400,7 @@ def gen_activity():
 def build_grp_aff_table(_grp_aff):
     _table = {}
     
-    for _peer_id, _aff_data in _grp_aff.iteritems():
+    for _peer_id, _aff_data in _grp_aff.items():
         _tgid_entries = _grp_aff[_peer_id]
         for _tgid in _tgid_entries:
             _rid_entries = _tgid_entries[_tgid]
@@ -404,7 +418,7 @@ def build_grp_aff_table(_grp_aff):
 def build_whitelist_rid_table(_whitelist_rid):
     _table = []
     
-    for _rid, _data in _whitelist_rid.iteritems():
+    for _rid, _data in _whitelist_rid.items():
         _table.append(_rid)
   
     return _table
@@ -416,7 +430,7 @@ def build_whitelist_rid_table(_whitelist_rid):
 # Build the connections table
 def build_ctable(_config):
     _stats_table = {'MASTERS': {}, 'MASTER_CNT': 0, 'PEERS': {}, 'PEER_CNT': 0}
-    for _hbp, _hbp_data in _config.iteritems(): 
+    for _hbp, _hbp_data in _config.items(): 
         if _hbp_data['Enabled'] == True:
             if _hbp_data['Mode'] == 'master':
                 _stats_table['MASTERS'][_hbp] = {}
@@ -479,26 +493,26 @@ def build_rules_table(_rules):
     _now = time()
     _cnow = strftime('%Y-%m-%d %H:%M:%S', localtime(_now))
     
-    for _rule, _rule_data in _rules.iteritems():
+    for _rule, _rule_data in _rules.items():
         _stats_table[_rule] = []
 
         _rules[_rule]['GROUP_VOICE'].sort(key=rules_sort)
         for rule_entry in _rules[_rule]['GROUP_VOICE']:
-            rule_entry['SRC_GROUP'] = str(int_id(rule_entry['SRC_GROUP']))
+            rule_entry['SRC_GROUP'] = str(rule_entry['SRC_GROUP'])
             rule_entry['SRC_TS'] = str(rule_entry['SRC_TS'])
-            rule_entry['DST_GROUP'] = str(int_id(rule_entry['DST_GROUP']))
+            rule_entry['DST_GROUP'] = str(rule_entry['DST_GROUP'])
             rule_entry['DST_TS'] = str(rule_entry['DST_TS'])
 
             rule_entry['ACTIVE'] = str(rule_entry['ACTIVE'])
             rule_entry['ROUTABLE'] = str(rule_entry['ROUTABLE'])
 
             for i in range(len(rule_entry['ON'])):
-                rule_entry['ON'][i] = str(int_id(rule_entry['ON'][i]))
+                rule_entry['ON'][i] = str(rule_entry['ON'][i])
 
             rule_entry['TRIG_ON'] = ', '.join(rule_entry['ON'])
 
             for i in range(len(rule_entry['OFF'])):
-                rule_entry['OFF'][i] = str(int_id(rule_entry['OFF'][i]))
+                rule_entry['OFF'][i] = str(rule_entry['OFF'][i])
 
             rule_entry['TRIG_OFF'] = ', '.join(rule_entry['OFF'])
 
@@ -524,16 +538,16 @@ def build_rules_table(_rules):
 def websock_update():
     global WEBSOCK_OPCODES
     if CONFIG:
-        table = WEBSOCK_OPCODES['CONFIG'] + json.dumps(CTABLE)
+        table = WEBSOCK_OPCODES['CONFIG'] + json.dumps(CTABLE).encode()
         dashboard_server.broadcast(table)
     if RULES:
-        table = WEBSOCK_OPCODES['RULES'] + json.dumps(RTABLE['RULES'])
+        table = WEBSOCK_OPCODES['RULES'] + json.dumps(RTABLE['RULES']).encode()
         dashboard_server.broadcast(table)
     if GRP_AFF:
-        table = WEBSOCK_OPCODES['AFFILIATION'] + json.dumps(GATABLE)
+        table = WEBSOCK_OPCODES['AFFILIATION'] + json.dumps(GATABLE).encode()
         dashboard_server.broadcast(table)
     if WLIST_RID:
-        table = WEBSOCK_OPCODES['WHITELIST_RID'] + json.dumps(WRIDTABLE)
+        table = WEBSOCK_OPCODES['WHITELIST_RID'] + json.dumps(WRIDTABLE).encode()
         dashboard_server.broadcast(table)
 
 # Process in coming messages and take the correct action depending on the opcode
@@ -564,7 +578,8 @@ def process_message(_message):
         
     elif opcode == REPORT_OPCODES['CALL_EVENT']:
         logging.info('CALL_EVENT: {}'.format(repr(_message[1:])))
-        p = _message[1:].split(",")
+        #p = _message[1:].split(",")
+        p = _message[1:].decode().split(",")
         if p[0] == 'GROUP VOICE':
             if p[1] == 'END':
                 log_message = '[{}] ({}) {} {}: System: {}; Peer: {}; Subscriber: {}; TS: {}; TGID: {}; Duration: {}s'.format(_now, p[2], p[0], p[1], p[3], p[5], p[6], p[7], p[8], p[9])
@@ -595,9 +610,9 @@ def process_message(_message):
         elif p[0] == 'PDU':
                 log_message = '[{}] ({}) {} {}: System: {}; Peer: {}; Subscriber: {}; TS: {}'.format(_now, p[2], p[0], p[1], p[3], p[5], p[6], p[7])
         else:
-            log_message = '[{}] UNKNOWN LOG MESSAGE'.format(_now)
+            log_message = '[{}] UNKNOWN LOG MESSAGE: {}'.format(_now, p[0])
             
-        dashboard_server.broadcast(WEBSOCK_OPCODES['LOG'] + log_message)
+        dashboard_server.broadcast(WEBSOCK_OPCODES['LOG'] + log_message.encode())
         LOGBUF.append(log_message)
     
     elif opcode == REPORT_OPCODES['WHITELIST_RID_UPD']:
@@ -606,7 +621,7 @@ def process_message(_message):
         WRIDTABLE = build_whitelist_rid_table(WLIST_RID)
 
     else:
-        self._factory._logger.error('Report unrecognized opcode %s PACKET %s', int_id(opcode), ahex(_message))
+        logging.error('Report unrecognized opcode %s PACKET %s', opcode, ahex(_message))
         
 def load_dictionary(_message):
     data = _message[1:]
@@ -630,6 +645,7 @@ class report(NetstringReceiver):
         pass
         
     def stringReceived(self, data):
+        logging.debug("Received message: {}".format(data))
         process_message(data)
 
 # ---------------------------------------------------------------------------
@@ -645,7 +661,7 @@ class reportClientFactory(ReconnectingClientFactory):
         global WEBSOCK_OPCODES
         logging.info('Connecting to FNE server.')
         if 'dashboard_server' in locals() or 'dashboard_server' in globals():
-            dashboard_server.broadcast(WEBSOCK_OPCODES['QUIT'] + 'Connection to FNE Established')
+            dashboard_server.broadcast(WEBSOCK_OPCODES['QUIT'] + b'Connection to FNE Established')
 
     def buildProtocol(self, addr):
         logging.info('Connected.')
@@ -656,7 +672,7 @@ class reportClientFactory(ReconnectingClientFactory):
         global WEBSOCK_OPCODES
         logging.info('Lost connection.  Reason: %s', reason)
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
-        dashboard_server.broadcast(WEBSOCK_OPCODES['QUIT'] + 'Connection to FNE Lost')
+        dashboard_server.broadcast(WEBSOCK_OPCODES['QUIT'] + b'Connection to FNE Lost')
 
     def clientConnectionFailed(self, connector, reason):
         logging.info('Connection failed. Reason: %s', reason)
@@ -682,15 +698,15 @@ class dashboard(WebSocketServerProtocol):
         gen_activity()
         for _message in LOGBUF:
             if _message:
-                self.sendMessage(WEBSOCK_OPCODES['LOG'] + _message)
+                self.sendMessage(WEBSOCK_OPCODES['LOG'] + _message.encode())
 
     def onMessage(self, payload, isBinary):
-        global WEBSOCK_OPCODES, REPORT_OPCODES, LOG_PATH, report_client
+        global WEBSOCK_OPCODES, REPORT_OPCODES, report_client
         if isBinary:
             logging.info('Binary message received: %s bytes', len(payload))
         else:
             _payload = payload.decode('ascii')
-            _opcode = _payload[:1]
+            _opcode = payload[:1]
             if (_opcode == WEBSOCK_OPCODES['MESSAGE']):
                 _arguments = _payload.split(',')
                 _peer_id = _arguments[0][1:]
@@ -706,8 +722,8 @@ class dashboard(WebSocketServerProtocol):
             elif (_opcode == WEBSOCK_OPCODES['DIAG_LOG']):
                 _arguments = _payload.split(',')
                 _peer_id = _arguments[0][1:]
-                diag_log = process_diag_log(LOG_PATH + _peer_id + '.log')
-                self.sendMessage(WEBSOCK_OPCODES['DIAG_LOG'] + json.dumps(diag_log))
+                diag_log = process_diag_log(config.LOG_PATH + _peer_id + '.log')
+                self.sendMessage(WEBSOCK_OPCODES['DIAG_LOG'] + json.dumps(diag_log).encode())
             else:
                 logging.info('Text message received: %s', _payload)
 
@@ -741,7 +757,7 @@ class dashboardFactory(WebSocketServerFactory):
     def broadcast(self, msg):
         logging.debug('broadcasting message to: %s', self.clients)
         for c in self.clients:
-            c.sendMessage(msg.encode('utf8'))
+            c.sendMessage(msg)
             logging.debug('message sent to %s', c.peer)
 
 # ---------------------------------------------------------------------------
@@ -769,7 +785,7 @@ if __name__ == '__main__':
     # Change the current directory to the location of the application
     os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
 
-    logging.basicConfig(level = logging.INFO, handlers = [logging.FileHandler(PATH + 'logfile.log'), logging.StreamHandler()])
+    logging.basicConfig(level = logging.INFO, handlers = [logging.FileHandler(config.PATH + 'logfile.log'), logging.StreamHandler()])
 
     logging.debug('Logging system started, anything from here on gets logged')
     logging.info('FNEmonitor - SYSTEM STARTING...')
@@ -778,11 +794,11 @@ if __name__ == '__main__':
     
     # Start update loop
     update_stats = task.LoopingCall(websock_update)
-    update_stats.start(FREQUENCY)
+    update_stats.start(config.FREQUENCY)
 
     # Connect to fne_core
     report_client = reportClientFactory()
-    reactor.connectTCP(FNEMON_IP, FNEMON_PORT, report_client)
+    reactor.connectTCP(config.FNEMON_IP, config.FNEMON_PORT, report_client)
     
     # Create websocket server to push content to clients
     dashboard_server = dashboardFactory('ws://*:9000')
@@ -791,18 +807,22 @@ if __name__ == '__main__':
 
     # Start activity update loop
     update_act = task.LoopingCall(gen_activity)
-    update_act.start(ACT_FREQUENCY)
+    update_act.start(config.ACT_FREQUENCY)
 
     siteResource = File('./webroot')
 
-    passwd_db = InMemoryUsernamePasswordDatabaseDontUse()
-    passwd_db.addUser(HTACCESS_USER, HTACCESS_PASS)
+    #TODO: password access doesn't work now
+    #i should figure out why, but this was a hack at best
 
+    passwd_db = InMemoryUsernamePasswordDatabaseDontUse()
+    passwd_db.addUser(config.HTACCESS_USER, config.HTACCESS_PASS)
     portal = Portal(publicHTMLRealm(), [passwd_db])
+
+    #portal = Portal(publicHTMLRealm())
     resource = HTTPAuthSessionWrapper(portal, [BasicCredentialFactory('auth')])
 
     # Create static web server to push initial index.html
     website = Site(resource)
-    reactor.listenTCP(WEB_SERVER_PORT, website)
+    reactor.listenTCP(config.WEB_SERVER_PORT, website)
 
     reactor.run()

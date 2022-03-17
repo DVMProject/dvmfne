@@ -345,8 +345,8 @@ function handleWebsock() {
             var opcode = e.data.slice(0, 1);
             var message = e.data.slice(1);
 
-            //console.debug("Websock opcode = ", opcode);
-            //console.debug(opcode, message);
+            console.debug("Websock opcode = ", opcode);
+            console.debug(opcode, message);
 
             if (opcode === WEBSOCK_OPCODES['QUIT']) {
                 displayErrorAlert(NO_CONN_MSG);
