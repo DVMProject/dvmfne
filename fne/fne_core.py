@@ -755,9 +755,9 @@ class coreFNE(DatagramProtocol):
                     _this_peer['TX_FREQ'] = peerCfg['txFrequency']
 
                     _this_peer['LATITUDE'] = peerInfo['latitude']
-                    _this_peer['LONGITUDE'] = peerInfo['latitude']
-                    _this_peer['HEIGHT'] = peerInfo['latitude']
-                    _this_peer['LOCATION'] = peerInfo['latitude']
+                    _this_peer['LONGITUDE'] = peerInfo['longitude']
+                    _this_peer['HEIGHT'] = peerInfo['height']
+                    _this_peer['LOCATION'] = peerInfo['location']
                     _this_peer['TX_OFFSET'] = peerChannel['txOffsetMhz']
                     _this_peer['CH_BW'] = peerChannel['chBandwidthKhz']
                     _this_peer['CHANNEL_ID'] = peerChannel['channelId']
@@ -911,12 +911,12 @@ class coreFNE(DatagramProtocol):
                     self.p25d_received(_peer_id, _rf_src, _dst_id, _call_type, _duid, _dtype_vseq, _stream_id, _data)
 
             elif _data[:5] == fne_const.TAG_MASTER_CLOSING: # MSTCL -- notify us the master is closing down
-                if _data[5:9] == self._config['PeerId']:
+                if bytes_to_int(_data[5:9]) == self._config['PeerId']:
                     self._stats['CONNECTION'] = 'NO'
                     self._logger.info('(%s) PEER %s MSTCL recieved', self._system, self._config['PeerId'])
 
             elif _data[:6] == fne_const.TAG_MASTER_NAK: # fne_const.TAG_MASTER_NAK -- a NACK from the master
-                _peer_id = _data[6:10]
+                _peer_id = bytes_to_int(_data[6:10])
                 if _peer_id == self._config['PeerId']: # Validate the source and intended target
                     self._logger.warning('(%s) PEER %s MSTNAK received', self._system, self._config['PeerId'])
                     self._stats['CONNECTION'] = 'NO' # Disconnect ourselves and re-register
@@ -936,27 +936,32 @@ class coreFNE(DatagramProtocol):
                 elif self._stats['CONNECTION'] == 'AUTHENTICATED': # If we've sent the login challenge...
                     if bytes_to_int(_data[6:10]) == self._config['PeerId']:
                         self._logger.info('(%s) PEER %s authentication accepted', self._system, self._config['PeerId'])
-                        _config_packet = self._config['PeerId'] + \
-                                         self._config['Identity'] + \
-                                         self._config['RxFrequency'] + \
-                                         self._config['TxFrequency'] + \
-                                         '          ' + \
-                                         self._config['Latitude'] + \
-                                         self._config['Longitude'] + \
-                                         '  0' + \
-                                         self._config['Location'] + \
-                                         '          ' + \
-                                         ' 0.00' + \
-                                         '00.00' + \
-                                         '  0' + \
-                                         '   0' + \
-                                         ' 0' + \
-                                         self._config['SoftwareId'] + \
-                                         '          ' + \
-                                         '                    ' + \
-                                         '    0'
+                        _peer_config = {
+                            'identity': self._config['Identity'],
+                            'rxFrequency': self._config['RxFrequency'],
+                            'txFrequency': self._config['TxFrequency'],
+                            'info': {
+                                'latitude': self._config['Latitude'],
+                                'longitude': self._config['Longitude'],
+                                'height': 0,
+                                'location': self._config['Location'],
+                            },
+                            'channel': {
+                                'txOffsetMhz': 0,
+                                'chBandwidthKhz': 0,
+                                'channelId': 0,
+                                'channelNo': 0,
+                                'txPower': 0
+                            },
+                            'rcon': {
+                                'password': 'ABCD123',
+                                'port': 0
+                            }
+                        }
 
-                        self.send_master(fne_const.TAG_REPEATER_CONFIG + _config_packet)
+                        _config_packet = json.dumps(_peer_config, separators=(',', ':')).encode()
+
+                        self.send_master(fne_const.TAG_REPEATER_CONFIG + int_to_bytes(self._config['PeerId']) + _config_packet)
                         self._stats['CONNECTION'] = 'CONFIG-SENT'
                         self._logger.info('(%s) PEER %s Configuration sent to master', self._system, self._config['PeerId'])
                     else:
@@ -965,7 +970,7 @@ class coreFNE(DatagramProtocol):
                                            self._config['PeerId'])
 
                 elif self._stats['CONNECTION'] == 'CONFIG-SENT': # If we've sent out configuration to the master
-                    if _data[6:10] == self._config['PeerId']:
+                    if bytes_to_int(_data[6:10]) == self._config['PeerId']:
                         self._logger.info('(%s) PEER %s Master accepted configuration', self._system, self._config['PeerId'])
                         self._stats['CONNECTION'] = 'YES'
                         self._logger.info('(%s) PEER %s Connection to MASTER Completed', self._system, self._config['PeerId'])
@@ -975,7 +980,7 @@ class coreFNE(DatagramProtocol):
                                            self._config['PeerId'])
 
             elif _data[:7] == fne_const.TAG_MASTER_PONG: # fne_const.TAG_MASTER_PONG -- a reply to RPTPING (send by peer)
-                if _data[7:11] == self._config['PeerId']:
+                if bytes_to_int(_data[7:11]) == self._config['PeerId']:
                     self._stats['PINGS_ACKD'] += 1
                     self._logger.debug('(%s) PEER %s MSTPONG received, pongs since connected %s', self._system,
                                        self._config['PeerId'], self._stats['PINGS_ACKD'])
