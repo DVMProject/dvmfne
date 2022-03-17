@@ -580,18 +580,18 @@ class coreFNE(DatagramProtocol):
         #print("Data packet")
         #print(_data)
         if _data[:4] == fne_const.TAG_DMR_DATA: # fne_const.TAG_DMR_DATA -- encapsulated DMR data frame
-            _peer_id = int.from_bytes(_data[11:15], "big")
+            _peer_id = bytes_to_int(_data[11:15])
             if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == 'YES' and 
                 self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
-                _seq = _data[4]
-                _rf_src = _data[5:8]
-                _dst_id = _data[8:11]
-                _bits = int_id(_data[15])
+                _seq = bytes_to_int(_data[4])
+                _rf_src = bytes_to_int(_data[5:8])
+                _dst_id = bytes_to_int(_data[8:11])
+                _bits = _data[15]
                 _slot = 2 if (_bits & 0x80) else 1
                 _call_type = 'unit' if (_bits & 0x40) else 'group'
                 _frame_type = (_bits & 0x30) >> 4
                 _dtype_vseq = (_bits & 0xF) # data, 1=voice header, 2=voice terminator; voice, 0=burst A ...  5=burst F
-                _stream_id = _data[16:20]
+                _stream_id = bytes_to_int(_data[16:20])
                 #self._logger.debug('(%s) DMRD - SEQ %s SRC_ID %s DST_ID %s', self._system, _seq, _rf_src, _dst_id)
 
                 if self.dmrd_validate(_peer_id, _rf_src, _dst_id, _slot, _call_type, _frame_type, _dtype_vseq, _stream_id) == True:
@@ -625,7 +625,7 @@ class coreFNE(DatagramProtocol):
                     self.dmrd_received(_peer_id, _rf_src, _dst_id, _seq, _slot, _call_type, _frame_type, _dtype_vseq, _stream_id, _data)
 
         elif _data[:4] == fne_const.TAG_P25_DATA: # fne_const.TAG_P25_DATA -- encapsulated P25 data frame
-            _peer_id = int.from_bytes(_data[11:15], "big")
+            _peer_id = bytes_to_int(_data[11:15])
             if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == 'YES' and
                 self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                 _rf_src = bytes_to_int(_data[5:8])
@@ -661,8 +661,7 @@ class coreFNE(DatagramProtocol):
                     self.p25d_received(_peer_id, _rf_src, _dst_id, _call_type, _duid, _dtype_vseq, _stream_id, _data)
 
         elif _data[:4] == fne_const.TAG_REPEATER_LOGIN: # fne_const.TAG_REPEATER_LOGIN -- a repeater wants to login
-            #convert the incoming bytes to an int
-            _peer_id = int.from_bytes(_data[4:8], "big")
+            _peer_id = bytes_to_int(_data[4:8])
             if _peer_id:
                 # Build the configuration data structure for the peer
                 self._peers.update({_peer_id: {
@@ -710,7 +709,7 @@ class coreFNE(DatagramProtocol):
                 self._logger.warning('(%s) Invalid login from PEER %s', self._system, _peer_id)
 
         elif _data[:4] == fne_const.TAG_REPEATER_AUTH: # fne_const.TAG_REPEATER_AUTH -- Repeater has answered our login challenge
-            _peer_id = int.from_bytes(_data[4:8], "big")
+            _peer_id = bytes_to_int(_data[4:8])
             _peer_bytes = _data[4:8]
             if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == 'CHALLENGE_SENT' and
                 self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
@@ -734,7 +733,7 @@ class coreFNE(DatagramProtocol):
                 self._logger.warning('(%s) RPTK from unauth PEER %s', self._system, _peer_id)
 
         elif _data[:4] == fne_const.TAG_REPEATER_CONFIG: # fne_const.TAG_REPEATER_CONFIG -- Repeater is sending it's configuration
-            _peer_id = int.from_bytes(_data[4:8], "big")
+            _peer_id = bytes_to_int(_data[4:8])
             if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == 'WAITING_CONFIG' and
                 self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                 _this_peer = self._peers[_peer_id]
@@ -802,7 +801,7 @@ class coreFNE(DatagramProtocol):
                 self._logger.warning('(%s) Configuration from unauth PEER %s', self._system, _peer_id)
 
         elif _data[:5] == fne_const.TAG_REPEATER_CLOSING: # fne_const.TAG_REPEATER_CLOSING -- Disconnect command
-            _peer_id = int.from_bytes(_data[5:9], "big")
+            _peer_id = bytes_to_int(_data[5:9])
             if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == 'YES' and
                 self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                 self._logger.info('(%s) PEER %s is closing down', self._system, _peer_id)
@@ -817,7 +816,7 @@ class coreFNE(DatagramProtocol):
                 del self._peers[_peer_id]
 
         elif _data[:7] == fne_const.TAG_REPEATER_PING: # fne_const.TAG_REPEATER_PING -- peer is pinging us
-            _peer_id = int.from_bytes(_data[7:11], "big")
+            _peer_id = bytes_to_int(_data[7:11])
             if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == "YES" and
                 self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                 self._peers[_peer_id]['PINGS_RECEIVED'] += 1
@@ -830,7 +829,7 @@ class coreFNE(DatagramProtocol):
 
         elif _data[:7] == fne_const.TAG_TRANSFER_ACT_LOG: # fne_const.TAG_TRANSFER_ACT_LOG -- peer is transferring activity log data to us
             if self._CONFIG['Log']['AllowActTrans'] == True and _act_log_lock == False:
-                _peer_id = int.from_bytes(_data[7:11], "big")
+                _peer_id = bytes_to_int(_data[7:11])
                 if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == "YES" and
                     self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                     _msg = _data[11:-1].decode()
@@ -840,7 +839,7 @@ class coreFNE(DatagramProtocol):
 
         elif _data[:8] == fne_const.TAG_TRANSFER_DIAG_LOG: # fne_const.TAG_TRANSFER_DIAG_LOG -- peer is transferring diagnostics log data to us
             if self._CONFIG['Log']['AllowDiagTrans'] == True:
-                _peer_id = int.from_bytes(_data[8:12], "big")
+                _peer_id = bytes_to_int(_data[8:12])
                 if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == "YES" and
                     self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                     _msg = _data[12:-1].decode()
