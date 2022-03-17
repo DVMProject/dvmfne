@@ -790,7 +790,6 @@ class coreFNE(DatagramProtocol):
                 # setup peer diagnostics log
                 if self._CONFIG['Log']['AllowDiagTrans'] == True:
                     if self._peers[_peer_id]['DIAG_LOG_FILE'] != None:
-                        diag_log_file = self._peers[_peer_id]['DIAG_LOG_FILE']
                         close_peer_logs()
                         _this_peer['DIAG_LOG_FILE'] = None
 
@@ -824,7 +823,7 @@ class coreFNE(DatagramProtocol):
                 if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == "YES" and
                     self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                     _msg = _data[12:-1]
-                    diag_log_file = self._peers[_peer_id]['DIAG_LOG_FILE']
+                    diag_log_file = get_peer_diag_log_handler(self._CONFIG, self._logger, _peer_id)
                     if diag_log_file != None:
                         diag_log_file.seek(0, 2)
                         diag_log_file.write(str(_peer_id) + ' ' + _msg + '\n')
