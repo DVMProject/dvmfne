@@ -391,7 +391,7 @@ def process_diag_log(_file):
 def gen_activity():
     global WEBSOCK_OPCODES
     _entries = process_act_log(config.ACTIVITY_LOG)
-    dashboard_server.broadcast(WEBSOCK_OPCODES['ACTIVITY'] + json.dumps(_entries))
+    dashboard_server.broadcast(WEBSOCK_OPCODES['ACTIVITY'] + json.dumps(_entries).encode())
 
 # ---------------------------------------------------------------------------
 #   Group Affiliations Table Routines
@@ -538,16 +538,16 @@ def build_rules_table(_rules):
 def websock_update():
     global WEBSOCK_OPCODES
     if CONFIG:
-        table = WEBSOCK_OPCODES['CONFIG'] + json.dumps(CTABLE)
+        table = WEBSOCK_OPCODES['CONFIG'] + json.dumps(CTABLE).encode()
         dashboard_server.broadcast(table)
     if RULES:
-        table = WEBSOCK_OPCODES['RULES'] + json.dumps(RTABLE['RULES'])
+        table = WEBSOCK_OPCODES['RULES'] + json.dumps(RTABLE['RULES']).encode()
         dashboard_server.broadcast(table)
     if GRP_AFF:
-        table = WEBSOCK_OPCODES['AFFILIATION'] + json.dumps(GATABLE)
+        table = WEBSOCK_OPCODES['AFFILIATION'] + json.dumps(GATABLE).encode()
         dashboard_server.broadcast(table)
     if WLIST_RID:
-        table = WEBSOCK_OPCODES['WHITELIST_RID'] + json.dumps(WRIDTABLE)
+        table = WEBSOCK_OPCODES['WHITELIST_RID'] + json.dumps(WRIDTABLE).encode()
         dashboard_server.broadcast(table)
 
 # Process in coming messages and take the correct action depending on the opcode
@@ -612,7 +612,7 @@ def process_message(_message):
         else:
             log_message = '[{}] UNKNOWN LOG MESSAGE'.format(_now)
             
-        dashboard_server.broadcast(WEBSOCK_OPCODES['LOG'] + log_message)
+        dashboard_server.broadcast(WEBSOCK_OPCODES['LOG'] + log_message.encode())
         LOGBUF.append(log_message)
     
     elif opcode == REPORT_OPCODES['WHITELIST_RID_UPD']:
@@ -661,7 +661,7 @@ class reportClientFactory(ReconnectingClientFactory):
         global WEBSOCK_OPCODES
         logging.info('Connecting to FNE server.')
         if 'dashboard_server' in locals() or 'dashboard_server' in globals():
-            dashboard_server.broadcast(WEBSOCK_OPCODES['QUIT'] + 'Connection to FNE Established')
+            dashboard_server.broadcast(WEBSOCK_OPCODES['QUIT'] + b'Connection to FNE Established')
 
     def buildProtocol(self, addr):
         logging.info('Connected.')
@@ -672,7 +672,7 @@ class reportClientFactory(ReconnectingClientFactory):
         global WEBSOCK_OPCODES
         logging.info('Lost connection.  Reason: %s', reason)
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
-        dashboard_server.broadcast(WEBSOCK_OPCODES['QUIT'] + 'Connection to FNE Lost')
+        dashboard_server.broadcast(WEBSOCK_OPCODES['QUIT'] + b'Connection to FNE Lost')
 
     def clientConnectionFailed(self, connector, reason):
         logging.info('Connection failed. Reason: %s', reason)
