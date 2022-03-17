@@ -40,7 +40,7 @@ from twisted.internet.protocol import Factory, Protocol
 from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor, task
 
-from fne.fne_core import hex_str_3, int_id, int_to_bytes, short_to_bytes, bytes_to_int, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
+from fne.fne_core import int_to_bytes, short_to_bytes, bytes_to_int, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
 from fne import fne_config, fne_log, fne_const
 
 from dmr_utils import lc, bptc, const
@@ -50,9 +50,6 @@ from dmr_utils import lc, bptc, const
 # ---------------------------------------------------------------------------
 
 def get_valid(_id, _dict):
-    if type(_id) == str:
-        _id = int_id(_id)
-
     if _id in _dict:
         return True
     else:
@@ -60,11 +57,6 @@ def get_valid(_id, _dict):
     return False
 
 def get_valid_ignore(_peer_id, _id, _dict):
-    if type(_peer_id) == str:
-        _peer_id = _peer_id
-    if type(_id) == str:
-        _id = int_id(_id)
-
     if _id in _dict:
         if _peer_id in _dict[_id]:
             return True
@@ -107,8 +99,6 @@ def make_rules(_fne_routing_rules):
         config['Systems'][_system]['TG_ALLOW_AFF'] = []
 
         for _rule in rule_file.RULES[_system]['GROUP_VOICE']:
-            #_rule['SRC_GROUP'] = hex_str_3(_rule['SRC_GROUP'])
-            #_rule['DST_GROUP'] = hex_str_3(_rule['DST_GROUP'])
             _rule['SRC_TS'] = _rule['SRC_TS']
             _rule['DST_TS'] = _rule['DST_TS']
 
@@ -123,10 +113,10 @@ def make_rules(_fne_routing_rules):
                 config['Systems'][_system]['TG_ALLOW_AFF'].append(_rule['SRC_GROUP'])
 
             for i, e in enumerate(_rule['ON']):
-                _rule['ON'][i] = hex_str_3(_rule['ON'][i])
+                _rule['ON'][i] = _rule['ON'][i]
             
             for i, e in enumerate(_rule['OFF']):
-                _rule['OFF'][i] = hex_str_3(_rule['OFF'][i])
+                _rule['OFF'][i] = _rule['OFF'][i]
             
             _rule['TIMEOUT'] = _rule['TIMEOUT'] * 60
             _rule['TIMER'] = time() + _rule['TIMEOUT']
@@ -188,55 +178,55 @@ class routerFNE(coreFNE):
         self.STATUS = {
             1: {
                 'RX_START':     time(),
-                'RX_PEER_ID':   '\x00',
-                'RX_SEQ':       '\x00',
-                'RX_RFS':       '\x00',
-                'TX_RFS':       '\x00',
-                'RX_STREAM_ID': '\x00',
-                'TX_STREAM_ID': '\x00',
-                'RX_TGID':      '\x00\x00\x00',
-                'TX_TGID':      '\x00\x00\x00',
-                'TX_PI_TGID':   '\x00\x00\x00',
+                'RX_PEER_ID':   0,
+                'RX_SEQ':       0,
+                'RX_RFS':       0,
+                'TX_RFS':       0,
+                'RX_STREAM_ID': 0,
+                'TX_STREAM_ID': 0,
+                'RX_TGID':      0,
+                'TX_TGID':      0,
+                'TX_PI_TGID':   0,
                 'RX_TIME':      time(),
                 'TX_TIME':      time(),
                 'RX_TYPE':      fne_const.DT_TERMINATOR_WITH_LC,
-                'RX_LC':        '\x00',
-                'RX_PI_LC':     '\x00',
-                'TX_H_LC':      '\x00',
-                'TX_P_LC':      '\x00',
-                'TX_T_LC':      '\x00',
+                'RX_LC':        0,
+                'RX_PI_LC':     0,
+                'TX_H_LC':      0,
+                'TX_P_LC':      0,
+                'TX_T_LC':      0,
                 'TX_EMB_LC': {
-                    1: '\x00',
-                    2: '\x00',
-                    3: '\x00',
-                    4: '\x00',
+                    1: 0,
+                    2: 0,
+                    3: 0,
+                    4: 0,
                     },
                 'P25_RX_CT':    'group'
                 },
             2: {
                 'RX_START':     time(),
-                'RX_PEER_ID':   '\x00',
-                'RX_SEQ':       '\x00',
-                'RX_RFS':       '\x00',
-                'TX_RFS':       '\x00',
-                'RX_STREAM_ID': '\x00',
-                'TX_STREAM_ID': '\x00',
-                'RX_TGID':      '\x00\x00\x00',
-                'TX_TGID':      '\x00\x00\x00',
-                'TX_PI_TGID':   '\x00\x00\x00',
+                'RX_PEER_ID':   0,
+                'RX_SEQ':       0,
+                'RX_RFS':       0,
+                'TX_RFS':       0,
+                'RX_STREAM_ID': 0,
+                'TX_STREAM_ID': 0,
+                'RX_TGID':      0,
+                'TX_TGID':      0,
+                'TX_PI_TGID':   0,
                 'RX_TIME':      time(),
                 'TX_TIME':      time(),
                 'RX_TYPE':      fne_const.DT_TERMINATOR_WITH_LC,
-                'RX_LC':        '\x00',
-                'RX_PI_LC':     '\x00',
-                'TX_H_LC':      '\x00',
-                'TX_P_LC':      '\x00',
-                'TX_T_LC':      '\x00',
+                'RX_LC':        0,
+                'RX_PI_LC':     0,
+                'TX_H_LC':      0,
+                'TX_P_LC':      0,
+                'TX_T_LC':      0,
                 'TX_EMB_LC': {
-                    1: '\x00',
-                    2: '\x00',
-                    3: '\x00',
-                    4: '\x00',
+                    1: 0,
+                    2: 0,
+                    3: 0,
+                    4: 0,
                     },
                 'P25_RX_CT':    'group'
                 }
@@ -290,7 +280,7 @@ class routerFNE(coreFNE):
     def dmrd_received(self, _peer_id, _rf_src, _dst_id, _seq, _slot, _call_type, _frame_type, _dtype_vseq, _stream_id, _data):
         pkt_time = time()
         dmrpkt = _data[20:53]
-        _bits = int_id(_data[15])
+        _bits = _data[15]
 
         if ((_frame_type == fne_const.FT_DATA_SYNC) and ((_dtype_vseq == fne_const.DT_DATA_HEADER) or (_dtype_vseq == fne_const.DT_RATE_12_DATA) or
                                                          (_dtype_vseq == fne_const.DT_RATE_34_DATA) or (_dtype_vseq == fne_const.DT_RATE_1_DATA))):
@@ -417,7 +407,7 @@ class routerFNE(coreFNE):
                     if (_stream_id != self.STATUS[_slot]['RX_STREAM_ID']) or (_target_status[rule['DST_TS']]['TX_RFS'] != _rf_src) or (_target_status[rule['DST_TS']]['TX_TGID'] != rule['DST_GROUP']):
                         # Record the DST TGID and Stream ID
                         _target_status[rule['DST_TS']]['TX_TGID'] = rule['DST_GROUP']
-                        _target_status[rule['DST_TS']]['TX_PI_TGID'] = '\x00\x00\x00'
+                        _target_status[rule['DST_TS']]['TX_PI_TGID'] = 0
                         _target_status[rule['DST_TS']]['TX_STREAM_ID'] = _stream_id
                         _target_status[rule['DST_TS']]['TX_RFS'] = _rf_src
 
@@ -427,7 +417,7 @@ class routerFNE(coreFNE):
                         _target_status[rule['DST_TS']]['TX_T_LC'] = bptc.encode_terminator_lc(dst_lc)
                         _target_status[rule['DST_TS']]['TX_EMB_LC'] = bptc.encode_emblc(dst_lc)
 
-                        dst_pi_lc = self.STATUS[_slot]['RX_PI_LC'][0:7] + rule['DST_GROUP'] + '\x00\x00'
+                        dst_pi_lc = self.STATUS[_slot]['RX_PI_LC'][0:7] + rule['DST_GROUP'] + b'\x00\x00'
                         _target_status[rule['DST_TS']]['TX_P_LC'] = bptc.encode_header_pi(dst_pi_lc)
 
                         self._logger.debug('(%s) TS %s [STREAM ID %s] TX_H_LC %s', self._system, _slot, _stream_id, ahex(dst_lc))
@@ -441,12 +431,12 @@ class routerFNE(coreFNE):
                             self._report.send_routeEvent('CALL ROUTE,TO,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], rule['DST_GROUP']))
 
                     _pi_dst_id = self.STATUS[_slot]['RX_PI_LC'][7:10]
-                    if (int_id(_pi_dst_id) != 0) and (_target_status[rule['DST_TS']]['TX_PI_TGID'] != rule['DST_GROUP']):
+                    if (_pi_dst_id != 0) and (_target_status[rule['DST_TS']]['TX_PI_TGID'] != rule['DST_GROUP']):
                         # Record the DST TGID and Stream ID
                         _target_status[rule['DST_TS']]['TX_PI_TGID'] = rule['DST_GROUP']
 
                         # Generate LCs (full and EMB) for the TX stream
-                        dst_pi_lc = self.STATUS[_slot]['RX_PI_LC'][0:7] + rule['DST_GROUP'] + '\x00\x00'
+                        dst_pi_lc = self.STATUS[_slot]['RX_PI_LC'][0:7] + rule['DST_GROUP'] + b'\x00\x00'
                         _target_status[rule['DST_TS']]['TX_P_LC'] = bptc.encode_header_pi(dst_pi_lc)
 
                         self._logger.debug('(%s) TS %s [STREAM ID %s] TX_P_LC %s', self._system, _slot, _stream_id, ahex(dst_pi_lc))
@@ -463,6 +453,12 @@ class routerFNE(coreFNE):
                         _tgt_peer_id = self._CONFIG['Systems'][_target]['PeerId']
                     except KeyError:
                         _tgt_peer_id = self.STATUS[_slot]['RX_PEER_ID']
+
+                    # somehow we've gotten a 0 for the peer ID -- so now we'll spoof the bitch
+                    if (_tgt_peer_id == 0):
+                        self._logger.warning('(%s) DMRD: Some how we got a 0 peer ID? This shouldn\'t happen, spoofing to %s',
+                                            self._system, _peer_id)
+                        _tgt_peer_id = _peer_id
 
                     _tmp_data = _data[:8] + rule['DST_GROUP'] + _tgt_peer_id + chr(_tmp_bits) + _data[16:20]
                     
@@ -821,6 +817,12 @@ class routerFNE(coreFNE):
                         _tgt_peer_id = self._CONFIG['Systems'][_target]['PeerId']
                     except KeyError:
                         _tgt_peer_id = self.STATUS[_slot]['RX_PEER_ID']
+
+                    # somehow we've gotten a 0 for the peer ID -- so now we'll spoof the bitch
+                    if (_tgt_peer_id == 0):
+                        self._logger.warning('(%s) P25D: Some how we got a 0 peer ID? This shouldn\'t happen, spoofing to %s',
+                                            self._system, _peer_id)
+                        _tgt_peer_id = _peer_id
 
                     _tmp_data = _data[:8] + short_to_bytes(rule['DST_GROUP']) + int_to_bytes(_tgt_peer_id) + _data[15:24]
                     _tmp_data = _tmp_data + p25pkt
