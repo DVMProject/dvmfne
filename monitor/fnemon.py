@@ -69,17 +69,17 @@ except Exception as e:
 
 # Opcodes for the network-based reporting protocol
 REPORT_OPCODES = {
-    'CONFIG_REQ': '\x00',
-    'CONFIG_RSP': '\x01',
-    'RRULES_REQ': '\x02',
-    'RRULES_RSP': '\x03',
-    'CONFIG_UPD': '\x04',
-    'RRULES_UPD': '\x05',
-    'LINK_EVENT': '\x06',
-    'CALL_EVENT': '\x07',
-    'GRP_AFF_UPD': '\x08',
-    'RCON_REQ': '\x09',
-    'WHITELIST_RID_UPD': '\x10',
+    'CONFIG_REQ': b'\x00',
+    'CONFIG_RSP': b'\x01',
+    'RRULES_REQ': b'\x02',
+    'RRULES_RSP': b'\x03',
+    'CONFIG_UPD': b'\x04',
+    'RRULES_UPD': b'\x05',
+    'LINK_EVENT': b'\x06',
+    'CALL_EVENT': b'\x07',
+    'GRP_AFF_UPD': b'\x08',
+    'RCON_REQ': b'\x09',
+    'WHITELIST_RID_UPD': b'\x10',
 }
 
 WEBSOCK_OPCODES = {
@@ -613,7 +613,7 @@ def process_message(_message):
         WRIDTABLE = build_whitelist_rid_table(WLIST_RID)
 
     else:
-        self._factory._logger.error('Report unrecognized opcode %s PACKET %s', int_id(opcode), ahex(_message))
+        logging.error('Report unrecognized opcode %s PACKET %s', int_id(opcode), ahex(_message))
         
 def load_dictionary(_message):
     data = _message[1:]
