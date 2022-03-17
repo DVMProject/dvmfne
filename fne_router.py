@@ -9,6 +9,7 @@
 ###############################################################################
 #   Copyright (C) 2016 Cortney T.  Buffington, N0MJS <n0mjs@me.com>
 #   Copyright (C) 2017-2021 Bryan Biedenkapp <gatekeep@gmail.com>
+#   Copyright (C) 2022 Natalie Moore <natalie@natnat.xyz>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -342,7 +343,8 @@ class routerFNE(coreFNE):
                 _alg_id = lcHeader['LC'][0]
                 _key_id = lcHeader['LC'][2]
                 self._logger.info('(%s) DMRD: Traffic *CALL PI PARAMS  * PEER %s DST_ID %s TS %s ALGID %s KID %s [STREAM ID %s]', self._system,
-                                        _peer_id, _dst_id, _slot, int_id(_alg_id), int_id(_key_id), _stream_id)
+                                        _peer_id, _dst_id, _slot, _alg_id, _key_id, _stream_id)
+
                 self.STATUS[_slot]['RX_PI_LC'] = lcHeader['LC'][:10]
 
                 self._logger.debug('(%s) TS %s [STREAM ID %s] RX_PI_LC %s', self._system, _slot, _stream_id, ahex(self.STATUS[_slot]['RX_PI_LC']))

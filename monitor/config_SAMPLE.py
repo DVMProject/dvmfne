@@ -5,8 +5,8 @@ FREQUENCY       = 10                    # Frequency to push updates to web clien
 ACT_FREQUENCY   = 10                    # Frequency to push activity updates to web clients
 WEB_SERVER_PORT = 8080                  # Has to be above 1024 if you're not running as root
 
-HTACCESS_USER   = ''                    # HTTP Access Username
-HTACCESS_PASS   = ''                    # HTTP Access Password
+HTACCESS_USER   = b''                    # HTTP Access Username
+HTACCESS_PASS   = b''                    # HTTP Access Password
 
 ACTIVITY_LOG    = './activity_log.log'  # Remote Activity Log
 

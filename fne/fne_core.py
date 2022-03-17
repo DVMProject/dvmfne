@@ -9,6 +9,7 @@
 ###############################################################################
 #   Copyright (C) 2016 Cortney T.  Buffington, N0MJS <n0mjs@me.com>
 #   Copyright (C) 2017-2021 Bryan Biedenkapp <gatekeep@gmail.com>
+#   Copyright (C) 2022 Natalie Moore <natalie@natnat.xyz>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -52,6 +53,8 @@ import json
 # Global variables used whether we are a module or __main__
 systems = {}
 _act_log_lock = False
+#TODO: fix this, but for now it's a quick little hack to get running
+open_logfiles = {}
 
 # Opcodes for the network-based reporting protocol
 REPORT_OPCODES = {
@@ -214,14 +217,36 @@ def setup_activity_log(_config, _logger):
     logsplitter.start(3600)
     return (act_log_file)
 
-# Helper to setup the peer diagnostic logs.
-def setup_peer_diag_log(_config, _logger, _peer_id):
+#TODO: make this into a class
+# Helpers for peer diagnostic logs.
+def get_peer_diag_log_filename(_config, _peer_id):
     if _config['Log']['AllowDiagTrans'] == False:
         return None
 
     diag_log_filepath = _config['Log']['DiagLogPath'] + str(_peer_id) + ".log"
-    diag_log_file = open(diag_log_filepath, "a+")
+    return (diag_log_filepath)
+
+def get_peer_diag_log_handler(_config, _logger, _peer_id):
+    global open_logfiles
+    if _config['Log']['AllowDiagTrans'] == False:
+        return None
+
+    if (_peer_id in open_logfiles):
+        diag_log_file = open_logfiles[_peer_id]
+        #print("Type of found logfile: {}".format(type(diag_log_file)))
+        
+    else:
+        diag_log_filepath = get_peer_diag_log_filename(_config, _peer_id)
+        diag_log_file = open(diag_log_filepath, "a+")
+        open_logfiles[_peer_id] = diag_log_file
+
     return (diag_log_file)
+
+def close_peer_logs():
+    global open_logfiles
+    for _peer_id in open_logfiles:
+        open_logfiles[_peer_id].close()
+    return True
 
 # ---------------------------------------------------------------------------
 #   String Utility Routines
@@ -714,34 +739,55 @@ class coreFNE(DatagramProtocol):
                 self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                 _this_peer = self._peers[_peer_id]
                 jsonBytes = _data[8:]
-                peerCfg = json.loads(jsonBytes.decode())
-                peerInfo = peerCfg['info']
-                peerChannel = peerCfg['channel']
-                peerRcon = peerCfg['rcon']
+                #if we have the old format - exit gracefully
+                try:
+                    peerCfg = json.loads(jsonBytes.decode())
+                    peerInfo = peerCfg['info']
+                    peerChannel = peerCfg['channel']
+                    peerRcon = peerCfg['rcon']
 
-                _this_peer['CONNECTION'] = 'YES'
-                _this_peer['PINGS_RECEIVED'] = 0
-                _this_peer['LAST_PING'] = time()
+                    _this_peer['CONNECTION'] = 'YES'
+                    _this_peer['PINGS_RECEIVED'] = 0
+                    _this_peer['LAST_PING'] = time()
 
-                _this_peer['IDENTITY'] = peerCfg['identity']
-                _this_peer['RX_FREQ'] = peerCfg['rxFrequency']
-                _this_peer['TX_FREQ'] = peerCfg['txFrequency']
+                    _this_peer['IDENTITY'] = peerCfg['identity']
+                    _this_peer['RX_FREQ'] = peerCfg['rxFrequency']
+                    _this_peer['TX_FREQ'] = peerCfg['txFrequency']
 
-                _this_peer['LATITUDE'] = peerInfo['latitude']
-                _this_peer['LONGITUDE'] = peerInfo['latitude']
-                _this_peer['HEIGHT'] = peerInfo['latitude']
-                _this_peer['LOCATION'] = peerInfo['latitude']
-                _this_peer['TX_OFFSET'] = peerChannel['txOffsetMhz']
-                _this_peer['CH_BW'] = peerChannel['chBandwidthKhz']
-                _this_peer['CHANNEL_ID'] = peerChannel['channelId']
-                _this_peer['CHANNEL_NO'] = peerChannel['channelNo']
-                _this_peer['TX_POWER'] = peerChannel['txPower']
-                _this_peer['RCON_PASSWORD'] = peerRcon['password']
-                _this_peer['RCON_PORT'] = peerRcon['port']
+                    _this_peer['LATITUDE'] = peerInfo['latitude']
+                    _this_peer['LONGITUDE'] = peerInfo['latitude']
+                    _this_peer['HEIGHT'] = peerInfo['latitude']
+                    _this_peer['LOCATION'] = peerInfo['latitude']
+                    _this_peer['TX_OFFSET'] = peerChannel['txOffsetMhz']
+                    _this_peer['CH_BW'] = peerChannel['chBandwidthKhz']
+                    _this_peer['CHANNEL_ID'] = peerChannel['channelId']
+                    _this_peer['CHANNEL_NO'] = peerChannel['channelNo']
+                    _this_peer['TX_POWER'] = peerChannel['txPower']
+                    _this_peer['RCON_PASSWORD'] = peerRcon['password']
+                    _this_peer['RCON_PORT'] = peerRcon['port']
+                except:
+                    _this_peer['CONNECTION'] = 'YES'
+                    _this_peer['PINGS_RECEIVED'] = 0
+                    _this_peer['LAST_PING'] = time()
 
+                    _this_peer['IDENTITY'] = "I NEED TO UPDATE MY DVMHOST"
+                    _this_peer['RX_FREQ'] = 0
+                    _this_peer['TX_FREQ'] = 0
+
+                    _this_peer['LATITUDE'] = 0
+                    _this_peer['LONGITUDE'] = 0
+                    _this_peer['HEIGHT'] = 0
+                    _this_peer['LOCATION'] = "I NEED TO UPDATE MY DVMHOST"
+                    _this_peer['TX_OFFSET'] = 0
+                    _this_peer['CH_BW'] = 0
+                    _this_peer['CHANNEL_ID'] = 0
+                    _this_peer['CHANNEL_NO'] = 0
+                    _this_peer['TX_POWER'] = 0
+                    _this_peer['RCON_PASSWORD'] = "ABCD1234"
+                    _this_peer['RCON_PORT'] = 0
                 # setup peer diagnostics log
                 if self._CONFIG['Log']['AllowDiagTrans'] == True:
-                    diag_log_file = setup_peer_diag_log(self._CONFIG, self._logger, _peer_id)
+                    diag_log_file = get_peer_diag_log_filename(self._CONFIG, _peer_id)
                     _this_peer['DIAG_LOG_FILE'] = diag_log_file
 
                 self.send_peer(_peer_id, fne_const.TAG_REPEATER_ACK + _peer_id.to_bytes(4, "big"))
@@ -765,8 +811,7 @@ class coreFNE(DatagramProtocol):
                 # setup peer diagnostics log
                 if self._CONFIG['Log']['AllowDiagTrans'] == True:
                     if self._peers[_peer_id]['DIAG_LOG_FILE'] != None:
-                        diag_log_file = self._peers[_peer_id]['DIAG_LOG_FILE']
-                        diag_log_file.close()
+                        close_peer_logs()
                         _this_peer['DIAG_LOG_FILE'] = None
 
                 del self._peers[_peer_id]
@@ -799,7 +844,8 @@ class coreFNE(DatagramProtocol):
                 if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == "YES" and
                     self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
                     _msg = _data[12:-1].decode()
-                    diag_log_file = self._peers[_peer_id]['DIAG_LOG_FILE']
+                    diag_log_file = get_peer_diag_log_handler(self._CONFIG, self._logger, _peer_id)
+
                     if diag_log_file != None:
                         diag_log_file.seek(0, 2)
                         diag_log_file.write(str(_peer_id) + ' ' + _msg + '\n')
@@ -961,6 +1007,7 @@ class report(NetstringReceiver):
     def process_message(self, _message):
         global systems
         opcode = _message[:1]
+        _message = _message.decode()
         if opcode == REPORT_OPCODES['CONFIG_REQ']:
             self._factory._logger.info('Reporting client sent \'CONFIG_REQ\': %s', self.transport.getPeer())
             self.send_config()
@@ -981,7 +1028,6 @@ class report(NetstringReceiver):
             _command_arg = _arguments[3]
             _mot_mfid = _arguments[5]
 
-            _peer_id = hex_str_4(_peer_id)
             _peer = {}
 
             # find peer 
@@ -1005,6 +1051,9 @@ class report(NetstringReceiver):
                              self.transport.getPeer(), _peer_id, _command, _dmr_slot, _command_arg, _mot_mfid)
 
                 _root_cmd = [self._factory._config['Global']['RconTool'], '-a', str(_peer_ip), '-p', str(_rcon_port), '-P', str(_rcon_password)]
+                print("Running dvmcmd: {}".format(_root_cmd))
+
+                #TODO: error out if rcon is disabled on the peer
 
                 # handle P25 commands with mot mfid
                 if _mot_mfid == 'true':
@@ -1058,5 +1107,6 @@ class reportFactory(Factory):
                 client.sendString(_message)
             
     def send_config(self):
+        #print(self._config['Systems'])
         serialized = pickle.dumps(self._config['Systems'], protocol = pickle.HIGHEST_PROTOCOL)
         self.send_clients(REPORT_OPCODES['CONFIG_RSP'] + serialized)
