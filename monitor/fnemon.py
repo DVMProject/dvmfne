@@ -714,7 +714,7 @@ class dashboard(WebSocketServerProtocol):
             elif (_opcode == WEBSOCK_OPCODES['DIAG_LOG']):
                 _arguments = _payload.split(',')
                 _peer_id = _arguments[0][1:]
-                diag_log = process_diag_log(LOG_PATH + _peer_id + '.log')
+                diag_log = process_diag_log(config.LOG_PATH + _peer_id + '.log')
                 self.sendMessage(WEBSOCK_OPCODES['DIAG_LOG'] + json.dumps(diag_log))
             else:
                 logging.info('Text message received: %s', _payload)
