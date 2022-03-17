@@ -9,6 +9,7 @@
 ###############################################################################
 #   Copyright (C) 2016 Cortney T.  Buffington, N0MJS <n0mjs@me.com>
 #   Copyright (C) 2017-2021 Bryan Biedenkapp <gatekeep@gmail.com>
+#   Copyright (C) 2022 Natalie Moore <natalie@natnat.xyz>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
