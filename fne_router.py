@@ -40,7 +40,7 @@ from twisted.internet.protocol import Factory, Protocol
 from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor, task
 
-from fne.fne_core import hex_str_3, int_id, int_to_bytes, bytes_to_int, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
+from fne.fne_core import hex_str_3, int_id, int_to_bytes, short_to_bytes, bytes_to_int, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
 from fne import fne_config, fne_log, fne_const
 
 from dmr_utils import lc, bptc, const
@@ -822,7 +822,7 @@ class routerFNE(coreFNE):
                     except KeyError:
                         _tgt_peer_id = self.STATUS[_slot]['RX_PEER_ID']
 
-                    _tmp_data = _data[:8] + int_to_bytes(rule['DST_GROUP']) + int_to_bytes(_tgt_peer_id) + _data[15:24]
+                    _tmp_data = _data[:8] + short_to_bytes(rule['DST_GROUP']) + int_to_bytes(_tgt_peer_id) + _data[15:24]
                     _tmp_data = _tmp_data + p25pkt
                     
                     # Transmit the packet to the destination system

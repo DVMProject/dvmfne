@@ -280,6 +280,9 @@ def int_id(_hex_string):
 def int_to_bytes(numIn):
     return numIn.to_bytes(4, "big")
 
+def short_to_bytes(numIn):
+    return numIn.to_bytes(3, "big")
+
 def bytes_to_int(bytesIn):
     return int.from_bytes(bytesIn, "big")
 
