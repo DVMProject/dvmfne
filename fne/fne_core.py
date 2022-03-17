@@ -53,6 +53,8 @@ import json
 # Global variables used whether we are a module or __main__
 systems = {}
 _act_log_lock = False
+#TODO: fix this, but for now it's a quick little hack to get running
+open_logfiles = {}
 
 # Opcodes for the network-based reporting protocol
 REPORT_OPCODES = {
@@ -215,14 +217,36 @@ def setup_activity_log(_config, _logger):
     logsplitter.start(3600)
     return (act_log_file)
 
-# Helper to setup the peer diagnostic logs.
-def setup_peer_diag_log(_config, _logger, _peer_id):
+#TODO: make this into a class
+# Helpers for peer diagnostic logs.
+def get_peer_diag_log_filename(_config, _peer_id):
     if _config['Log']['AllowDiagTrans'] == False:
         return None
 
     diag_log_filepath = _config['Log']['DiagLogPath'] + str(_peer_id) + ".log"
-    diag_log_file = open(diag_log_filepath, "a+")
+    return (diag_log_filepath)
+
+def get_peer_diag_log_handler(_config, _logger, _peer_id):
+    global open_logfiles
+    if _config['Log']['AllowDiagTrans'] == False:
+        return None
+
+    if (_peer_id in open_logfiles):
+        diag_log_file = open_logfiles[_peer_id]
+        print("Type of found logfile: {}".format(type(diag_log_file)))
+        
+    else:
+        diag_log_filepath = get_peer_diag_log_filename(_config, _peer_id)
+        diag_log_file = open(diag_log_filepath, "a+")
+        open_logfiles[_peer_id] = diag_log_file
+
     return (diag_log_file)
+
+def close_peer_logs():
+    global open_logfiles
+    for _peer_id in open_logfiles:
+        open_logfiles[_peer_id].close()
+    return True
 
 # ---------------------------------------------------------------------------
 #   String Utility Routines
@@ -742,7 +766,7 @@ class coreFNE(DatagramProtocol):
 
                 # setup peer diagnostics log
                 if self._CONFIG['Log']['AllowDiagTrans'] == True:
-                    diag_log_file = setup_peer_diag_log(self._CONFIG, self._logger, _peer_id)
+                    diag_log_file = get_peer_diag_log_filename(self._CONFIG, self._logger, _peer_id)
                     _this_peer['DIAG_LOG_FILE'] = diag_log_file
 
                 self.send_peer(_peer_id, fne_const.TAG_REPEATER_ACK + _peer_id.to_bytes(4, "big"))
@@ -767,7 +791,7 @@ class coreFNE(DatagramProtocol):
                 if self._CONFIG['Log']['AllowDiagTrans'] == True:
                     if self._peers[_peer_id]['DIAG_LOG_FILE'] != None:
                         diag_log_file = self._peers[_peer_id]['DIAG_LOG_FILE']
-                        diag_log_file.close()
+                        close_peer_logs()
                         _this_peer['DIAG_LOG_FILE'] = None
 
                 del self._peers[_peer_id]
