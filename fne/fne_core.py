@@ -1007,7 +1007,6 @@ class report(NetstringReceiver):
             _command_arg = _arguments[3]
             _mot_mfid = _arguments[5]
 
-            _peer_id = hex_str_4(_peer_id)
             _peer = {}
 
             # find peer 
