@@ -928,8 +928,7 @@ class coreFNE(DatagramProtocol):
                 if self._stats['CONNECTION'] == 'RPTL_SENT': # If we've sent a login request...
                     _login_int32 = bytes_to_int(_data[6:10])
                     self._logger.info('(%s) PEER %s login ACK received with ID %s', self._system, self._config['PeerId'], _login_int32)
-
-                    _pass_hash = sha256(_login_int32 + self._config['Passphrase']).hexdigest()
+                    _pass_hash = sha256(int_to_bytes(_login_int32) + self._config['Passphrase'].encode()).hexdigest()
                     _pass_hash = bhex(_pass_hash)
                     self.send_master(fne_const.TAG_REPEATER_AUTH + int_to_bytes(self._config['PeerId']) + _pass_hash)
                     self._stats['CONNECTION'] = 'AUTHENTICATED'
