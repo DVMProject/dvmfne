@@ -1059,5 +1059,6 @@ class reportFactory(Factory):
                 client.sendString(_message)
             
     def send_config(self):
+        print(self._config['Systems'])
         serialized = pickle.dumps(self._config['Systems'], protocol = pickle.HIGHEST_PROTOCOL)
         self.send_clients(REPORT_OPCODES['CONFIG_RSP'] + serialized)
