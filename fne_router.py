@@ -140,7 +140,7 @@ def make_rules(_fne_routing_rules):
                         _rule['TIMER'] = _loaded_rule['TIMER']
                         break
 
-            logger.info('Rule (%s) NAME: %s SRC_TGID: %s DST_TGID: %s SRC_TS: %s DST_TS: %s ACTIVE: %s ROUTABLE: %s TO_TYPE: %s AFFILIATED: %s IGNORED: %s', _system, _rule['NAME'], int_id(_rule['SRC_GROUP']), int_id(_rule['DST_GROUP']), _rule['SRC_TS'], _rule['DST_TS'], _rule['ACTIVE'], _rule['ROUTABLE'], _rule['TO_TYPE'], _rule['AFFILIATED'], _rule['IGNORED'])
+            logger.info('Rule (%s) NAME: %s SRC_TGID: %s DST_TGID: %s SRC_TS: %s DST_TS: %s ACTIVE: %s ROUTABLE: %s TO_TYPE: %s AFFILIATED: %s IGNORED: %s', _system, _rule['NAME'], _rule['SRC_GROUP'], _rule['DST_GROUP'], _rule['SRC_TS'], _rule['DST_TS'], _rule['ACTIVE'], _rule['ROUTABLE'], _rule['TO_TYPE'], _rule['AFFILIATED'], _rule['IGNORED'])
 
     for _system in config['Systems']:
         if _system not in rule_file.RULES:
@@ -158,18 +158,18 @@ def rule_timer_loop():
                 if _rule['ROUTABLE'] == True:
                     if _rule['TIMER'] < _now:
                         _rule['ROUTABLE'] = False
-                        logger.info('(%s) TG Routing timeout DEACTIVATE routing name %s, Target %s, TS %s, TGID %s',  _system, _rule['NAME'], _rule['DST_NET'], _rule['DST_TS'], int_id(_rule['DST_GROUP']))
+                        logger.info('(%s) TG Routing timeout DEACTIVATE routing name %s, Target %s, TS %s, TGID %s',  _system, _rule['NAME'], _rule['DST_NET'], _rule['DST_TS'], _rule['DST_GROUP'])
                     else:
                         timeout_in = _rule['TIMER'] - _now
-                        logger.info('(%s) TG Routing ACTIVE with ON timer running Timeout eligible in %ds, Rule name %s, Target %s, TS %s, TGID %s', _system, timeout_in, _rule['NAME'], _rule['DST_NET'], _rule['DST_TS'], int_id(_rule['DST_GROUP']))
+                        logger.info('(%s) TG Routing ACTIVE with ON timer running Timeout eligible in %ds, Rule name %s, Target %s, TS %s, TGID %s', _system, timeout_in, _rule['NAME'], _rule['DST_NET'], _rule['DST_TS'], _rule['DST_GROUP'])
             elif _rule['TO_TYPE'] == 'OFF':
                 if _rule['ROUTABLE'] == False:
                     if _rule['TIMER'] < _now:
                         _rule['ROUTABLE'] = True
-                        logger.info('(%s) TG Routing timeout ACTIVATE Rule name %s, Target %s, TS %s, TGID %s', _system, _rule['NAME'], _rule['DST_NET'], _rule['DST_TS'], int_id(_rule['DST_GROUP']))
+                        logger.info('(%s) TG Routing timeout ACTIVATE Rule name %s, Target %s, TS %s, TGID %s', _system, _rule['NAME'], _rule['DST_NET'], _rule['DST_TS'], _rule['DST_GROUP'])
                     else:
                         timeout_in = _rule['TIMER'] - _now
-                        logger.info('(%s) TG Routing DEACTIVATE with OFF timer running Timeout eligible in %ds, Rule name %s, Target %s, TS %s, TGID %s', _system, timeout_in, _rule['NAME'], _rule['DST_NET'], _rule['DST_TS'], int_id(_rule['DST_GROUP']))
+                        logger.info('(%s) TG Routing DEACTIVATE with OFF timer running Timeout eligible in %ds, Rule name %s, Target %s, TS %s, TGID %s', _system, timeout_in, _rule['NAME'], _rule['DST_NET'], _rule['DST_TS'], _rule['DST_GROUP'])
             else:
                 logger.debug('Routable rule timer loop made no rule changes')
 
@@ -380,34 +380,34 @@ class routerFNE(coreFNE):
                     if ((rule['DST_GROUP'] != _target_status[rule['DST_TS']]['RX_TGID']) and ((pkt_time - _target_status[rule['DST_TS']]['RX_TIME']) < RULES[_target]['GROUP_HANGTIME'])):
                         if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
                             self._logger.info('(%s) DMRD: Call not routed to TGID %s, target active or in group hangtime: PRID %s TS %s TGID %s', self._system,
-                                              int_id(rule['DST_GROUP']), _target, rule['DST_TS'], int_id(_target_status[rule['DST_TS']]['RX_TGID']))
+                                              rule['DST_GROUP'], _target, rule['DST_TS'], _target_status[rule['DST_TS']]['RX_TGID'])
 
                             if config['Reports']['Report']:
-                                self._report.send_routeEvent('CALL ROUTE,FAILED,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP'])))
+                                self._report.send_routeEvent('CALL ROUTE,FAILED,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], rule['DST_GROUP']))
                         continue    
                     if ((rule['DST_GROUP'] != _target_status[rule['DST_TS']]['TX_TGID']) and ((pkt_time - _target_status[rule['DST_TS']]['TX_TIME']) < RULES[_target]['GROUP_HANGTIME'])):
                         if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
                             self._logger.info('(%s) DMRD: Call not routed to TGID %s, target in group hangtime: PRID %s TS %s TGID %s', self._system,
-                                              int_id(rule['DST_GROUP']), _target, rule['DST_TS'], int_id(_target_status[rule['DST_TS']]['TX_TGID']))
+                                              rule['DST_GROUP'], _target, rule['DST_TS'], _target_status[rule['DST_TS']]['TX_TGID'])
                             
                             if config['Reports']['Report']:
-                                self._report.send_routeEvent('CALL ROUTE,FAILED,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP'])))
+                                self._report.send_routeEvent('CALL ROUTE,FAILED,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], rule['DST_GROUP']))
                         continue
                     if (rule['DST_GROUP'] == _target_status[rule['DST_TS']]['RX_TGID']) and ((pkt_time - _target_status[rule['DST_TS']]['RX_TIME']) < fne_const.STREAM_TO):
                         if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
                             self._logger.info('(%s) DMRD: Call not routed to TGID %s, matching call already active on target: PRID %s TS %s TGID %s', self._system,
-                                              int_id(rule['DST_GROUP']), _target, rule['DST_TS'], int_id(_target_status[rule['DST_TS']]['RX_TGID']))
+                                              rule['DST_GROUP'], _target, rule['DST_TS'], _target_status[rule['DST_TS']]['RX_TGID'])
 
                             if config['Reports']['Report']:
-                                self._report.send_routeEvent('CALL ROUTE,FAILED,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP'])))
+                                self._report.send_routeEvent('CALL ROUTE,FAILED,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], rule['DST_GROUP']))
                         continue
                     if (rule['DST_GROUP'] == _target_status[rule['DST_TS']]['TX_TGID']) and (_rf_src != _target_status[rule['DST_TS']]['TX_RFS']) and ((pkt_time - _target_status[rule['DST_TS']]['TX_TIME']) < fne_const.STREAM_TO):
                         if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
                             self._logger.info('(%s) DMRD: Call not routed for SUB %s, call route in progress on target: PRID %s TS %s TGID %s SUB %s', self._system,
-                                              _rf_src, _target, rule['DST_TS'], int_id(_target_status[rule['DST_TS']]['TX_TGID']), _target_status[rule['DST_TS']]['TX_RFS'])
+                                              _rf_src, _target, rule['DST_TS'], _target_status[rule['DST_TS']]['TX_TGID'], _target_status[rule['DST_TS']]['TX_RFS'])
 
                             if config['Reports']['Report']:
-                                self._report.send_routeEvent('CALL ROUTE,FAILED,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP'])))
+                                self._report.send_routeEvent('CALL ROUTE,FAILED,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], rule['DST_GROUP']))
                         continue
 
                     # Set values for the contention handler to test next time
@@ -434,11 +434,11 @@ class routerFNE(coreFNE):
                         self._logger.debug('(%s) TS %s [STREAM ID %s] TX_P_LC %s', self._system, _slot, _stream_id, ahex(dst_pi_lc))
 
                         self._logger.debug('(%s) DMR Packet DST TGID %s does not match SRC TGID %s - Generating FULL and EMB LCs', 
-                                           self._system, int_id(rule['DST_GROUP']), _dst_id)
+                                           self._system, rule['DST_GROUP'], _dst_id)
                         self._logger.info('(%s) DMRD: Call routed to SYSTEM %s TS %s TGID %s',
-                                          self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP']))
+                                          self._system, _target, rule['DST_TS'], rule['DST_GROUP'])
                         if config['Reports']['Report']:
-                            self._report.send_routeEvent('CALL ROUTE,TO,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP'])))
+                            self._report.send_routeEvent('CALL ROUTE,TO,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], rule['DST_GROUP']))
 
                     _pi_dst_id = self.STATUS[_slot]['RX_PI_LC'][7:10]
                     if (int_id(_pi_dst_id) != 0) and (_target_status[rule['DST_TS']]['TX_PI_TGID'] != rule['DST_GROUP']):
@@ -451,7 +451,7 @@ class routerFNE(coreFNE):
 
                         self._logger.debug('(%s) TS %s [STREAM ID %s] TX_P_LC %s', self._system, _slot, _stream_id, ahex(dst_pi_lc))
                         self._logger.info('(%s) DMRD: Call PI parameters routed to SYSTEM %s TS %s TGID %s',
-                                          self._system, _target, rule['DST_TS'], int_id(rule['DST_GROUP']))
+                                          self._system, _target, rule['DST_TS'], rule['DST_GROUP'])
                     
                     # Handle any necessary re-writes for the destination
                     if rule['SRC_TS'] != rule['DST_TS']:
@@ -783,24 +783,24 @@ class routerFNE(coreFNE):
                     #
                     if ((rule['DST_GROUP'] != _target_status[rule['DST_TS']]['RX_TGID']) and ((pkt_time - _target_status[rule['DST_TS']]['RX_TIME']) < RULES[_target]['GROUP_HANGTIME'])):
                         self._logger.info('(%s) P25D: Call not routed to TGID %s, target active or in group hangtime: PRID %s TGID %s', self._system,
-                                          int_id(rule['DST_GROUP']), _target, int_id(_target_status[rule['DST_TS']]['RX_TGID']))
+                                          rule['DST_GROUP'], _target, _target_status[rule['DST_TS']]['RX_TGID'])
                         
                         if config['Reports']['Report']:
-                            self._report.send_routeEvent('CALL ROUTE,FAILED,P25,{},{},{},{}'.format(self._system, _target, 1, int_id(rule['DST_GROUP'])))
+                            self._report.send_routeEvent('CALL ROUTE,FAILED,P25,{},{},{},{}'.format(self._system, _target, 1, rule['DST_GROUP']))
                         continue    
                     if ((rule['DST_GROUP'] != _target_status[rule['DST_TS']]['TX_TGID']) and ((pkt_time - _target_status[rule['DST_TS']]['TX_TIME']) < RULES[_target]['GROUP_HANGTIME'])):
                         self._logger.info('(%s) P25D: Call not routed to TGID %s, target in group hangtime: PRID %s TGID %s', self._system,
-                                          int_id(rule['DST_GROUP']), _target, int_id(_target_status[rule['DST_TS']]['TX_TGID']))
+                                          rule['DST_GROUP'], _target, _target_status[rule['DST_TS']]['TX_TGID'])
                         
                         if config['Reports']['Report']:
-                            self._report.send_routeEvent('CALL ROUTE,FAILED,P25,{},{},{},{}'.format(self._system, _target, 1, int_id(rule['DST_GROUP'])))
+                            self._report.send_routeEvent('CALL ROUTE,FAILED,P25,{},{},{},{}'.format(self._system, _target, 1, rule['DST_GROUP']))
                         continue
                     if (rule['DST_GROUP'] == _target_status[rule['DST_TS']]['TX_TGID']) and (_rf_src != _target_status[rule['DST_TS']]['TX_RFS']) and ((pkt_time - _target_status[rule['DST_TS']]['TX_TIME']) < fne_const.STREAM_TO):
                         self._logger.info('(%s) P25D: Call not routed for SRC_ID %s, call route in progress on target: PRID %s TGID %s SRC_ID %s', self._system,
-                                          _rf_src, _target, int_id(_target_status[rule['DST_TS']]['TX_TGID']), _target_status[rule['DST_TS']]['TX_RFS'])
+                                          _rf_src, _target, _target_status[rule['DST_TS']]['TX_TGID'], _target_status[rule['DST_TS']]['TX_RFS'])
                         
                         if config['Reports']['Report']:
-                            self._report.send_routeEvent('CALL ROUTE,FAILED,P25,{},{},{},{}'.format(self._system, _target, 1, int_id(rule['DST_GROUP'])))
+                            self._report.send_routeEvent('CALL ROUTE,FAILED,P25,{},{},{},{}'.format(self._system, _target, 1, rule['DST_GROUP']))
                         continue
 
                     # Set values for the contention handler to test next time
@@ -812,10 +812,10 @@ class routerFNE(coreFNE):
                         _target_status[rule['DST_TS']]['TX_TGID'] = rule['DST_GROUP']
                         _target_status[rule['DST_TS']]['TX_STREAM_ID'] = _stream_id
                         _target_status[rule['DST_TS']]['TX_RFS'] = _rf_src
-                        self._logger.info('(%s) P25D: Call routed to SYSTEM %s TGID %s', self._system, _target, int_id(rule['DST_GROUP']))
+                        self._logger.info('(%s) P25D: Call routed to SYSTEM %s TGID %s', self._system, _target, rule['DST_GROUP'])
 
                         if config['Reports']['Report']:
-                            self._report.send_routeEvent('CALL ROUTE,TO,P25,{},{},{},{}'.format(self._system, _target, 1, int_id(rule['DST_GROUP'])))
+                            self._report.send_routeEvent('CALL ROUTE,TO,P25,{},{},{},{}'.format(self._system, _target, 1, rule['DST_GROUP']))
 
                     try:
                         _tgt_peer_id = self._CONFIG['Systems'][_target]['PeerId']
