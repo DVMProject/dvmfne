@@ -49,7 +49,7 @@ from twisted.internet.protocol import Factory, Protocol
 from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor, task
 
-from fne.fne_core import hex_str_3, int_id, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
+from fne.fne_core import coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
 from fne import fne_config, fne_log, fne_const
 
 from dmr_utils.tlv import tlvFNE
@@ -101,7 +101,7 @@ class bridgeFNE(coreFNE):
         if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC) and (_tx_slot.type != fne_const.DT_TERMINATOR_WITH_LC):
             self.tlv_fne.end_call(_tx_slot)
 
-        if (int_id(_data[15]) & 0x20) == 0:
+        if (_data[15] & 0x20) == 0:
             _dmr_frame = BitArray('0x' + ahex(_data[20:]))
             _ambe = _dmr_frame[0:108] + _dmr_frame[156:264]
             self.tlv_fne.export_voice(_tx_slot, _seq, _ambe.tobytes())
