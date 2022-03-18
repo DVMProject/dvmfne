@@ -128,11 +128,11 @@ def lc_header_encode(_message):
     bin_message = bytearray(_message)
     parity = encode(bin_message)
     masked_parity = lc_header_mask(parity)
-    return chr(masked_parity[0]) + chr(masked_parity[1]) + chr(masked_parity[2])
+    return bytes([masked_parity[0]]) + bytes([masked_parity[1]]) + bytes([masked_parity[2]])
     
 # All Inclusive function to take an LC string and provide the RS129 string to append
 def lc_terminator_encode(_message):
     bin_message = bytearray(_message)
     parity = encode(bin_message)
     masked_parity = lc_terminator_mask(parity)
-    return chr(masked_parity[0]) + chr(masked_parity[1]) + chr(masked_parity[2])
+    return bytes([masked_parity[0]]) + bytes([masked_parity[1]]) + bytes([masked_parity[2]])

@@ -7,7 +7,7 @@
 # @package DVM / FNE
 #
 ###############################################################################
-#   Copyright (C) 2016  Cortney T. Buffington, N0MJS <n0mjs@me.com>
+#   Copyright (C) 2016-2018  Cortney T. Buffington, N0MJS <n0mjs@me.com>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -28,13 +28,12 @@ from __future__ import print_function
 from bitarray import bitarray
 
 def csum5(_data):
-    _data = bytearray(_data)
     accum = 0
     assert len(_data) == 9, 'csum5 expected 9 bytes of data and got something else'
     
     for i in range(9):
         accum += _data[i]
-    accum = chr(accum % 31)
+    accum = bytes([accum % 31])
     csum = bitarray()
     csum.frombytes(accum)
     del csum[0:3]

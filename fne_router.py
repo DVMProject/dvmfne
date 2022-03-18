@@ -417,7 +417,7 @@ class routerFNE(coreFNE):
                         _target_status[rule['DST_TS']]['TX_T_LC'] = bptc.encode_terminator_lc(dst_lc)
                         _target_status[rule['DST_TS']]['TX_EMB_LC'] = bptc.encode_emblc(dst_lc)
 
-                        dst_pi_lc = self.STATUS[_slot]['RX_PI_LC'][0:7] + rule['DST_GROUP'] + b'\x00\x00'
+                        dst_pi_lc = self.STATUS[_slot]['RX_PI_LC'][0:7] + short_to_bytes(rule['DST_GROUP']) + b'\x00\x00'
                         _target_status[rule['DST_TS']]['TX_P_LC'] = bptc.encode_header_pi(dst_pi_lc)
 
                         self._logger.debug('(%s) TS %s [STREAM ID %s] TX_H_LC %s', self._system, _slot, _stream_id, ahex(dst_lc))
@@ -460,7 +460,7 @@ class routerFNE(coreFNE):
                                             self._system, _peer_id)
                         _tgt_peer_id = _peer_id
 
-                    _tmp_data = _data[:8] + short_to_bytes(rule['DST_GROUP']) + int_to_bytes(_tgt_peer_id) + chr(_tmp_bits) + _data[16:20]
+                    _tmp_data = _data[:8] + short_to_bytes(rule['DST_GROUP']) + int_to_bytes(_tgt_peer_id) + _tmp_bits.to_bytes(1, "big") + _data[16:20]
                     
                     # MUST TEST FOR NEW STREAM AND IF SO, RE-WRITE THE LC FOR THE TARGET
                     # MUST RE-WRITE DESTINATION TGID IF DIFFERENT
