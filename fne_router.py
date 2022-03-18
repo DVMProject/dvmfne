@@ -430,7 +430,7 @@ class routerFNE(coreFNE):
                         if config['Reports']['Report']:
                             self._report.send_routeEvent('CALL ROUTE,TO,DMR,{},{},{},{}'.format(self._system, _target, rule['DST_TS'], rule['DST_GROUP']))
 
-                    _pi_dst_id = self.STATUS[_slot]['RX_PI_LC'][7:10]
+                    _pi_dst_id = bytes_to_int(self.STATUS[_slot]['RX_PI_LC'][7:10])
                     if (_pi_dst_id != 0) and (_target_status[rule['DST_TS']]['TX_PI_TGID'] != rule['DST_GROUP']):
                         # Record the DST TGID and Stream ID
                         _target_status[rule['DST_TS']]['TX_PI_TGID'] = rule['DST_GROUP']
