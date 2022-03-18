@@ -1040,7 +1040,7 @@ class routerFNE(coreFNE):
             self._logger.info('(%s) P25D: PEER %s Removed TGID %s from affiliations table [STREAM ID %s]', self._system, _peer_id, _dst_id, _stream_id)
 
     def rid_tid_update_loop(self):
-        from fne.fne_core import mk_id_dict
+        from dvmfne_corelib.fne_core import mk_id_dict
 
         self._logger.debug('(ALL SYSTEMS) RID/TID update timer loop started')
         global RULES

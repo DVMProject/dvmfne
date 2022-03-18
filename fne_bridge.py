@@ -9,6 +9,7 @@
 ###############################################################################
 #   Copyright (C) 2016 Cortney T.  Buffington, N0MJS <n0mjs@me.com>
 #   Copyright (C) 2017-2021 Bryan Biedenkapp <gatekeep@gmail.com>
+#   Copyright (C) 2022 Natalie Moore <natalie@natnat.xyz>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -30,7 +31,7 @@ import sys
 import struct
 import sys
 import socket
-import ConfigParser
+import configpParser
 import thread
 import traceback
 
@@ -49,11 +50,11 @@ from twisted.internet.protocol import Factory, Protocol
 from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor, task
 
-from fne.fne_core import coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
-from fne import fne_config, fne_log, fne_const
+from dvmfne_corelib.fne_core import coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
+from dvmfne_corelib import fne_config, fne_log, fne_const
 
-from dmr_utils.tlv import tlvFNE
-from dmr_utils import lc, bptc, const, golay, qr, ambe_utils
+from dvmfne_corelib.dmr_utils.tlv import tlvFNE
+from dvmfne_corelib.dmr_utils import lc, bptc, const, golay, qr, ambe_utils
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
@@ -130,7 +131,7 @@ class bridgeFNE(coreFNE):
 
     # Load configuration from file
     def load_configuration(self, _file_name):
-        config = ConfigParser.ConfigParser()
+        config = configparser.ConfigParser()
         if not config.read(_file_name):
             sys.exit('Configuration file \'' + _file_name + '\' is not a valid configuration file! Exiting...')
         try:
@@ -140,7 +141,7 @@ class bridgeFNE(coreFNE):
                     self._gateway = config.get(section, 'Gateway').split(None)[0]                 # IP address of bridge app
                     self._gateway_port = int(config.get(section, 'ToGatewayPort').split(None)[0]) # Port bridge is listening on for AMBE frames to decode
 
-        except ConfigParser.Error as err:
+        except configparser.Error as err:
             traceback.print_exc()
             sys.exit('Could not parse configuration file, ' + _file_name + ', exiting...')
 
@@ -166,8 +167,8 @@ if __name__ == '__main__':
     import argparse
     import os
 
-    from fne.fne_core import mk_id_dict
-    from fne.fne_core import setup_fne
+    from dvmfne_corelib.fne_core import mk_id_dict
+    from dvmfne_corelib.fne_core import setup_fne
     
     # perform basic FNE setup
     config, logger, act_log_file = setup_fne()

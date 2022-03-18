@@ -257,8 +257,8 @@ class parrotFNE(coreFNE):
 # ---------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    from fne.fne_core import mk_id_dict
-    from fne.fne_core import setup_fne
+    from dvmfne_corelib.fne_core import mk_id_dict
+    from dvmfne_corelib.fne_core import setup_fne
     
     # perform basic FNE setup
     config, logger, act_log_file = setup_fne()
