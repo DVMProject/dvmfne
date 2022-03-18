@@ -93,7 +93,7 @@ class bridgeFNE(coreFNE):
 
         if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_VOICE_PI_HEADER):
             lcHeader = lc.decode_lc_header(dmrpkt)
-            _alg_id = lcHeader['LC'][0]
+            _alg_id = lcHeader['LC'][0] & 0x7
             _key_id = lcHeader['LC'][2]
             _mi = lcHeader['LC'][3:7]
             self.tlv_fne.pi_params(_slot, _dst_id, _alg_id, _key_id, _mi)
@@ -140,7 +140,7 @@ class bridgeFNE(coreFNE):
                     self._gateway = config.get(section, 'Gateway').split(None)[0]                 # IP address of bridge app
                     self._gateway_port = int(config.get(section, 'ToGatewayPort').split(None)[0]) # Port bridge is listening on for AMBE frames to decode
 
-        except ConfigParser.Error, err:
+        except ConfigParser.Error as err:
             traceback.print_exc()
             sys.exit('Could not parse configuration file, ' + _file_name + ', exiting...')
 

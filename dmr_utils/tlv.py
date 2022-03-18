@@ -48,7 +48,7 @@ from twisted.internet import reactor
 from twisted.internet import task
 
 # Things we import from the core modules
-from fne.fne_core import hex_str_3, hex_str_4, int_id
+from fne.fne_core import int_to_bytes, bytes_to_int, short_to_bytes
 
 from dmr_utils import lc, bptc, const, golay, qr, rs129
 
@@ -84,8 +84,8 @@ TAG_DMR_TEST    = 0xFF
 '''
 lc_header_flag     = lambda _slot: (0xA0 if (_slot == 2) else 0x20) | ord(const.DT_VOICE_LC_HEADER)
 pi_header_flag     = lambda _slot: (0xA0 if (_slot == 2) else 0x20) | ord(const.DT_VOICE_PI_HEADER)
-terminator_flag = lambda _slot: (0xA0 if (_slot == 2) else 0x20) | ord(const.DT_TERMINATOR_WITH_LC)
-voice_flag      = lambda _slot, _vf: (0x80 if (_slot == 2) else 0) | (0x10 if (_vf == 0) else 0) | _vf
+terminator_flag    = lambda _slot: (0xA0 if (_slot == 2) else 0x20) | ord(const.DT_TERMINATOR_WITH_LC)
+voice_flag         = lambda _slot, _vf: (0x80 if (_slot == 2) else 0) | (0x10 if (_vf == 0) else 0) | _vf
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
@@ -94,13 +94,13 @@ voice_flag      = lambda _slot, _vf: (0x80 if (_slot == 2) else 0) | (0x10 if (_
 
 class SLOT:
     def __init__(self, _slot, _src_id, _dst_id, _peer_id, _cc):
-        self.src_id = hex_str_3(_src_id)                    # Source ID
-        self.dst_id = hex_str_3(_dst_id)                    # Destination ID (TG)
-        self.peer_id = hex_str_4(_peer_id)                  # Peer ID
+        self.src_id = _src_id                               # Source ID
+        self.dst_id = _dst_id                               # Destination ID (TG)
+        self.peer_id = _peer_id                             # Peer ID
         self.slot = _slot                                   # Slot to use
         self.cc = _cc                                       # Color code to use
         self.type = 0                                       # 1=voice header, 2=voice terminator; voice, 0=burst A ... 5=burst F
-        self.stream_id = hex_str_4(0)                       # Stream id is same across a single session
+        self.stream_id = 0                                  # Stream id is same across a single session
         self.frame_count = 0                                # Count of frames in a session
         self.start_time = 0                                 # Start of session
         self.time = 0                                       # Current time in session.  Used to calculate duration
@@ -204,63 +204,63 @@ class tlvBase:
                     t = ord(t)
                     if (t == TAG_BEGIN_TX):
                         if ord(l) > 1:
-                            _slot = int_id(v[10:11])
+                            _slot = bytes_to_int(v[10:11])
                             _rx_slot = self.rx[_slot]
                             _rx_slot.slot = _slot
-                            _rx_slot.src_id = hex_str_3(int_id(v[0:3]))
-                            _rx_slot.peer_id = self._parent.get_peer_id(hex_str_4(int_id(v[3:7])))
-                            _rx_slot.dst_id = hex_str_3(int_id(v[7:10]))
-                            _rx_slot.cc = int_id(v[11:12])
+                            _rx_slot.src_id = bytes_to_int(v[0:3])
+                            _rx_slot.peer_id = self._parent.get_peer_id(bytes_to_int(v[3:7]))
+                            _rx_slot.dst_id = bytes_to_int(v[7:10])
+                            _rx_slot.cc = bytes_to_int(v[11:12])
 
-                            group = int_id(v[12])
+                            group = v[12]
                             if (group == 0):
                                 _rx_slot.group = False
                             else:
                                 _rx_slot.group = True
 
-                        _rx_slot.stream_id = hex_str_4(randint(0, 0xFFFFFFFF))   # Every stream has a unique ID
+                        _rx_slot.stream_id = randint(0, 0xFFFFFFFF)   # Every stream has a unique ID
                         self._logger.info('(%s) TLV BEGIN_TX, STREAM ID %s SRC_ID %s PEER %s GROUP %s TGID %s TS %s', \
-                                        self._system, int_id(_rx_slot.stream_id), int_id(_rx_slot.src_id), int_id(_rx_slot.peer_id), group, int_id(_rx_slot.dst_id), _slot)
+                                        self._system, _rx_slot.stream_id, _rx_slot.src_id, _rx_slot.peer_id, group, _rx_slot.dst_id, _slot)
                         self.send_voice_header(_rx_slot)
                     elif (t == TAG_PI_INFO):
                         if ord(l) > 1:
-                            _slot = int_id(v[9:10])
+                            _slot = bytes_to_int(v[9:10])
                             _rx_slot = self.rx[_slot]
                             _rx_slot.secure = True
-                            _rx_slot.dst_id = hex_str_3(int_id(v[0:3]))
-                            _rx_slot.alg_id = v[3:4]
-                            _rx_slot.key_id = v[4:5]
+                            _rx_slot.dst_id = bytes_to_int(v[0:3])
+                            _rx_slot.alg_id = bytes_to_int(v[3:4]) & 0x7
+                            _rx_slot.key_id = bytes_to_int(v[4:5])
                             _rx_slot.mi = v[5:9]
                         self._logger.info('(%s) TLV PI_INFO, STREAM ID %s SRC_ID %s PEER %s TS %s ALG %s KID %s', \
-                                        self._system, int_id(_rx_slot.stream_id), int_id(_rx_slot.src_id), int_id(_rx_slot.peer_id), _slot, int_id(_rx_slot.alg_id), int_id(_rx_slot.key_id))
+                                        self._system, _rx_slot.stream_id, _rx_slot.src_id, _rx_slot.peer_id, _slot, _rx_slot.alg_id, _rx_slot.key_id)
                         self.send_pi_header(_rx_slot)
                     elif (t == TAG_END_TX):
-                        _slot = int_id(v[0])
+                        _slot = v[0]
                         _rx_slot = self.rx[_slot]
                         if _rx_slot.frame_count > 0:
                             self.send_voice_term(_rx_slot)
                         
-                        self._logger.info('(%s) TLV END_TX, STREAM ID %d FRAMES %d', self._system, int_id(_rx_slot.stream_id), _rx_slot.frame_count)
+                        self._logger.info('(%s) TLV END_TX, STREAM ID %d FRAMES %d', self._system, _rx_slot.stream_id, _rx_slot.frame_count)
                         
                         # set it back to zero so any random AMBE frames are ignored.
                         _rx_slot.frame_count = 0
 
                     elif (t == TAG_AMBE_72): # generic AMBE or specific AMBE72
-                        _slot = int_id(v[0])
+                        _slot = v[0]
                         _rx_slot = self.rx[_slot]
                         if _rx_slot.frame_count > 0:
                             self.send_voice72(_rx_slot, v[1:])
                     elif (t == TAG_AMBE_49): # AMBE49
-                        _slot = int_id(v[0])
+                        _slot = v[0]
                         _rx_slot = self.rx[_slot]
                         if _rx_slot.frame_count > 0:
                             self.send_voice49(_rx_slot, v[1:])
 
                     elif (t == TAG_DMR_TEST):
-                        _rx_slot.dst_id = hex_str_3(int(v.split('=')[1]))
-                        self._logger.info('(%s) TLV DMR_TEST, TGID %d TS %d', self._system, int_id(_rx_slot.dst_id), _rx_slot.slot)
+                        _rx_slot.dst_id = int(v.split('=')[1])
+                        self._logger.info('(%s) TLV DMR_TEST, TGID %d TS %d', self._system, _rx_slot.dst_id, _rx_slot.slot)
                         #TODO: fix this thread
-                        thread.start_new_thread(self.sendBlankAmbe, (_rx_slot, hex_str_4(randint(0,0xFFFFFFFF)), 5 * 60 * 500))
+                        thread.start_new_thread(self.sendBlankAmbe, (_rx_slot, randint(0,0xFFFFFFFF), 5 * 60 * 500))
                             
                     else:
                         self._logger.info('(%s) TLV unknown, T %d L %d, V %s', self._system, t, ord(l), ahex(v))
@@ -280,7 +280,7 @@ class tlvBase:
         _rx_slot.stream_id = _stream_id
         self.send_voice_header(_rx_slot)
         sleep(0.06)
-        silence = '\xAC\AA\x40\x20\x00\x44\x40\x80\x80'
+        silence = b'\xAC\AA\x40\x20\x00\x44\x40\x80\x80'
         self._logger.info('(%s) Silence %d frames', self._system, _frames)
         while _frames > 0:
             self.send_voice72(_rx_slot, silence + silence + silence)
@@ -290,16 +290,16 @@ class tlvBase:
 
     # Begin export call to partner                
     def begin_call(self, _slot, _group_call, _src_id, _dst_id, _peer_id, _cc, _seq, _stream_id):
-        group = '\x01'
+        group = b'\x01'
         if (_group_call == False):
-            group = '\x00'
+            group = b'\x00'
 
         metadata = _src_id[0:3] + _peer_id[0:4] + _dst_id[0:3] + struct.pack('B', _slot) + struct.pack('B', _cc) + group
 
         # start transmission
         self.send_tlv(TAG_BEGIN_TX, metadata)    
 
-        self._logger.info('Voice Transmission Start; slot = {}, dstId = {}, srcId = {}'.format(_slot, int_id(_dst_id), int_id(_src_id)))
+        self._logger.info('Voice Transmission Start; slot = {}, dstId = {}, srcId = {}'.format(_slot, _dst_id, _src_id))
 
         _tx_slot = self.tx[_slot]
         _tx_slot.slot = _slot
@@ -316,14 +316,14 @@ class tlvBase:
 
     # Send PI call parameters to partner                
     def pi_params(self, _slot, _dst_id, _alg_id, _key_id, _mi):
-        metadata = _dst_id[0:3] + _alg_id + _key_id + _mi[0:4] + struct.pack('B', _slot)
+        metadata = _dst_id[0:3] + int_to_bytes(_alg_id) + int_to_bytes(_key_id) + _mi[0:4] + struct.pack('B', _slot)
 
         sleep(0.06)
 
         # start transmission
         self.send_tlv(TAG_PI_INFO, metadata)    
 
-        self._logger.info('PI parameters; slot = {}, dstId = {}, algId = {}, kId = {}'.format(_slot, int_id(_dst_id), int_id(_alg_id), int_id(_key_id)))
+        self._logger.info('PI parameters; slot = {}, dstId = {}, algId = {}, kId = {}'.format(_slot, _dst_id, _alg_id, _key_id))
 
         _tx_slot = self.tx[_slot]
         _tx_slot.secure = True
@@ -429,10 +429,10 @@ class tlvFNE(tlvBase):
                     if (self._DMOStreamID == 0) or (time() > self._DMOTimeout): # are we idle?
                         self._DMOStreamID = _rx_slot.stream_id
                         self._DMOTimeout = time() + 0.50
-                        self._logger.info('(%s) DMO Transition from idle to stream %d', self._system, int_id(_rx_slot.stream_id))
+                        self._logger.info('(%s) DMO Transition from idle to stream %d', self._system, _rx_slot.stream_id)
                     if _rx_slot.stream_id != self._DMOStreamID: # packet is from wrong stream?
                         if (_frame[15] & 0x2F) == 0x21:     # Call start?
-                            self._logger.info('(%s) DMO Ignore traffic on stream %d', self._system, int_id(_rx_slot.stream_id))
+                            self._logger.info('(%s) DMO Ignore traffic on stream %d', self._system, _rx_slot.stream_id)
                         continue
                     if (_frame[15] & 0x2F) == 0x22:         # call terminator flag?
                         self._DMOStreamID = 0               # we are idle again
@@ -442,7 +442,7 @@ class tlvFNE(tlvBase):
                 else:
                     _frame[15] = _orig_flag                 # Use the origional flag value if not DMO
 
-                _repeaterID = hex_str_4(int(_peerDict['PEER_ID']))
+                _repeaterID = int(_peerDict['PEER_ID'])
                 for _index in range(0,4):                   # Force the repeater ID to be the "destination" ID of the client (fne will not accept it otherwise)
                     _frame[_index + 11] = _repeaterID[_index]
 
@@ -479,7 +479,7 @@ class tlvFNE(tlvBase):
             _flco = LC_PRIVATE_VOICE
 
         # create lc
-        lcHeader = _flco + _fid + '\x00' + _dst_id + _src_id     # PF + Reserved + FLCO + FID + Service Options + Destination Address + Source Address
+        lcHeader = _flco + _fid + b'\x00' + short_to_bytes(_dst_id) + short_to_bytes(_src_id) # PF + Reserved + FLCO + FID + Service Options + Destination Address + Source Address
 
         _rx_slot.emblc = bptc.encode_emblc(lcHeader)        # save off the emb lc for voice frames B-E
         _rx_slot.emblc[5] = bitarray(32)                    # NULL message (F)
@@ -505,7 +505,7 @@ class tlvFNE(tlvBase):
             _fid = FID_DMRA
 
         # create lc
-        lcHeader = _alg_id + _fid + _key_id  + _mi + _dst_id + '\x00\x00' # AlgID + FID + KeyID + MI + Destination Address + CRC-CCITT16
+        lcHeader = _alg_id + _fid + short_to_bytes(_key_id)  + _mi + short_to_bytes(_dst_id) + b'\x00\x00' # AlgID + FID + KeyID + MI + Destination Address + CRC-CCITT16
 
         return lc.encode_pi_header(lcHeader, _cc, _dtype, MS_DATA_SYNC)
     
@@ -643,8 +643,8 @@ class tlvIPSC(tlvBase):
         self.rx[_slot].frame_count += 1      # update count (used for stats and to make sure header was sent)
 
     def generate_ipsc_voice_header(self, _rx_slot):
-        src_id = struct.pack('>I', int_id(_rx_slot.src_id))
-        dst_id = struct.pack('>I', int_id(_rx_slot.dst_id))
+        src_id = struct.pack('>I', _rx_slot.src_id)
+        dst_id = struct.pack('>I', _rx_slot.dst_id)
 
         frameType = GROUP_VOICE
         if not _rx_slot.group:
@@ -659,9 +659,9 @@ class tlvIPSC(tlvBase):
             control &= ~(1 << 7)
         control = chr(control)
 
-        frame = frameType + struct.pack('>I', int_id(_rx_slot.peer_id)) + struct.pack("i", self.ipsc_seq)[0] + \
+        frame = frameType + struct.pack('>I', _rx_slot.peer_id) + struct.pack("i", self.ipsc_seq)[0] + \
             src_id[1] + src_id[2] + src_id[3] + dst_id[1] + dst_id[2] + dst_id[3] + \
-            CALL_PRIORITY_2 + struct.pack('>I', int_id(_rx_slot.stream_id)) + control
+            CALL_PRIORITY_2 + struct.pack('>I', _rx_slot.stream_id) + control
 
         return frame
 
@@ -746,8 +746,8 @@ class tlvIPSC(tlvBase):
         return burst
 
     def generate_voice_header(self, _rx_slot, _burst_type):
-        src_id = struct.pack('>I', int_id(_rx_slot.src_id))
-        dst_id = struct.pack('>I', int_id(_rx_slot.dst_id))
+        src_id = struct.pack('>I', _rx_slot.src_id)
+        dst_id = struct.pack('>I', _rx_slot.dst_id)
 
         headerType = ord(LC_GROUP_VOICE)
         if not _rx_slot.group:
@@ -784,7 +784,7 @@ class tlvIPSC(tlvBase):
         #TODO: this section
         _unk = '\x00'
 
-        dst_id = struct.pack('>I', int_id(_rx_slot.dst_id))
+        dst_id = struct.pack('>I', _rx_slot.dst_id)
 
         featureSet = FID_DMRA
 

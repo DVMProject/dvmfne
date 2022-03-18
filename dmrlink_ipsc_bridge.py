@@ -55,7 +55,7 @@ from dmr_utils.tlv import tlvIPSC
 from ipsc.ipsc_const import *
 from ipsc.ipsc_mask import *
     
-from fne.fne_core import hex_str_3, hex_str_4, int_id
+from fne.fne_core import int_to_bytes, bytes_to_int, short_to_bytes
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
@@ -122,20 +122,20 @@ class bridgeIPSC(IPSC):
 
     def voice_call(self, _src_id, _dst_id, _group, _ts, _end, _peerId, _rtp, _data):
         _tx_slot = self.tlv_ipsc.tx[_ts]
-        _payload_type = _data[30:31]
-        _seq = int_id(_data[20:22])
+        _payload_type = bytes_to_int(_data[30:31])
+        _seq = bytes_to_int(_data[20:22])
         _tx_slot.frame_count += 1
 
         if _payload_type == BURST_DATA_TYPE['VOICE_HEADER']:
-            _stream_id = int_id(_data[5:6])           # int8  looks like a sequence number for a packet
+            _stream_id = bytes_to_int(_data[5:6])           # int8  looks like a sequence number for a packet
             if (_stream_id != _tx_slot.stream_id):
                 self.tlv_ipsc.begin_call(_ts, _group, _src_id, _dst_id, _peerId, self.cc, _seq, _stream_id)
             _tx_slot.lastSeq = _seq
 
         if _payload_type == BURST_DATA_TYPE['PI_HEADER']:
-            _stream_id = int_id(_data[5:6])           # int8  looks like a sequence number for a packet
-            _alg_id = _data[38:39]
-            _key_id = _data[40:41]
+            _stream_id = bytes_to_int(_data[5:6])           # int8  looks like a sequence number for a packet
+            _alg_id = bytes_to_int(_data[38:39])
+            _key_id = bytes_to_int(_data[40:41])
             _mi = _data[41:45]
             if (_stream_id == _tx_slot.stream_id):
                 self.tlv_ipsc.pi_params(_ts, _dst_id, _alg_id, _key_id, _mi)
