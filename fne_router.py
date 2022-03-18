@@ -40,10 +40,10 @@ from twisted.internet.protocol import Factory, Protocol
 from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor, task
 
-from fne.fne_core import int_to_bytes, short_to_bytes, bytes_to_int, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
-from fne import fne_config, fne_log, fne_const
+from dvmfne_corelib.fne_core import int_to_bytes, short_to_bytes, bytes_to_int, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
+from dvmfne_corelib import fne_config, fne_log, fne_const
 
-from dmr_utils import lc, bptc, const
+from dvmfne_corelib.dmr_utils import lc, bptc, const
 
 # ---------------------------------------------------------------------------
 #   Module Routines
@@ -1098,8 +1098,8 @@ class routeReportFactory(reportFactory):
 # ---------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    from fne.fne_core import mk_id_dict
-    from fne.fne_core import setup_fne
+    from dvmfne_corelib.fne_core import mk_id_dict
+    from dvmfne_corelib.fne_core import setup_fne
 
     # perform basic FNE setup
     config, logger, act_log_file = setup_fne()

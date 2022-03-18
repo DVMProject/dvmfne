@@ -38,10 +38,10 @@ from twisted.internet.protocol import Factory, Protocol
 from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor, task
 
-from fne.fne_core import short_to_bytes, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
-from fne import fne_config, fne_log, fne_const
+from dvmfne_corelib.fne_core import short_to_bytes, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
+from dvmfne_corelib import fne_config, fne_log, fne_const
 
-from dmr_utils import lc, bptc, const
+from dvmfne_corelib.dmr_utils import lc, bptc, const
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
