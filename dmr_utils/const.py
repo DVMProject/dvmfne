@@ -29,13 +29,13 @@ from __future__ import print_function
 from bitarray import bitarray
 
 # DMR Data Types
-DT_VOICE_PI_HEADER = '\x00'
-DT_VOICE_LC_HEADER = '\x01'
-DT_TERMINATOR_WITH_LC = '\x02'
-DT_CSBK = '\x03'
-DT_DATA_HEADER = '\x06'
-DT_RATE_12_DATA = '\x07'
-DT_RATE_34_DATA = '\x08'
+DT_VOICE_PI_HEADER = b'\x00'
+DT_VOICE_LC_HEADER = b'\x01'
+DT_TERMINATOR_WITH_LC = b'\x02'
+DT_CSBK = b'\x03'
+DT_DATA_HEADER = b'\x06'
+DT_RATE_12_DATA = b'\x07'
+DT_RATE_34_DATA = b'\x08'
 
 # Sync patterns used for LC and Voice Burst A packets
 BS_VOICE_SYNC = bitarray()
@@ -53,25 +53,25 @@ SYNC_TYPE_VOICE = 0x01
 SYNC_TYPE_DATA = 0x02
 
 # Feature Set
-FID_ETSI = '\x00'
-FID_DMRA = '\x10'
+FID_ETSI = b'\x00'
+FID_DMRA = b'\x10'
 
 # LC Options - Use for Group Voice
-LC_OPT = '\x00\x00\x20'
-LC_PI_OPT = '\x00\x00\x00\x00\x00\x00\x00'
+LC_OPT = b'\x00\x00\x20'
+LC_PI_OPT = b'\x00\x00\x00\x00\x00\x00\x00'
 
-LC_GROUP_VOICE = '\x00'
-LC_PRIVATE_VOICE = '\x03'
+LC_GROUP_VOICE = b'\x00'
+LC_PRIVATE_VOICE = b'\x03'
 
-LC_SVC_OPT_EMERGENCY = '\x80'
-LC_SVC_OPT_PRIVACY = '\x40'
-LC_SVC_OPT_BCAST = '\x08'
-LC_SVC_OPT_OVCM = '\x04'
+LC_SVC_OPT_EMERGENCY = b'\x80'
+LC_SVC_OPT_PRIVACY = b'\x40'
+LC_SVC_OPT_BCAST = b'\x08'
+LC_SVC_OPT_OVCM = b'\x04'
 
-CALL_PRIORITY_NONE = '\x00'
-CALL_PRIORITY_1 = '\x01'
-CALL_PRIORITY_2 = '\x02'    # Default Priority
-CALL_PRIORITY_3 = '\x03'
+CALL_PRIORITY_NONE = b'\x00'
+CALL_PRIORITY_1 = b'\x01'
+CALL_PRIORITY_2 = b'\x02'    # Default Priority
+CALL_PRIORITY_3 = b'\x03'
 
 # Voice Control
 VC_EMBEDDED_LC_BITS = 0x02

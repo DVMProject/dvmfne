@@ -321,9 +321,9 @@ class routerFNE(coreFNE):
                 # just make a new one from the HBP header.  This is good
                 # enough, and it saves lots of time
                 else:
-                    self.STATUS[_slot]['RX_LC'] = const.LC_OPT + _dst_id + _rf_src
+                    self.STATUS[_slot]['RX_LC'] = const.LC_OPT + short_to_bytes(_dst_id) + short_to_bytes(_rf_src)
 
-                self.STATUS[_slot]['RX_PI_LC'] = const.LC_PI_OPT + '\x00\x00\x00' + '\x00\x00'
+                self.STATUS[_slot]['RX_PI_LC'] = const.LC_PI_OPT + b'\x00\x00\x00' + b'\x00\x00'
                 self._logger.debug('(%s) TS %s [STREAM ID %s] RX_LC %s', self._system, _slot, _stream_id, ahex(self.STATUS[_slot]['RX_LC']))
 
             # If we can, use the PI LC from the PI voice header as to keep all
@@ -412,7 +412,7 @@ class routerFNE(coreFNE):
                         _target_status[rule['DST_TS']]['TX_RFS'] = _rf_src
 
                         # Generate LCs (full and EMB) for the TX stream
-                        dst_lc = self.STATUS[_slot]['RX_LC'][0:3] + rule['DST_GROUP'] + _rf_src
+                        dst_lc = self.STATUS[_slot]['RX_LC'][0:3] + short_to_bytes(rule['DST_GROUP']) + short_to_bytes(_rf_src)
                         _target_status[rule['DST_TS']]['TX_H_LC'] = bptc.encode_header_lc(dst_lc)
                         _target_status[rule['DST_TS']]['TX_T_LC'] = bptc.encode_terminator_lc(dst_lc)
                         _target_status[rule['DST_TS']]['TX_EMB_LC'] = bptc.encode_emblc(dst_lc)
@@ -436,7 +436,7 @@ class routerFNE(coreFNE):
                         _target_status[rule['DST_TS']]['TX_PI_TGID'] = rule['DST_GROUP']
 
                         # Generate LCs (full and EMB) for the TX stream
-                        dst_pi_lc = self.STATUS[_slot]['RX_PI_LC'][0:7] + rule['DST_GROUP'] + b'\x00\x00'
+                        dst_pi_lc = self.STATUS[_slot]['RX_PI_LC'][0:7] + short_to_bytes(rule['DST_GROUP']) + b'\x00\x00'
                         _target_status[rule['DST_TS']]['TX_P_LC'] = bptc.encode_header_pi(dst_pi_lc)
 
                         self._logger.debug('(%s) TS %s [STREAM ID %s] TX_P_LC %s', self._system, _slot, _stream_id, ahex(dst_pi_lc))
@@ -460,7 +460,7 @@ class routerFNE(coreFNE):
                                             self._system, _peer_id)
                         _tgt_peer_id = _peer_id
 
-                    _tmp_data = _data[:8] + rule['DST_GROUP'] + _tgt_peer_id + chr(_tmp_bits) + _data[16:20]
+                    _tmp_data = _data[:8] + short_to_bytes(rule['DST_GROUP']) + int_to_bytes(_tgt_peer_id) + chr(_tmp_bits) + _data[16:20]
                     
                     # MUST TEST FOR NEW STREAM AND IF SO, RE-WRITE THE LC FOR THE TARGET
                     # MUST RE-WRITE DESTINATION TGID IF DIFFERENT

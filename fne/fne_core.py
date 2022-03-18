@@ -586,7 +586,7 @@ class coreFNE(DatagramProtocol):
             _peer_id = bytes_to_int(_data[11:15])
             if (_peer_id in self._peers and self._peers[_peer_id]['CONNECTION'] == 'YES' and 
                 self._peers[_peer_id]['IP'] == _host and self._peers[_peer_id]['PORT'] == _port):
-                _seq = bytes_to_int(_data[4])
+                _seq = _data[4]
                 _rf_src = bytes_to_int(_data[5:8])
                 _dst_id = bytes_to_int(_data[8:11])
                 _bits = _data[15]
