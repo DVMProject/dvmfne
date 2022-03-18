@@ -224,7 +224,7 @@ if __name__ == '__main__':
     
     # perform basic FNE setup
     config, logger, act_log_file = setup_fne()
-    logger.info('Digital Voice Modem Parrot Service D01.00')
+    logger.info('Digital Voice Modem FNE Parrot Service R01.50')
 
     # setup FNE report server
     report_server = config_reports(config, logger, reportFactory)

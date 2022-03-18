@@ -171,7 +171,7 @@ if __name__ == '__main__':
     
     # perform basic FNE setup
     config, logger, act_log_file = setup_fne()
-    logger.info('Digital Voice Modem FNE -> IPSC Bridge Service D01.00')
+    logger.info('Digital Voice Modem FNE -> IPSC Bridge Service R01.00')
 
     # CLI argument parser - handles picking up the config file from the command
     # line, and sending a "help" message

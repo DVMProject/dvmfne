@@ -1103,7 +1103,7 @@ if __name__ == '__main__':
 
     # perform basic FNE setup
     config, logger, act_log_file = setup_fne()
-    logger.info('Digital Voice Modem Router Service D02.00')
+    logger.info('Digital Voice Modem FNE Router Service R02.50')
     
     # make dictionaries
     white_rids = mk_id_dict(config['Aliases']['Path'], config['Aliases']['WhitelistRIDsFile'])
