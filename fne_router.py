@@ -330,7 +330,7 @@ class routerFNE(coreFNE):
             # options intact
             if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_PI_HEADER:
                 lcHeader = lc.decode_lc_header(dmrpkt)
-                _alg_id = lcHeader['LC'][0]
+                _alg_id = lcHeader['LC'][0] & 0x7
                 _key_id = lcHeader['LC'][2]
                 self._logger.info('(%s) DMRD: Traffic *CALL PI PARAMS  * PEER %s DST_ID %s TS %s ALGID %s KID %s [STREAM ID %s]', self._system,
                                         _peer_id, _dst_id, _slot, _alg_id, _key_id, _stream_id)

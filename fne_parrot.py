@@ -28,6 +28,7 @@ from __future__ import print_function
 
 import sys
 
+from binascii import b2a_hex as ahex
 from bitarray import bitarray
 from time import time, sleep
 from importlib import import_module
@@ -37,8 +38,10 @@ from twisted.internet.protocol import Factory, Protocol
 from twisted.protocols.basic import NetstringReceiver
 from twisted.internet import reactor, task
 
-from fne.fne_core import coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
+from fne.fne_core import short_to_bytes, coreFNE, systems, fne_shutdown_handler, REPORT_OPCODES, reportFactory, config_reports, setup_activity_log
 from fne import fne_config, fne_log, fne_const
+
+from dmr_utils import lc, bptc, const
 
 # ---------------------------------------------------------------------------
 #   Class Declaration
@@ -55,46 +58,52 @@ class parrotFNE(coreFNE):
         self.STATUS = {
             1: {
                 'RX_START':     time(),
-                'RX_SEQ':       '\x00',
-                'RX_RFS':       '\x00',
-                'TX_RFS':       '\x00',
-                'RX_STREAM_ID': '\x00',
-                'TX_STREAM_ID': '\x00',
-                'RX_TGID':      '\x00\x00\x00',
-                'TX_TGID':      '\x00\x00\x00',
+                'RX_SEQ':       0,
+                'RX_RFS':       0,
+                'TX_RFS':       0,
+                'RX_STREAM_ID': 0,
+                'TX_STREAM_ID': 0,
+                'RX_TGID':      0,
+                'TX_TGID':      0,
+                'TX_PI_TGID':   0,
                 'RX_TIME':      time(),
                 'TX_TIME':      time(),
                 'RX_TYPE':      fne_const.DT_TERMINATOR_WITH_LC,
-                'RX_LC':        '\x00',
-                'TX_H_LC':      '\x00',
-                'TX_T_LC':      '\x00',
+                'RX_LC':        0,
+                'RX_PI_LC':     0,
+                'TX_H_LC':      0,
+                'TX_P_LC':      0,
+                'TX_T_LC':      0,
                 'TX_EMB_LC': {
-                    1: '\x00',
-                    2: '\x00',
-                    3: '\x00',
-                    4: '\x00',
+                    1: 0,
+                    2: 0,
+                    3: 0,
+                    4: 0,
                 }
                 },
             2: {
                 'RX_START':     time(),
-                'RX_SEQ':       '\x00',
-                'RX_RFS':       '\x00',
-                'TX_RFS':       '\x00',
-                'RX_STREAM_ID': '\x00',
-                'TX_STREAM_ID': '\x00',
-                'RX_TGID':      '\x00\x00\x00',
-                'TX_TGID':      '\x00\x00\x00',
+                'RX_SEQ':       0,
+                'RX_RFS':       0,
+                'TX_RFS':       0,
+                'RX_STREAM_ID': 0,
+                'TX_STREAM_ID': 0,
+                'RX_TGID':      0,
+                'TX_TGID':      0,
+                'TX_PI_TGID':   0,
                 'RX_TIME':      time(),
                 'TX_TIME':      time(),
                 'RX_TYPE':      fne_const.DT_TERMINATOR_WITH_LC,
-                'RX_LC':        '\x00',
-                'TX_H_LC':      '\x00',
-                'TX_T_LC':      '\x00',
+                'RX_LC':        0,
+                'RX_PI_LC':     0,
+                'TX_H_LC':      0,
+                'TX_P_LC':      0,
+                'TX_T_LC':      0,
                 'TX_EMB_LC': {
-                    1: '\x00',
-                    2: '\x00',
-                    3: '\x00',
-                    4: '\x00',
+                    1: 0,
+                    2: 0,
+                    3: 0,
+                    4: 0,
                 }
             }
         }
@@ -127,7 +136,36 @@ class parrotFNE(coreFNE):
                 self.STATUS['RX_START'] = pkt_time
                 self._logger.info('(%s) DMRD: Traffic *CALL START     * PEER %s SRC_ID %s TGID %s TS %s [STREAM ID %s]', self._system,
                                   _peer_id, _rf_src, _dst_id, _slot, _stream_id)
+
+                # If we can, use the LC from the voice header as to keep all
+                # options intact
+                if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_LC_HEADER:
+                    lcHeader = lc.decode_lc_header(dmrpkt)
+                    self.STATUS[_slot]['RX_LC'] = lcHeader['LC'][:9]
+                
+                # If we don't have a voice header then don't wait to decode it
+                # from the Embedded LC
+                # just make a new one from the HBP header.  This is good
+                # enough, and it saves lots of time
+                else:
+                    self.STATUS[_slot]['RX_LC'] = const.LC_OPT + short_to_bytes(_dst_id) + short_to_bytes(_rf_src)
+
+                self.STATUS[_slot]['RX_PI_LC'] = const.LC_PI_OPT + b'\x00\x00\x00' + b'\x00\x00'
+                self._logger.debug('(%s) TS %s [STREAM ID %s] RX_LC %s', self._system, _slot, _stream_id, ahex(self.STATUS[_slot]['RX_LC']))
             
+            # If we can, use the PI LC from the PI voice header as to keep all
+            # options intact
+            if _frame_type == fne_const.FT_DATA_SYNC and _dtype_vseq == fne_const.DT_VOICE_PI_HEADER:
+                lcHeader = lc.decode_lc_header(dmrpkt)
+                _alg_id = lcHeader['LC'][0] & 0x7
+                _key_id = lcHeader['LC'][2]
+                self._logger.info('(%s) DMRD: Traffic *CALL PI PARAMS  * PEER %s DST_ID %s TS %s ALGID %s KID %s [STREAM ID %s]', self._system,
+                                        _peer_id, _dst_id, _slot, _alg_id, _key_id, _stream_id)
+
+                self.STATUS[_slot]['RX_PI_LC'] = lcHeader['LC'][:10]
+
+                self._logger.debug('(%s) TS %s [STREAM ID %s] RX_PI_LC %s', self._system, _slot, _stream_id, ahex(self.STATUS[_slot]['RX_PI_LC']))
+
             # Final actions - Is this a voice terminator?
             if (_frame_type == fne_const.FT_DATA_SYNC) and (_dtype_vseq == fne_const.DT_TERMINATOR_WITH_LC) and (self.STATUS[_slot]['RX_TYPE'] != fne_const.DT_TERMINATOR_WITH_LC):
                 call_duration = pkt_time - self.STATUS['RX_START']
