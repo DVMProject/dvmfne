@@ -593,7 +593,7 @@ class routerFNE(coreFNE):
 
     def p25d_preprocess(self, _peer_id, _rf_src, _dst_id, _call_type, _duid, _dtype_vseq, _stream_id, _data):
         pkt_time = time()
-        p25pkt = _data[24:178]
+        p25pkt = _data[24:]
         _lcf = int(_data[4])
         _slot = 1               # fake the slot data, P25 doesn't have this
 
@@ -711,7 +711,7 @@ class routerFNE(coreFNE):
 
     def p25d_received(self, _peer_id, _rf_src, _dst_id, _call_type, _duid, _dtype_vseq, _stream_id, _data):
         pkt_time = time()
-        p25pkt = _data[24:178]
+        p25pkt = _data[24:]
         _lcf = int(_data[4])
         _slot = 1               # fake the slot data, P25 doesn't have this
 
